@@ -59,6 +59,7 @@ body{background:#edf1eb}main{padding-top:16px}.chart h2{font-size:clamp(22px,4vw
 .bidClock progress::-moz-progress-bar{background:currentColor}
 .bidClock.urgent progress{color:#973e2c}.bidClock.urgent span{color:#7a3426}
 dialog .facts{display:flex;flex-wrap:wrap;gap:12px;padding:12px 0;margin:0;border-top:1px solid var(--line);clear:both}
+#builds{display:grid;gap:8px;margin:12px 0}.buildChoice{display:grid;grid-template-columns:1fr auto;gap:3px 8px;text-align:left;padding:10px;border-radius:8px}.buildChoice span{grid-column:1/-1;color:var(--mute);font-size:13px;font-weight:450}.buildNote{border-left:3px solid #ac9253;padding-left:9px}#hold{width:100%;min-height:44px}
 </style></head>
 <body>
 <header><div class="mast"><span class="seal" aria-hidden="true">⚓</span><strong>Harbor Deeds</strong></div><div class="headright"><span class="live">Local table</span><button id="rulesBtn" aria-label="Rulebook">?</button><button id="setupBtn">New table</button></div></header>
@@ -651,10 +652,19 @@ const controllers = {
       button('Roll dice',()=>send('roll'),true);
       if(!s.traded && s.owners.some((o,i)=>o!==null&&!locked(s,rules,i))) button('Draft trade',()=>compose(s,send));
       if(s.builds.length)button('Improve',()=>{
-        openDialog(`<h2>Improve a district</h2><p>${money(cash)} available. Building locks this district against trades. Improvements earn rent, not final deed value.</p><div id="builds"></div>`);
+        const after=s.players.filter((p,i)=>!p.out&&i>actor).length;
+        const rolls=(rules.rounds-s.round)*(s.players.filter(p=>!p.out).length-1)+after;
+        openDialog(`<h2>Build or hold?</h2><p>${money(cash)} cash · up to ${rolls} opponent rolls left. A build costs cash now; you only earn it back if opponents land there and pay.</p><p class="buildNote">No resale value. Building locks every deed in this district against trades.</p><div id="builds"></div><button id="hold">Keep cash</button>`);
+        $('hold').onclick=()=>$('modal').close();
         for(const q of s.builds){
           const el=document.createElement('button');const t=rules.tiles[q.tile];
-          el.textContent=`${q.tiles.length>1?t.group:t.name} · L${s.levels[q.tile]+1} · ${money(q.cost)} · +${money(q.gain)} ${q.tiles.length>1?'combined rent':'rent'}`;
+          const district=q.tiles.length>1;
+          const gains=q.tiles.map(k=>Math.round(rules.tiles[k].rent*rules.development.levels[s.levels[k]].rent_pct/100)-s.rents[k]);
+          const lo=Math.min(...gains),hi=Math.max(...gains);
+          const visits=n=>n>0?Math.ceil(q.cost/n):Infinity;
+          const needed=visits(lo)===visits(hi)?visits(lo):`${visits(hi)}–${visits(lo)}`;
+          el.className='buildChoice';
+          el.innerHTML=`<strong>${district?t.group:t.name} · Level ${s.levels[q.tile]+1}</strong><b>Build ${money(q.cost)}</b><span>+${money(lo)}${lo===hi?'':`–${money(hi)}`} per paying visit · ${needed} to recover cost</span><span>${q.cost>cash?`${money(q.cost-cash)} short`:`Cash after: ${money(cash-q.cost)}`}</span>`;
           el.disabled=q.cost>cash;el.onclick=()=>{$('modal').close();send('build',{tile:q.tile})};$('builds').append(el);
         }
       });
@@ -708,7 +718,12 @@ function detail(i) {
     notice:'Draw a port notice for a cash award or unexpected bill.',
     rest:'A safe harbor. No payment is due here.'
   };
-  openDialog(`<h2>${t.name}</h2>${t.kind==='deed'?`<p>${t.group} · ${owner===null?'On the market':`Owned by ${seat(owner)}`} · Level ${state.levels[i]}</p>${facts([['List price',money(t.price)],['Current rent',money(state.rents[i])],['Full district',money(Math.round(t.rent*rules.development.set_rent_pct/100))]])}`:`<p>${info[t.kind]}</p>`}`);
+  const max=rules.development.levels.length,level=state.levels[i];
+  const group=rules.tiles.flatMap((x,k)=>x.kind==='deed'&&x.group===t.group?[k]:[]);
+  const have=group.filter(k=>state.owners[k]===owner).length;
+  const status=owner===null?'Complete the district to build.':have<group.length?`${seat(owner)} has ${have}/${group.length} deeds. A complete district unlocks building.`:
+    level===max?'Fully improved.':rules.development.policy==='even'&&group.some(k=>state.levels[k]<level)?'Improve the lower-level deeds first.':'The owner can improve before rolling.';
+  openDialog(`<h2>${t.name}</h2>${t.kind==='deed'?`<p>${t.group} · ${owner===null?'On the market':`Owned by ${seat(owner)}`} · Level ${level}/${max}</p>${facts([['List price',money(t.price)],['Current rent',money(state.rents[i])]])}<p>${status}${locked(state,rules,i)?' This district cannot be traded.':''}</p>`:`<p>${info[t.kind]}</p>`}`);
 }
 const summary=(deed,cash)=>[deed===null?'':rules.tiles[deed].name,cash?money(cash):''].filter(Boolean).join(' + ');
 function facts(entries){
@@ -737,11 +752,16 @@ function render() {
     const here=s.players.flatMap((player,j)=>player.pos===i&&!player.out?[j]:[]);
     b.innerHTML=`${tile.kind==='deed'?`<span class="num">Nº ${String(i).padStart(2,'0')}</span>`:`<span class="mark">${tile.mark}</span>`}<strong>${tile.name}</strong>${tile.price?`<span class="cost">${money(tile.price)}</span>`:''}${s.owners[i]!==null?`<span class="owned">●${s.owners[i]+1}</span>`:''}<span class="tokens">${here.map(j=>`<span class="token" style="background:${colors[j]}">${j+1}</span>`).join('')}</span>`;
     b.setAttribute('aria-label',`${tile.name}${here.length?', occupied by '+here.map(seat).join(', '):''}. Inspect space`);
+    if(s.levels[i]){
+      b.querySelector('.owned').textContent=`${s.owners[i]+1}·L${s.levels[i]}`;
+      b.setAttribute('aria-label',`${b.getAttribute('aria-label')}. Level ${s.levels[i]}, rent ${money(s.rents[i])}`);
+    }
   }
   $('register').innerHTML=s.players.map((player,i)=>{
     const owned=deeds(s,i), groups=Object.keys(bands).map(g=>{
       const count=owned.filter(k=>rules.tiles[k].group===g).length;
-      return count?`<span title="${g}" style="--band:${bands[g]}">${g} ${count}/${rules.tiles.filter(t=>t.group===g).length}</span>`:'';
+      const levels=owned.filter(k=>rules.tiles[k].group===g).reduce((n,k)=>n+s.levels[k],0);
+      return count?`<span title="${g}" style="--band:${bands[g]}">${g} ${count}/${rules.tiles.filter(t=>t.group===g).length}${levels?` · ${levels} built · locked`:''}</span>`:'';
     }).join('');
     return `<div class="row"><span class="badge" style="background:${colors[i]}">${i+1}</span><div><strong>${seat(i)}</strong><div class="meta">${player.out?'Bankrupt':seats[i]==='bot'?'Bot':'Local player'} · ${owned.length} deeds</div><div class="holdings">${groups}</div></div><span class="money">${money(player.cash)}</span></div>`;
   }).join('');

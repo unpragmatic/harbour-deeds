@@ -58,3 +58,4 @@ body{background:#edf1eb}main{padding-top:16px}.chart h2{font-size:clamp(22px,4vw
 .bidClock progress::-moz-progress-bar{background:currentColor}
 .bidClock.urgent progress{color:#973e2c}.bidClock.urgent span{color:#7a3426}
 dialog .facts{display:flex;flex-wrap:wrap;gap:12px;padding:12px 0;margin:0;border-top:1px solid var(--line);clear:both}
+#builds{display:grid;gap:8px;margin:12px 0}.buildChoice{display:grid;grid-template-columns:1fr auto;gap:3px 8px;text-align:left;padding:10px;border-radius:8px}.buildChoice span{grid-column:1/-1;color:var(--mute);font-size:13px;font-weight:450}.buildNote{border-left:3px solid #ac9253;padding-left:9px}#hold{width:100%;min-height:44px}

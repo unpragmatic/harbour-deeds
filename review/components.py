@@ -34,6 +34,11 @@ sections = {
         ('settled', 'Settlement', 'Show the outcome, then advance automatically. The activity feed preserves results that go by too quickly.'),
         ('final', 'Final accounts', 'Show the winner and each seat’s net worth. Local rematch reuses settings instead of reopening setup.'),
     ],
+    'Develop a district': [
+        ('build-even', 'Build or hold', 'Compare cash left after construction with the rent per visit. Keep cash dismisses the quote without spending or advancing the turn.'),
+        ('build-district', 'Whole-district quote', 'Show the full purchase cost and the range earned from one paying visitor. A visitor lands on only one deed, not the whole district.'),
+        ('built-deed', 'After construction', 'The deed shows its current rent, level cap and why its next level is blocked. District lock and investment are also visible in the portfolio.'),
+    ],
 }
 out = ['''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Harbor Deeds · Component review</title><style>
