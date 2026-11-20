@@ -21,12 +21,12 @@ expanded["development"] = dict(base["development"], levels=[
     zip(base["development"]["levels"], outer["development_cost_pct"], strict=True)
 ])
 for marker, value in {
-    "/*STYLE*/": (web / "style.css").read_text(),
+    "/*STYLE*/": "\n".join((web / name).read_text() for name in ["style.css","table.css"]),
     "__RULES__": (web / "rules.json").read_text(),
     "__OUTER__": json.dumps(expanded),
     "__GRAND__": json.dumps(dict(expanded, **json.loads((web / "grand-harbor.json").read_text()))),
     "__WASM__": base64.b64encode(wasm.read_bytes()).decode(),
-    "/*APP*/": "const uxInventory="+(web/"interactions.json").read_text()+";\n"+"\n".join((web / name).read_text() for name in ["strategy.mjs","feedback.js","room.js","app.js"]),
+    "/*APP*/": "const uxInventory="+(web/"interactions.json").read_text()+";\n"+"\n".join((web / name).read_text() for name in ["strategy.mjs","foley.js","feedback.js","room.js","app.js"]),
 }.items():
     html = html.replace(marker, value)
 commands = re.search(r'enum Command \{(.*?)\n\}', (root/'src/lib.rs').read_text(), re.S)[1]

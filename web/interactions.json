@@ -7,12 +7,12 @@
   ],
   "commands": {
     "start":["Start or rematch","Fresh board; no startup fanfare","quiet"],
-    "roll":["Roll and land","Dice total and landing accent","dice"],
-    "buy":["Purchase a deed","Stamp the purchased space","coin"],
+    "roll":["Roll and land","Dice tumble to their actual faces; the numbered ship traces its route. The destination and net cash change stay on the table.","dice"],
+    "buy":["Purchase a deed","Deed seal lands, tile receives an ink stamp, buyer’s balance shows the debit.","coin"],
     "pass":["Open bidding","Announce the auction","gavel"],
     "bid":["Raise bid","Confirm the accepted amount","bid"],
-    "withdraw":["Withdraw or expire","Identify withdrawn seat or sale","down"],
-    "build":["Develop property","Stamp the improved space","build"],
+    "withdraw":["Withdraw or expire","Bidder leaves the lot, or gavel closes with winner and actual price. No sale has a separate result.","down"],
+    "build":["Develop property","Hammer strikes; every improved tile gets its level stamp, with cost and new rent or district scope on the table.","build"],
     "propose":["Send proposal","Hand off to recipient","paper"],
     "accept":["Accept contract","Confirm the exchange","coin"],
     "reject":["Decline contract","Return to proposer","down"],
@@ -30,7 +30,7 @@
     ["Rent / fee / card","Confirm the amount and card name without obstructing the next action."],
     ["Guild / exchange","Distinguish token location from the deed under auction; identify both guild choices."],
     ["Trading / building","Review both legs or project economics. Cancel or hold without a success cue."],
-    ["Audio / motion","Sound is opt-in per browser. Muted, reduced-motion and audio-unavailable play retain text feedback."],
+    ["Audio / motion","Local foley starts after user interaction unless muted. Reduced motion keeps the settled dice, outcome and balance changes without a moving pawn, stamp or ripple. Review with review/motion.py."],
     ["Results / leave","Show winners and scores. Rematch locally or explicitly end the network table."]
   ]
 }

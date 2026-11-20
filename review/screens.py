@@ -17,7 +17,7 @@ with sync_playwright() as pw:
     sound=p.get_by_role('button',name='Sound effects')
     sound.click()
     p.reload()
-    assert sound.get_attribute('aria-pressed')=='true'
+    assert sound.get_attribute('aria-pressed')=='false'
     sound.click()
     shot('grand-harbor')
     p.set_viewport_size({'width':390,'height':844})
@@ -50,13 +50,13 @@ with sync_playwright() as pw:
     assert p.locator('#inspector tbody tr').count()==5
     shot('workbench')
     button('Start auction').click()
-    assert p.locator('#receipt').inner_text()=='Open bidding'
+    assert p.locator('#stageTag').text_content()=='Auction opened'
     shot('auction','.desk')
     button('Custom').click()
     p.locator('#amount').fill('70')
     shot('custom-bid','dialog')
     button('Place bid').click()
-    assert p.locator('#receipt').inner_text()=='Bid placed · $70'
+    assert p.locator('#stageTitle').text_content()=='$70'
     shot('bid','.desk')
     button('Withdraw').click()
     shot('settled','.desk')

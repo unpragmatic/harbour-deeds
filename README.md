@@ -29,6 +29,8 @@ Each seat selects a controller implementing `(snapshot, abortSignal) => Promise<
 
 Maintain `web/interactions.json` with changes to controls, cues and board identifiers. The build rejects undocumented Rust commands. Local, host and guest live moves use the command-to-cue mapping; replay, simulation and ordinary turn advancement are silent. `review/components.py` publishes the same inventory in the illustrated checklist. For new UI-only flows, update the surfaces list and the relevant browser walkthrough in the same change.
 
+The board shows the last accepted action until another replaces it; the dock shows whose decision is **next**. On a large board the result and cash ledger occupy the chart center. On smaller screens they stay pinned above a scrollable route. Dice, the moving ship and the physical sounds use only committed values. **♪ On / Off** controls sound per browser; reduced motion uses the same final faces, amounts and labels without the animations. `review/motion.py` captures a real turn and its audio for the overview.
+
 [Open the illustrated component overview](https://unpragmatic.github.io/harbour-deeds/components.html) for the controls, decision screens and recovery flow in one place. Expand a capture to inspect it. Each card explains a change or an improvement opportunity.
 
 The phone shell keeps the decision dock visible while the board, portfolios or activity scroll independently. Desktop uses the same decisions alongside the workspace. Native buttons, selects, numeric inputs and dismissible dialogs support touch and keyboard use. The review counts deliberate control activations from the indicated starting screen, not typing, elapsed time or human-study observations.

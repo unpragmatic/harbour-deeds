@@ -110,6 +110,87 @@ dialog .facts{display:flex;flex-wrap:wrap;gap:12px;padding:12px 0;margin:0;borde
 }
 @media(max-width:420px){.headright{gap:4px}.headright button{padding-inline:6px}.headright #rulesBtn{width:38px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
+
+/* The chart holds the last confirmed action; the command desk always holds the next decision. */
+.board{position:relative;isolation:isolate}
+.ocean{position:relative;background-color:#cddfcf;background-image:repeating-radial-gradient(ellipse at 115% -55%,transparent 0 17px,#627e7330 18px,transparent 19px 27px)}
+.ocean>.chart{position:absolute;inset:8px;width:auto;height:auto;pointer-events:none;overflow:hidden}
+.ocean>.chart>*{display:none}
+.ocean>.chart>.art{display:block;position:absolute;right:3%;bottom:3%;width:30%;opacity:.25}
+#stage{--brass:#ffcf79;--panel:#18443f;--shadow:#102f30;position:relative;z-index:1;width:min(92%,660px);color:#fff7dc;text-align:left;background:linear-gradient(115deg,var(--panel),var(--shadow));border:2px solid #e4be71;box-shadow:0 0 0 3px #26443c,0 8px 0 #21392f35,0 12px 25px #233e3333;font-family:system-ui,sans-serif}
+#stage[data-kind=bid],#stage[data-kind=pass],#stage[data-kind=withdraw],#stage[data-kind=sold]{--panel:#5c391d;--shadow:#342c24}
+#stage[data-kind=dispatch],#stage[data-kind=propose],#stage[data-kind=accept],#stage[data-kind=reject]{--panel:#34475c;--shadow:#203241}
+#stage[data-kind=build]{--panel:#205367;--shadow:#193641}
+.stageFace{display:grid;grid-template-columns:112px minmax(0,1fr);align-items:center;gap:24px;padding:clamp(16px,2.2vw,32px)}
+.stageCopy{grid-area:1/2;min-width:0}
+#stageTag{color:var(--brass);font:800 14px/1.2 system-ui;letter-spacing:.11em;text-transform:uppercase}
+#stageTitle{font:bold clamp(28px,3.8vw,56px)/1.04 Georgia,serif;letter-spacing:-.032em;margin:.12em 0;overflow-wrap:anywhere}
+#stageDetail{font:550 clamp(15px,1.3vw,20px)/1.3 system-ui;color:#faf3da}
+#stageProp{grid-area:1/1;display:grid;place-items:center;min-width:0;min-height:84px;perspective:400px}
+#stageProp>svg{width:85px;height:85px;padding:10px;color:var(--brass);border:2px solid currentColor;outline:1px solid currentColor;outline-offset:-6px;background:#ffffff08;transform-origin:70% 85%}
+#stage[data-kind=buy] #stageProp svg,#stage[data-kind=final] #stageProp svg,#stage[data-kind=grant] #stageProp svg,#stage[data-kind=insure] #stageProp svg{border-radius:50%}
+.diceSet{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px}
+.die{display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);place-items:center;width:47px;height:47px;padding:6px;background:#fff2c6;color:#25382f;border:1px solid #fff9db;border-radius:9px;box-shadow:0 4px 0 #b88d4c,1px 6px 6px #0005;font:bold 20px/1 system-ui}
+.die i{width:80%;height:80%;border-radius:50%;background:#213b35;box-shadow:inset 0 1px 2px #071613}
+.die:nth-child(even){transform:rotate(6deg);margin-top:9px}
+.diceSet:has(.die:nth-child(3)) .die{width:29px;height:29px;padding:3px;border-radius:5px}
+#stageLedger{display:flex;background:#081e21a6;border-top:1px solid #c7b88080}
+.account{display:flex;flex:1;align-items:center;gap:6px;min-width:0;flex-wrap:wrap;padding:9px 10px;color:#f5efd7;border-right:1px solid #bec3a83b;font:700 16px/1.2 system-ui;font-variant-numeric:tabular-nums}
+.account:last-child{border-right:0}.account.acting{box-shadow:inset 0 -3px 0 var(--brass)}
+.seatDisc{flex:none;display:inline-grid;place-items:center;background:var(--seat);border:1px solid #fff9;border-radius:50%;width:21px;height:21px;font:bold 13px/1 system-ui;color:white}
+.account em{color:var(--brass);font:750 13px/1.2 system-ui}
+#wake{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:5}
+.sailing{position:absolute;top:-21px;left:-21px;width:42px;height:42px;background:var(--seat);color:white;border:3px solid #fff5d5;border-radius:50%;box-shadow:0 3px 0 #142f29,0 5px 12px #163c2a70}
+.sailing svg{width:100%;height:100%;fill:#fff6e3;stroke:var(--seat);stroke-width:1.75}
+.board.inTransit .tile.landing .arrived{visibility:hidden}
+.sailing b{position:absolute;right:-5px;bottom:-4px;display:grid;place-items:center;width:17px;height:17px;background:#172e2a;border:1px solid white;border-radius:50%;font:750 11px/1 system-ui}
+.waveRing{position:absolute;width:37px;height:37px;border:3px solid #d78019;outline:2px solid #fff3bd;border-radius:50%;opacity:0}
+.inkStamp{position:absolute;opacity:0;white-space:nowrap;color:#672e1d;background:#fff0bd;border:3px double currentColor;padding:2px 6px;box-shadow:1px 3px 4px #172f2940;font:900 14px/1.1 system-ui;letter-spacing:.04em}
+.account em.credit{color:#a7f1bc}
+.board .tile{gap:1px}
+.board .tile strong,.board[data-map=grand] .tile strong{font:bold clamp(13px,1.1vw,17px)/1.07 Georgia,serif}
+.board .tile .tileValue{font:730 13px/1.05 system-ui;color:#263e35;letter-spacing:-.025em}
+.board .tile.special .tileValue{font-size:12px}
+.board .tile.deed:before{height:5px}
+.board .tile.landing{background:#ffdf89;box-shadow:inset 0 0 0 3px #795019}
+.board .tile.selected{outline:2px dashed #775015;outline-offset:-4px}
+.board .tile .berth{gap:3px}
+.board .tile .berth .token{width:16px;height:16px;font:800 12px/14px system-ui}
+.board .tile .flag{padding:1px 3px;color:#fff;background:var(--seat);border-radius:2px;font:800 11px/13px system-ui}
+.crew{font-size:12px}
+@container(max-width:92px){.berth:has(.token:nth-of-type(4)) .token{display:none}.berth:has(.token:nth-of-type(4)) .crew{display:inline}}
+.desk #phaseLabel{font-size:13px;font-weight:800}.desk #controlType{font-weight:680}
+.desk .facts dd{font:750 19px/1.1 system-ui}.desk #actions button{font-weight:700}
+.boardhead #round{font:680 12px/1.2 system-ui;letter-spacing:.04em}
+#inspectQuote{display:none}
+#inspector .curve table,#mobileLadder .curve table{font-size:14px}
+@media(max-width:800px){
+  #turn:has(#inspectQuote) h2{display:inline}
+  #inspectQuote{display:inline-block;margin-left:8px;min-height:32px;padding:2px 3px;border:0;text-decoration:underline;text-underline-offset:2px;font:650 13px/1.15 system-ui}
+}
+.desk #actions button:not(:disabled):active{transform:translateY(2px);box-shadow:inset 0 2px 3px #0004}
+@media(min-width:1200px) and (min-height:821px){
+  .layout .boardbox:has(.board[data-map=grand]){grid-template-rows:auto minmax(720px,1fr) auto}
+  .board[data-map=grand]{width:100%;min-height:720px}
+  .board[data-map=grand] .tile:has(.berth){gap:0;padding:5px 2px 2px}
+  .board[data-map=grand] .tile:has(.berth) strong{font-size:clamp(13px,1vw,15px)}
+}
+/* When eleven perimeter cells would force small print, display the same route as a chart in movement order. */
+.layout .boardbox:has(.board.route){display:block}
+.layout .boardbox[hidden]{display:none!important}
+.layout .boardbox .board.route{display:grid;width:100%;height:auto;max-height:none;min-height:0;aspect-ratio:auto;grid-template:auto / repeat(auto-fit,minmax(min(100%,100px),1fr))!important}
+.board.route .tile,.board.route[data-map=grand] .tile{grid-area:auto!important;min-height:74px;padding:7px 3px 4px}
+.board.route .tile strong,.board.route[data-map=grand] .tile strong{font:700 15px/1.08 Georgia,serif}
+.board.route .ocean{display:none}
+@media(max-width:800px){.board.route .ocean:has(#mobileLadder:not(:empty)){display:block;grid-area:auto / 1 / auto / -1!important;order:-1}.board.route .ocean>.chart{display:none}}
+#stage.strip{position:sticky;top:0;width:100%;z-index:6;border:1px solid #cfb274;box-shadow:0 2px 5px #21392f40}
+.strip .stageFace{grid-template-columns:66px minmax(0,1fr);gap:10px;padding:7px 12px;min-height:72px}
+.strip #stageProp{min-height:0}.strip #stageProp>svg{width:48px;height:48px;padding:5px}
+.strip #stageTag{font-size:11px;letter-spacing:.08em}.strip #stageTitle{font-size:clamp(21px,4.7vw,32px);line-height:1.03}.strip #stageDetail{font-size:13px;line-height:1.2}
+.strip .die{width:29px;height:29px;padding:3px;border-radius:5px}.strip .diceSet{gap:4px}.strip .diceSet:has(.die:nth-child(3)) .die{width:18px;height:18px;padding:2px;font-size:12px}
+.strip .account{padding:4px 6px;font-size:13px;gap:4px}.strip .account em{font-size:12px}.strip .seatDisc{width:17px;height:17px;font-size:11px}
+@media(max-width:480px){.layout .boardbox .board.route{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+@media(prefers-reduced-motion:reduce){.desk #actions button:not(:disabled):active{transform:none}}
 </style></head>
 <body>
 <header><div class="mast"><span class="seal" aria-hidden="true">⚓</span><strong>Harbor Deeds</strong></div><div class="headright"><span class="live">Local table</span><button id="soundBtn" aria-label="Sound effects" aria-pressed="false">♪ Off</button><button id="rulesBtn" aria-label="Rulebook">?</button><button id="setupBtn">New table</button></div></header>
@@ -121,11 +202,15 @@ dialog .facts{display:flex;flex-wrap:wrap;gap:12px;padding:12px 0;margin:0;borde
 <path d="M12 79q29 1 43-8t37-3l11-6 28 3 19 9 23 4m-145 5 35-2 22-4 30 1m-56-3 19-4 15 1m5-4 18 2 12 4m-27-12 5-44h14l5 46m-19-42 14 3m-15 10 16 4m-17 6 18 5m-18 7 19 5M99 19h23v-3H99zm4-4V8h16v7m-17-7 9-7 9 7zm8 1v6m4-6v6m-2 47v-6h4v7"/>
 <path d="m161 72 44 1-9 7h-26zm20-3V27l-19 42zm3-1 16 2-16-30zm-3-39 9 2-9 3M5 89q14-3 28 0t28 0m18 4q16-3 29 0t29 0m2-7q13-3 25 0t25 0m16-3q13-3 25 0t24 0M37 33q4-3 8 1 3-5 8-4m136-14q4-3 7 1 3-5 8-4m8 25q4-3 7 1 3-5 8-4"/>
 </g></svg>
-<h2 id="boardName">Inner Harbor</h2><div id="chartStatus"></div></div><div id="mobileLadder"></div></div></div>
+<h2 id="boardName">Inner Harbor</h2><div id="chartStatus"></div></div>
+<section id="stage" aria-label="Table action"><div class="stageFace">
+<div class="stageCopy" role="status" aria-atomic="true"><div id="stageTag"></div><div id="stageTitle"></div><div id="stageDetail"></div></div>
+<div id="stageProp" aria-hidden="true"></div></div><div id="stageLedger" aria-label="Merchant balances"></div></section>
+<div id="mobileLadder"></div></div><div id="wake" aria-hidden="true"></div></div>
 <div class="boardfoot"><span>↻ &nbsp; Clockwise</span><span>⚑ Owner · ● Visitor</span></div></section>
 <section class="panel workspace" id="playersView" hidden><h2>Players</h2><p>Cash, deeds and district progress.</p><div id="register"></div></section>
 <section class="panel workspace" id="activityView" hidden><h2>Activity</h2><p>Latest first</p><ol id="log" aria-live="off"></ol></section>
-<aside><section class="panel desk"><div class="panelhead"><small id="phaseLabel">TURN DESK</small><span id="controlType"></span><span id="receipt" hidden></span></div><div id="turn" aria-live="polite"></div><div id="actions"></div></section>
+<aside><section class="panel desk"><div class="panelhead"><small id="phaseLabel">TURN DESK</small><span id="controlType"></span></div><div id="turn" aria-live="polite"></div><div id="actions"></div></section>
 <section class="panel quick"><div class="panelhead"><small>MERCHANT REGISTER</small></div><div id="balances"></div></section><section id="inspector" aria-label="Selected board space"></section></aside></div></main>
 <dialog id="modal"><div class="modalhead"><button aria-label="Close dialog" id="close">×</button></div><div id="content"></div></dialog>
 <script id="grand" type="application/json">{"dice": {"count": 2, "sides": 6}, "cash": 850, "salary": 240, "auction_increment": 10, "rounds": 26, "notices": [90, -60, 120, -80, 50], "development": {"policy": "even", "set_rent_pct": 200, "levels": [{"cost_pct": 7, "rent_pct": 300}, {"cost_pct": 11, "rent_pct": 380}, {"cost_pct": 14, "rent_pct": 440}]}, "tiles": [{"name": "Port Office", "kind": "start", "mark": "\u2693"}, {"name": "Rope Walk", "kind": "deed", "group": "Old Town", "price": 80, "rent": 20}, {"name": "Bottle Post", "kind": "notice", "mark": "\u2709"}, {"name": "Net Loft", "kind": "deed", "group": "Old Town", "price": 100, "rent": 25}, {"name": "Salt Row", "kind": "deed", "group": "Old Town", "price": 120, "rent": 30}, {"name": "Lifeboat Guild", "kind": "guild", "mark": "\u271a", "cash_offer": 25, "cover_offer": 75}, {"name": "Copper Yard", "kind": "deed", "group": "Foundry", "price": 140, "rent": 35}, {"name": "Signal Tower", "kind": "notice", "mark": "\u2709"}, {"name": "Iron Works", "kind": "deed", "group": "Foundry", "price": 160, "rent": 40}, {"name": "Kiln Street", "kind": "deed", "group": "Foundry", "price": 180, "rent": 45}, {"name": "Auction House", "kind": "exchange", "mark": "\u2696"}, {"name": "Slipway", "kind": "deed", "group": "Shipyards", "price": 150, "rent": 38}, {"name": "Dry Dock", "kind": "deed", "group": "Shipyards", "price": 170, "rent": 43}, {"name": "Hull Survey", "kind": "fee", "price": 65, "mark": "\u00a7"}, {"name": "Spar Yard", "kind": "deed", "group": "Shipyards", "price": 190, "rent": 48}, {"name": "Cable Office", "kind": "notice", "mark": "\u2709"}, {"name": "Kelp Farm", "kind": "deed", "group": "Tidelands", "price": 160, "rent": 40}, {"name": "Marsh Cut", "kind": "deed", "group": "Tidelands", "price": 180, "rent": 45}, {"name": "Pilots Guild", "kind": "guild", "mark": "\u271a", "cash_offer": 35, "cover_offer": 100}, {"name": "Reed Bank", "kind": "deed", "group": "Tidelands", "price": 200, "rent": 50}, {"name": "Beacon Post", "kind": "notice", "mark": "\u2709"}, {"name": "Market Hall", "kind": "deed", "group": "Market", "price": 200, "rent": 50}, {"name": "Silk Arcade", "kind": "deed", "group": "Market", "price": 220, "rent": 55}, {"name": "Canal Toll", "kind": "fee", "price": 80, "mark": "\u00a7"}, {"name": "Pearl Court", "kind": "deed", "group": "Market", "price": 240, "rent": 60}, {"name": "Bond Exchange", "kind": "exchange", "mark": "\u2696"}, {"name": "Fish Hall", "kind": "deed", "group": "Exchange", "price": 190, "rent": 48}, {"name": "Tea Wharf", "kind": "deed", "group": "Exchange", "price": 210, "rent": 53}, {"name": "Packet Boat", "kind": "notice", "mark": "\u2709"}, {"name": "Grain Quay", "kind": "deed", "group": "Exchange", "price": 230, "rent": 58}, {"name": "Admiralty Guild", "kind": "guild", "mark": "\u271a", "cash_offer": 40, "cover_offer": 120}, {"name": "East Basin", "kind": "deed", "group": "Marina", "price": 260, "rent": 65}, {"name": "Sail Quay", "kind": "deed", "group": "Marina", "price": 280, "rent": 70}, {"name": "Dock Levy", "kind": "fee", "price": 100, "mark": "\u00a7"}, {"name": "Crown Pier", "kind": "deed", "group": "Marina", "price": 300, "rent": 75}, {"name": "Radio Room", "kind": "notice", "mark": "\u2709"}, {"name": "Glass Strand", "kind": "deed", "group": "Headlands", "price": 280, "rent": 70}, {"name": "Cliff House", "kind": "deed", "group": "Headlands", "price": 300, "rent": 75}, {"name": "Harbor Wire", "kind": "notice", "mark": "\u2709"}, {"name": "Cape Royal", "kind": "deed", "group": "Headlands", "price": 320, "rent": 80}], "cards": [{"title": "Mail boat arrives", "kind": "cash", "amount": 70}, {"title": "Salvage bounty", "kind": "cash", "amount": 100}, {"title": "Fogbound cargo", "kind": "cash", "amount": -55}, {"title": "Broken mooring", "kind": "cash", "amount": -35}, {"title": "Warehouse dividend", "kind": "deeds", "amount": 12}, {"title": "Fire inspection", "kind": "levels", "amount": -15}, {"title": "Lantern festival", "kind": "levels", "amount": 20}, {"title": "Mutual aid charter", "kind": "cover", "amount": 65}]}</script><script id="config" type="application/json">{
@@ -171,12 +256,12 @@ dialog .facts{display:flex;flex-wrap:wrap;gap:12px;padding:12px 0;margin:0;borde
   ],
   "commands": {
     "start":["Start or rematch","Fresh board; no startup fanfare","quiet"],
-    "roll":["Roll and land","Dice total and landing accent","dice"],
-    "buy":["Purchase a deed","Stamp the purchased space","coin"],
+    "roll":["Roll and land","Dice tumble to their actual faces; the numbered ship traces its route. The destination and net cash change stay on the table.","dice"],
+    "buy":["Purchase a deed","Deed seal lands, tile receives an ink stamp, buyer’s balance shows the debit.","coin"],
     "pass":["Open bidding","Announce the auction","gavel"],
     "bid":["Raise bid","Confirm the accepted amount","bid"],
-    "withdraw":["Withdraw or expire","Identify withdrawn seat or sale","down"],
-    "build":["Develop property","Stamp the improved space","build"],
+    "withdraw":["Withdraw or expire","Bidder leaves the lot, or gavel closes with winner and actual price. No sale has a separate result.","down"],
+    "build":["Develop property","Hammer strikes; every improved tile gets its level stamp, with cost and new rent or district scope on the table.","build"],
     "propose":["Send proposal","Hand off to recipient","paper"],
     "accept":["Accept contract","Confirm the exchange","coin"],
     "reject":["Decline contract","Return to proposer","down"],
@@ -194,7 +279,7 @@ dialog .facts{display:flex;flex-wrap:wrap;gap:12px;padding:12px 0;margin:0;borde
     ["Rent / fee / card","Confirm the amount and card name without obstructing the next action."],
     ["Guild / exchange","Distinguish token location from the deed under auction; identify both guild choices."],
     ["Trading / building","Review both legs or project economics. Cancel or hold without a success cue."],
-    ["Audio / motion","Sound is opt-in per browser. Muted, reduced-motion and audio-unavailable play retain text feedback."],
+    ["Audio / motion","Local foley starts after user interaction unless muted. Reduced motion keeps the settled dice, outcome and balance changes without a moving pawn, stamp or ripple. Review with review/motion.py."],
     ["Results / leave","Show winners and scores. Rematch locally or explicitly end the network table."]
   ]
 }
@@ -283,60 +368,232 @@ export function botMove(s, rules) {
   return send(s.phase);
 }
 
-// Presentation only: live accepted moves call this, journal replay never does.
-const motifs={dice:[170,250,195],coin:[660,880],build:[245,330,490],bid:[475],gavel:[190,135],down:[315,240],paper:[410,490],bell:[550,825],final:[392,494,587,784]};
-let audio, sound=false, cueTimer;
-function refreshSound(){
-  const b=document.getElementById('soundBtn');
-  b.textContent=sound?'♪ On':'♪ Off';b.setAttribute('aria-pressed',String(sound));
+// All sound is synthesized on this device. No samples, timers or RNG in the engine.
+let audio, bus, felt, sound=true;
+function soundButton(){
+  const b=$('soundBtn');b.textContent=sound?'♪ On':'♪ Off';b.setAttribute('aria-pressed',String(sound));
+}
+function unlockSound(){
+  if(!sound)return;
+  if(!audio){
+    const Context=window.AudioContext||window.webkitAudioContext;
+    if(!Context){sound=false;soundButton();$('soundBtn').disabled=true;$('soundBtn').title='Audio unavailable';return}
+    audio=new Context();bus=audio.createGain();bus.gain.value=.5;bus.connect(audio.destination);
+    felt=audio.createBuffer(1,Math.ceil(audio.sampleRate*.2),audio.sampleRate);
+    let seed=97;
+    const data=felt.getChannelData(0);
+    for(let i=0;i<data.length;i++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;data[i]=seed/2147483648-1}
+  }
+  bus.gain.value=.5;
+  if(audio.state==='suspended')audio.resume().catch(e=>console.warn('Could not unlock table sound:',e));
+}
+function initSound(){
+  try{sound=localStorage.getItem('harbor-sound')!=='off'}catch(e){console.warn('Sound preference unavailable:',e)}
+  soundButton();
+  for(const event of ['pointerdown','keydown'])document.addEventListener(event,unlockSound);
+  $('soundBtn').onclick=()=>{
+    sound=!sound;
+    if(sound){unlockSound();if(audio)audio.resume().then(()=>foley('bell')).catch(e=>console.warn('Audio unavailable:',e))}
+    else if(bus)bus.gain.value=0;
+    soundButton();
+    try{localStorage.setItem('harbor-sound',sound?'on':'off')}catch(e){console.warn('Could not save sound preference:',e)}
+  };
+}
+function foley(kind){
+  if(!sound||audio?.state!=='running'||document.hidden)return;
+  const t=audio.currentTime;
+  function strike(type,from,to,delay,length,gain){
+    const at=t+delay,v=audio.createGain(),noise=type==='noise';
+    const source=noise?audio.createBufferSource():audio.createOscillator();
+    const filter=noise?audio.createBiquadFilter():null;
+    if(noise){
+      source.buffer=felt;filter.type='bandpass';filter.Q.value=.75;
+      filter.frequency.value=from;source.connect(filter);filter.connect(v);
+    }else{
+      source.type=type;source.frequency.setValueAtTime(from,at);
+      source.frequency.exponentialRampToValueAtTime(to,at+length);source.connect(v);
+    }
+    v.gain.setValueAtTime(.0001,at);v.gain.exponentialRampToValueAtTime(gain,at+.004);
+    v.gain.exponentialRampToValueAtTime(.0001,at+length);
+    v.connect(bus);source.start(at);source.stop(at+length+.002);
+    source.onended=()=>{source.disconnect();filter?.disconnect();v.disconnect()};
+  }
+  const knock=(at,power,pitch)=>{strike('triangle',pitch,pitch*.45,at,.09,power);strike('noise',1400,0,at,.055,power*.9)};
+  const chime=(at,pitch)=>{strike('sine',pitch,pitch*.992,at,.22,.14);strike('sine',pitch*2.7,pitch*2.69,at,.09,.045)};
+  switch(kind){
+    case 'dice': [0,.048,.12,.235,.355].forEach((at,i)=>knock(at,.23-i*.023,460-i*44));break;
+    case 'gavel': knock(0,.35,240);knock(.125,.14,170);break;
+    case 'build': knock(0,.25,290);knock(.11,.29,230);chime(.24,660);break;
+    case 'paper': strike('noise',2500,0,0,.14,.27);knock(.12,.16,280);break;
+    case 'coin': chime(0,1046);chime(.095,1396);break;
+    case 'bid': knock(0,.16,520);chime(.038,740);break;
+    case 'down': strike('triangle',350,145,0,.17,.22);break;
+    case 'final': [392,494,587,784].forEach((n,i)=>chime(i*.09,n));break;
+    case 'bell': chime(0,784);break;
+  }
+}
+
+const routeScreen=matchMedia('(max-width:1199px), (max-height:820px)');
+const still=matchMedia('(prefers-reduced-motion: reduce)');
+const signed=n=>`${n<0?'−':'+'}${money(Math.abs(n))}`;
+const pips=[[],[4],[0,8],[0,4,8],[0,2,6,8],[0,2,4,6,8],[0,2,3,5,6,8]];
+const artwork={
+  ship:'<path d="M7 43h50l-9 10H17zM30 7v32H9L30 7zm5 7 17 25H35z"/>',
+  deed:'<path d="M14 5h35v40H14zM21 15h21m-21 7h15m-15 7h20"/><circle cx="40" cy="40" r="8"/><path d="m36 48-2 10 6-4 5 4-1-11"/>',
+  gavel:'<path d="m21 14 8-8 17 17-8 8zM12 23l7-7 17 17-7 7zM34 28l21 21-5 5-21-21zM8 49h22l4 7H5z"/>',
+  build:'<path d="M6 54h52M10 52V32l14 6V25l15 9v18M43 52l2-39h7l3 39M16 43v4m9-4v4m9-4v4"/>',
+  trade:'<path d="M7 17h36v-7l13 12-13 12v-7H7zm50 29H21v7L8 41l13-12v7h36z"/>',
+  card:'<path d="m10 22 22-13 22 13v29H10zM10 23l22 16 22-16m-40 23 14-13m22 13L36 33"/>',
+  cover:'<path d="m32 6 22 8c0 18-3 31-22 43C13 45 10 32 10 14zM21 31l8 8 15-17"/>',
+  coin:'<ellipse cx="32" cy="20" rx="21" ry="9"/><path d="M11 20v20c0 12 42 12 42 0V20M11 27c0 12 42 12 42 0M11 34c0 12 42 12 42 0"/>',
+  final:'<path d="M17 9h30l-3 17q-2 9-12 13-10-4-12-13zM18 14H8q0 17 15 18m23-18h10q0 17-15 18M32 39v9m-12 6h24l-4-6H24z"/>'
+};
+const icon=name=>`<svg viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">${artwork[name]}</svg>`;
+function diceProp(values){
+  return `<span class="diceSet">${values.map(v=>`<span class="die">${pips[v]?pips[v].map(i=>`<i style="grid-area:${1+Math.floor(i/3)} / ${1+i%3}"></i>`).join(''):v}</span>`).join('')}</span>`;
+}
+function placeStage(){
+  const stage=$('stage'),board=$('board'),route=routeScreen.matches;
+  board.classList.toggle('route',route);stage.classList.toggle('strip',route);
+  if(route)board.before(stage);else board.querySelector('.ocean').append(stage);
+}
+let animations=[], lastDeltas=[];
+function clearMotion(){
+  animations.forEach(a=>a.cancel());animations=[];$('wake').replaceChildren();$('board').classList.remove('inTransit');
+}
+function resetStage(){
+  clearMotion();lastDeltas=[];delete $('stage').dataset.live;
 }
 function initFeedback(){
-  try{sound=localStorage.getItem('harbor-sound')==='on'}catch{/* storage optional */}
-  refreshSound();
-  const unlock=()=>{
-    if(!sound)return;
-    try{
-      audio??=new AudioContext();
-      if(audio.state==='suspended')audio.resume().catch(()=>{sound=false;refreshSound()});
-    }catch{sound=false;refreshSound();document.getElementById('soundBtn').title='Audio unavailable in this browser'}
-  };
-  document.addEventListener('pointerdown',unlock);document.addEventListener('keydown',unlock);
-  document.getElementById('soundBtn').onclick=()=>{
-    sound=!sound;unlock();refreshSound();
-    try{localStorage.setItem('harbor-sound',sound?'on':'off')}catch{/* session preference still works */}
-    tone('bell');
-  };
+  initSound();routeScreen.addEventListener('change',()=>{clearMotion();placeStage()});
+  still.addEventListener('change',clearMotion);
 }
-function tone(kind){
-  if(!sound||audio?.state!=='running'||document.hidden)return;
-  for(const [i,hz] of (motifs[kind]||[]).entries()){
-    const o=audio.createOscillator(),v=audio.createGain(),t=audio.currentTime+i*.065;
-    o.type=kind==='dice'||kind==='gavel'?'triangle':'sine';o.frequency.value=hz;
-    v.gain.setValueAtTime(.0001,t);v.gain.exponentialRampToValueAtTime(.055,t+.009);v.gain.exponentialRampToValueAtTime(.0001,t+.12);
-    o.connect(v);v.connect(audio.destination);o.start(t);o.stop(t+.13);o.onended=()=>{o.disconnect();v.disconnect()};
+function plate(tag,title,detail,prop,kind){
+  $('stage').dataset.kind=kind;$('stageTag').textContent=tag;$('stageTitle').textContent=title;
+  $('stageDetail').textContent=detail;$('stageProp').innerHTML=prop;
+}
+function ledger(s){
+  const actor=actingSeat(s);
+  $('stageLedger').innerHTML=s.players.map((p,i)=>{
+    const diff=lastDeltas[i]||0;
+    return `<div class="account ${actor===i&&s.phase!=='over'?'acting':''}" style="--seat:${colors[i]}" aria-label="${seat(i)}: ${p.out?'bankrupt':money(p.cash)}${diff?', change '+signed(diff):''}"><span class="seatDisc">${i+1}</span><b>${p.out?'Out':money(p.cash)}</b>${diff?`<em class="${diff>0?'credit':'debit'}">${signed(diff)}</em>`:''}</div>`;
+  }).join('');
+}
+function syncStage(s){
+  ledger(s);
+  if($('stage').dataset.live)return;
+  const tile=s.auction?.tile??s.players[s.turn].pos;
+  const context={roll:'Ready to sail',offer:'Deed for sale',guild:'Guild charter',auction:'At auction',trade:'Contract offered',end:'Settlement',over:'Final accounts'};
+  plate(context[s.phase],s.phase==='over'?s.winners.map(seat).join(' & '):rules.tiles[tile].name,
+    s.phase==='roll'?`${seat(s.turn)} to roll · ${rules.dice?.count??2} dice`:s.events.at(-1)||context[s.phase],
+    icon(s.phase==='auction'?'gavel':s.phase==='over'?'final':'ship'),'ready');
+}
+function outcome(m,b,s){
+  const a=m.actor,dieTotal=s.dice.reduce((x,y)=>x+y,0),pos=s.players[a].pos;
+  const delta=s.players[a].cash-b.players[a].cash, lot=b.auction?.tile??m.tile??pos;
+  const tile=rules.tiles[lot],who=seat(a),action=m.action;
+  let tag=who,title='',detail='',prop='ship',cue=uxInventory.commands[action][2],kind=action,targets=[lot];
+  if(s.phase==='over'){
+    tag='Final accounts';title=`${s.winners.map(seat).join(' & ')} ${s.winners.length>1?'tie':'wins'}`;
+    detail='Cash and deed values settled';prop='final';cue='final';kind='final';targets=[];
+  }else if(action==='roll'){
+    tag=`${who} rolled ${dieTotal}`;title=tile.name;prop='dice';
+    if(tile.kind==='deed')detail=s.owners[pos]===null?`For sale · ${money(tile.price)}`:s.owners[pos]===a?'Your own deed':`Rent to ${seat(s.owners[pos])} · ${money(b.rents[pos])}`;
+    else detail=({guild:'Guild charter · cash or cover',fee:`Harbor dues · ${money(tile.price??0)}`,start:'Port salary',rest:'Safe harbor',notice:'Port notice',
+      exchange:s.auction?`Auction: ${rules.tiles[s.auction.tile].name}`:'All deeds owned'})[tile.kind];
+    if(s.last_card!=null){title=rules.cards[s.last_card].title;detail=`Dispatch at ${tile.name}`;kind='dispatch'}
+    if(delta)detail+=` · Net ${signed(delta)}`;
+    if(s.players[a].cover!==b.players[a].cover&&!s.players[a].out)detail+=` · Cover ${money(s.players[a].cover)}`;
+    if(s.players[a].out)detail+=' · Bankrupt';
+  }else if(b.auction&&!s.auction){
+    const winner=s.owners[lot];tag='Auction closed';title=winner==null?'No sale':`Sold · ${money(action==='bid'?m.amount:b.auction.high_bid)}`;
+    detail=`${tile.name} · ${winner==null?'Still on the market':seat(winner)+' takes the deed'}`;kind='sold';prop='gavel';cue='gavel';
+  }else if(action==='pass'||action==='bid'||action==='withdraw'){
+    tag=action==='pass'?'Auction opened':action==='bid'?'High bid':'Bidder out';
+    title=action==='pass'?tile.name:action==='bid'?money(m.amount):`${who} withdrew`;
+    detail=action==='pass'?`Bidding starts at ${money(rules.auction_increment)}`:`${tile.name} · ${action==='bid'?who+' leads':seat(s.auction.actor)+' to bid'}`;prop='gavel';
+  }else if(action==='buy'){
+    tag='Deed recorded';title=tile.name;detail=`${who} paid ${money(-delta)} · Rent ${money(s.rents[lot])}`;prop='deed';
+  }else if(action==='build'){
+    targets=b.builds.find(q=>q.tile===lot).tiles;
+    tag=`${who} built level ${s.levels[lot]}`;title=targets.length>1?tile.group:tile.name;
+    detail=`Cost ${money(-delta)} · ${targets.length>1?targets.length+' deeds improved':'Rent '+money(b.rents[lot])+' → '+money(s.rents[lot])}`;prop='build';
+  }else if(['propose','accept','reject'].includes(action)){
+    const deal=s.trade??b.trade;targets=[deal.give_deed,deal.take_deed].filter(i=>i!=null);
+    tag=`${seat(deal.from)} ↔ ${seat(deal.to)}`;title={propose:'Contract offered',accept:'Trade signed',reject:'Offer declined'}[action];
+    detail=`${summary(deal.give_deed,deal.give_cash)} ↔ ${summary(deal.take_deed,deal.take_cash)}`;prop='trade';
+  }else if(action==='grant'||action==='insure'){
+    const grant=action==='grant';tag=grant?'Guild grant':'Rent cover';title=grant?signed(delta):money(s.players[a].cover);
+    detail=`${who} · ${grant?'Paid by the guild':'Protected on next rent bill'}`;prop=grant?'coin':'cover';
   }
+  return {tag,title,detail,kind,cue,targets,prop:prop==='dice'?diceProp(s.dice):icon(prop)};
+}
+function animate(el,frames,timing){
+  if(!el?.animate)return;
+  const anim=el.animate(frames,timing);animations.push(anim);return anim;
+}
+function impact(el,delay=0,ink=''){
+  const center=el.getBoundingClientRect(),base=$('wake').getBoundingClientRect();
+  const ring=document.createElement('i');ring.className='waveRing';
+  ring.style.left=`${center.left-base.left+center.width/2}px`;ring.style.top=`${center.top-base.top+center.height/2}px`;$('wake').append(ring);
+  animate(ring,[{transform:'translate(-50%,-50%) scale(.3)',opacity:0},{opacity:1,offset:.12},{transform:'translate(-50%,-50%) scale(2.4)',opacity:0}],{delay,duration:430});
+  animate(el,[{boxShadow:'inset 0 0 0 4px #f6a92d',backgroundColor:'#ffdf89'},{boxShadow:'inset 0 0 0 1px transparent'}],{delay,duration:620});
+  if(ink){
+    const stamp=document.createElement('b');stamp.className='inkStamp';stamp.textContent=ink;
+    stamp.style.left=ring.style.left;stamp.style.top=ring.style.top;$('wake').append(stamp);
+    animate(stamp,[{opacity:0,transform:'translate(-50%,-90%) scale(1.7) rotate(-18deg)'},{opacity:1,transform:'translate(-50%,-50%) scale(.94) rotate(-8deg)',offset:.18},{opacity:1,offset:.74},{opacity:0,transform:'translate(-50%,-66%) rotate(-8deg)'}],{duration:880,delay});
+  }
+}
+function followTile(i){
+  if($('boardView').hidden||$('modal').open)return;
+  const view=$('boardView'),v=view.getBoundingClientRect(),r=$(`tile-${i}`).getBoundingClientRect();
+  const top=v.top+(routeScreen.matches?$('stage').offsetHeight:0);
+  if(r.top<top||r.bottom>v.bottom)view.scrollTop+=r.top-(top+v.bottom-r.height)/2;
+}
+function sail(move,b,s){
+  const board=$('board'),wake=$('wake'),base=wake.getBoundingClientRect(),total=s.dice.reduce((x,y)=>x+y,0);
+  const start=b.players[move.actor].pos,n=rules.tiles.length;
+  const frames=[],steps=Math.min(total,n); // Limit work for designer dice that circle the board several times.
+  for(let k=0;k<=steps;k++){
+    const at=(start+Math.round(k*total/steps))%n,el=$(`tile-${at}`),r=el.getBoundingClientRect();
+    const x=r.left-base.left+r.width/2,y=r.top-base.top+r.height/2;
+    frames.push({transform:`translate(${x}px,${y}px)`,offset:k/steps});
+    if(k>0&&k<steps)animate(el,[{backgroundColor:'#ffcf69'},{backgroundColor:getComputedStyle(el).backgroundColor}],{delay:85+490*k/steps,duration:300});
+  }
+  const pawn=document.createElement('div');pawn.className='sailing';
+  pawn.style.setProperty('--seat',colors[move.actor]);pawn.innerHTML=`${icon('ship')}<b>${move.actor+1}</b>`;
+  wake.append(pawn);board.classList.add('inTransit');
+  const trip=animate(pawn,frames,{delay:85,duration:490,fill:'both'});
+  const dock=()=>{pawn.remove();board.classList.remove('inTransit')};
+  if(trip)trip.onfinish=dock;else dock();
+  impact($(`tile-${s.players[move.actor].pos}`),550);
 }
 function liveFeedback(move,before,after){
-  const action=move.action,entry=uxInventory.commands[action],actor=move.actor;
-  let cue=entry[2],label=entry[0],tile=move.tile??before.auction?.tile??after.players[actor]?.pos;
-  if(after.phase==='over'){cue='final';label='Final accounts settled'}
-  else if(action==='roll'){
-    const delta=after.players[actor].cash-before.players[actor].cash;
-    label=`Rolled ${after.dice.join(' + ')}${delta?` · ${delta>0?'+':'−'}${money(Math.abs(delta))}`:''}`;
-    if(after.last_card!=null){label+=` · ${rules.cards[after.last_card].title}`;cue='paper'}
-  }else if(action==='buy'){label=`Deed purchased · ${rules.tiles[tile].name}`}
-  else if(action==='bid'){label=`Bid placed · ${money(move.amount)}`}
-  else if(action==='build'){label=`${rules.tiles[tile].name} · level ${after.levels[tile]}`}
-  else if(action==='withdraw'&&!after.auction){label=before.auction.leader===null?'Auction closed · no sale':`Sold for ${money(before.auction.high_bid)}`;cue='gavel'}
-  if(cue==='quiet')return;
-  tone(cue);
-  const receipt=document.getElementById('receipt');
-  receipt.textContent=label;receipt.hidden=false;
-  clearTimeout(cueTimer);cueTimer=setTimeout(()=>receipt.hidden=true,1450);
-  if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
-    receipt.animate?.([{opacity:.3,transform:'translateY(3px)'},{opacity:1,transform:'none'}],{duration:160});
-    document.getElementById(`tile-${tile}`)?.animate?.([{boxShadow:'inset 0 0 0 4px #d39732'},{boxShadow:'inset 0 0 0 1px transparent'}],{duration:460});
+  if(move.action==='end'&&after.phase!=='over')return;
+  const event=outcome(move,before,after);
+  clearMotion();lastDeltas=after.players.map((p,i)=>p.cash-before.players[i].cash);
+  $('stage').dataset.live=move.action;plate(event.tag,event.title,event.detail,event.prop,event.kind);ledger(after);
+  foley(event.cue);
+  if(move.action==='roll'&&!document.hidden)followTile(after.players[move.actor].pos);
+  if(still.matches||document.hidden||$('boardView').hidden)return;
+  const prop=$('stageProp');
+  if(prop.querySelector('.die')){
+    [...prop.querySelectorAll('.die')].forEach((die,i)=>animate(die,[
+      {transform:`translate(${i%2?25:-25}px,-20px) rotate(${i%2?75:-85}deg) scale(.8)`},
+      {transform:'translateY(2px) rotate(-12deg)',offset:.42},
+      {transform:'translateY(-9px) rotate(7deg)',offset:.66},{transform:'none'}],{duration:420+i*18}));
+    sail(move,before,after);
+  }else{
+    const hammer=prop.querySelector('svg');
+    const frames=event.kind==='build'||event.kind==='sold'||event.kind==='bid'?
+      [{transform:'rotate(-35deg) translateY(-14px)'},{transform:'rotate(9deg)',offset:.62},{transform:'none'}]:
+      [{transform:'scale(1.48) rotate(-14deg)',opacity:.3},{transform:'scale(.90) rotate(3deg)',offset:.65},{transform:'none'}];
+    animate(hammer,frames,{duration:360,easing:'ease-out'});
+    const ink={buy:'DEED FILED',sold:after.owners[event.targets[0]]==null?'NO SALE':'SOLD',build:`LEVEL ${after.levels[move.tile]}`,accept:'SIGNED',insure:'COVERED'}[event.kind];
+    event.targets.forEach(i=>impact($(`tile-${i}`),110,ink));
   }
+  animate(document.querySelector('.stageCopy'),[{transform:event.kind==='dispatch'?'rotateX(-65deg)':'translateY(8px)',opacity:.5},{transform:'none',opacity:1}],{duration:220});
+  $('stageLedger').querySelectorAll('em').forEach(el=>animate(el,[{transform:'translateY(9px) scale(.85)'},{transform:'translateY(-3px) scale(1.15)',offset:.6},{transform:'none'}],{duration:380}));
 }
 
 // PeerJS only handles discovery and WebRTC transport. The host serializes all moves;
@@ -941,10 +1198,10 @@ function render() {
     }
     b.classList.toggle('landing',s.phase!=='over'&&i===s.players[s.turn].pos);
     const here=s.players.flatMap((player,j)=>player.pos===i&&!player.out?[j]:[]);
-    const owner=s.owners[i],value=owner!==null?`Rent ${money(s.rents[i])}`:tile.price?money(tile.price):'';
-    const flag=owner!==null?`<span class="flag" style="color:${colors[owner]}">⚑${owner+1}</span>`:'';
-    const markers=here.map(j=>`<span class="token" style="background:${colors[j]}">${j+1}</span>`).join('')+(here.length>1?`<span class="crew">●×${here.length}</span>`:'');
-    b.innerHTML=`<strong>${tile.name}</strong><span class="tileValue">${tile.mark?`<span aria-hidden="true">${tile.mark}</span> `:''}${value}</span>${flag||markers?`<span class="berth">${flag}${markers}</span>`:''}`;
+    const owner=s.owners[i],value=owner!==null?`Rent ${money(s.rents[i])}`:tile.kind==='fee'?`−${money(tile.price)}`:tile.price?money(tile.price):({start:'Salary',notice:'Draw',guild:'Choose',exchange:'Auction',rest:'Rest'})[tile.kind];
+    const flag=owner!==null?`<span class="flag" style="--seat:${colors[owner]}">⚑${owner+1}</span>`:'';
+    const markers=here.map(j=>`<span class="token${j===s.turn?' arrived':''}" style="background:${colors[j]}">${j+1}</span>`).join('')+(here.length>1?`<span class="crew">●×${here.length}</span>`:'');
+    b.innerHTML=`<strong>${tile.name}</strong><span class="tileValue">${value}</span>${flag||markers?`<span class="berth">${flag}${markers}</span>`:''}`;
     b.setAttribute('aria-label',[tile.name,tile.group||tile.kind,value,owner===null?'':`Owned by ${seat(owner)}, level ${s.levels[i]}`,here.length?'Occupied by '+here.map(seat).join(', '):'','Inspect space'].filter(Boolean).join('. '));
   }
   $('register').innerHTML=s.players.map((player,i)=>{
@@ -956,6 +1213,7 @@ function render() {
     return `<div class="row"><span class="badge" style="background:${colors[i]}">${i+1}</span><div><strong>${seat(i)}</strong><div class="meta">${player.out?'Bankrupt':seats[i]==='bot'?'Bot':'Local player'} · ${owned.length} deeds</div><div class="holdings">${groups}</div></div><span class="money">${money(player.cash)}</span></div>`;
   }).join('');
   $('balances').innerHTML=s.players.map((v,i)=>`<div class="ledger"><i style="background:${colors[i]}"></i>${seat(i)}<b>${v.out?'Bankrupt':money(v.cash)}</b></div>`).join('');
+  syncStage(s);
   const market=s.phase==='offer'||s.phase==='auction',at=s.auction?.tile??s.players[s.turn].pos;
   const key=`${s.round}/${s.turn}/${at}/${market}`;
   if(key!==focusKey){inspected=at;focusKey=key}
@@ -987,12 +1245,13 @@ function render() {
   }else{
     title=t.name;text=s.events.at(-1);
   }
-  $('turn').innerHTML=`<h2>${title}</h2><p>${text}</p>${stats.length?facts(stats):''}`;
+  $('turn').innerHTML=`<h2>${title}</h2>${market?'<button id="inspectQuote">Rent &amp; build costs</button>':''}<p>${text}</p>${stats.length?facts(stats):''}`;
+  if(market)$('inspectQuote').onclick=()=>detail(at);
   if(seats[a]==='bot' || s.phase==='end') $('actions').innerHTML=`<small class="waiting">${s.phase==='end'?'Advancing to the next turn…':'Bot is considering the table…'}</small>`;
 }
 function initialize(types,map,seconds,seed,policy=maps[map].development.policy) {
   rules={...maps[map],development:{...maps[map].development,policy}};clockSeconds=seconds;
-  clearTimeout(cueTimer);$('receipt').hidden=true;
+  resetStage();
   focusKey='';inspected=0;
   const side=rules.tiles.length/4+1;
   const board=$('board');
@@ -1000,6 +1259,7 @@ function initialize(types,map,seconds,seed,policy=maps[map].development.policy) 
   board.style.gridTemplate=`repeat(${side},minmax(0,1fr)) / repeat(${side},minmax(0,1fr))`;
   board.querySelector('.ocean').style.gridArea=`2 / 2 / ${side} / ${side}`;
   board.dataset.map=map;
+  placeStage();
   const mapName={grand:'Grand Harbor',outer:'Outer Harbor',compact:'Inner Harbor'}[map];
   $('boardName').textContent=mapName;$('mapTitle').textContent=`${mapName} · ${rules.tiles.length} spaces · ${rules.dice?.count??2}d${rules.dice?.sides??6}`;
   showView('board');
@@ -1009,8 +1269,8 @@ function initialize(types,map,seconds,seed,policy=maps[map].development.policy) 
 async function play(types,map='grand',seconds=DEFAULT_CLOCK,policy=rules.development.policy) {
   session?.abort(); session=new AbortController(); const {signal}=session;
   initialize(types,map,seconds,crypto.getRandomValues(new Uint32Array(1))[0],policy);
+  render();
   while(!signal.aborted) {
-    render();
     if(state.phase==='over') return;
     const step=new AbortController();
     const cancel=()=>step.abort();
@@ -1020,7 +1280,7 @@ async function play(types,map='grand',seconds=DEFAULT_CLOCK,policy=rules.develop
       : await controllers[seats[actingSeat(state)]](state,step.signal);
     signal.removeEventListener('abort',cancel); step.abort();
     if(signal.aborted) return;
-    const before=state;state=command(action);liveFeedback(action,before,state);
+    const before=state;state=command(action);render();liveFeedback(action,before,state);
   }
 }
 function report(err){$('actions').replaceChildren();$('turn').textContent=`Game unavailable: ${err.message}`;console.error(err)}

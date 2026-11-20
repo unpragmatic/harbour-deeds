@@ -8,6 +8,11 @@ from PIL import Image
 
 root = Path(__file__).resolve().parent
 sections = {
+    'Read the table in play': [
+        ('motion-roll','Roll and travel','The dice settle to the Rust result and the numbered ship moves clockwise. The arrival and price remain readable after motion stops.'),
+        ('motion-sale','Hammer falls','The lot is stamped and the ledger debits the winner, not the player who withdrew. The next decision is available separately.'),
+        ('motion-phone','Reduced-motion phone','Same seeded arrival, with stationary dice, a pinned result and a larger three-column route. Muting does not remove any information.'),
+    ],
     'Set up a table': [
         ('modes', 'Mode picker', 'Keep the four play modes visible. Common local games start immediately; customization is secondary.'),
         ('settings', 'Local settings', 'Board and clock apply to the whole table; seat selectors choose the controllers. A future improvement is a short roster summary before Start.'),
@@ -57,6 +62,7 @@ details[open] summary{cursor:zoom-out}details[open] img{height:auto}summary:focu
 for i, section in enumerate(sections):
     out.append(f'<a href="#group{i}">{escape(section)}</a>')
 out.append('</nav>')
+out.append('<section id="motion"><h2>Watch a turn, with sound</h2><p>An actual local game: Seat 1 rolls, opens Copper Yard to bids, and wins it for $10 when Seat 2 withdraws. The rattling dice, bid and closing gavel are recorded from the game.</p><video controls playsinline preload="metadata" style="width:100%;max-width:900px" aria-label="Roll, bidding and settlement with the game audio" src="./table-in-motion.webm"></video></section>')
 inventory=json.loads((root.parent/'web/interactions.json').read_text())
 out.append('<section id="inventory"><h2>Interaction review checklist</h2><details><summary>Visual priorities, commands and non-game interactions</summary><h3>Space identifiers</h3><dl>')
 for name, note in inventory['identifiers']:

@@ -245,10 +245,10 @@ function render() {
     }
     b.classList.toggle('landing',s.phase!=='over'&&i===s.players[s.turn].pos);
     const here=s.players.flatMap((player,j)=>player.pos===i&&!player.out?[j]:[]);
-    const owner=s.owners[i],value=owner!==null?`Rent ${money(s.rents[i])}`:tile.price?money(tile.price):'';
-    const flag=owner!==null?`<span class="flag" style="color:${colors[owner]}">⚑${owner+1}</span>`:'';
-    const markers=here.map(j=>`<span class="token" style="background:${colors[j]}">${j+1}</span>`).join('')+(here.length>1?`<span class="crew">●×${here.length}</span>`:'');
-    b.innerHTML=`<strong>${tile.name}</strong><span class="tileValue">${tile.mark?`<span aria-hidden="true">${tile.mark}</span> `:''}${value}</span>${flag||markers?`<span class="berth">${flag}${markers}</span>`:''}`;
+    const owner=s.owners[i],value=owner!==null?`Rent ${money(s.rents[i])}`:tile.kind==='fee'?`−${money(tile.price)}`:tile.price?money(tile.price):({start:'Salary',notice:'Draw',guild:'Choose',exchange:'Auction',rest:'Rest'})[tile.kind];
+    const flag=owner!==null?`<span class="flag" style="--seat:${colors[owner]}">⚑${owner+1}</span>`:'';
+    const markers=here.map(j=>`<span class="token${j===s.turn?' arrived':''}" style="background:${colors[j]}">${j+1}</span>`).join('')+(here.length>1?`<span class="crew">●×${here.length}</span>`:'');
+    b.innerHTML=`<strong>${tile.name}</strong><span class="tileValue">${value}</span>${flag||markers?`<span class="berth">${flag}${markers}</span>`:''}`;
     b.setAttribute('aria-label',[tile.name,tile.group||tile.kind,value,owner===null?'':`Owned by ${seat(owner)}, level ${s.levels[i]}`,here.length?'Occupied by '+here.map(seat).join(', '):'','Inspect space'].filter(Boolean).join('. '));
   }
   $('register').innerHTML=s.players.map((player,i)=>{
@@ -260,6 +260,7 @@ function render() {
     return `<div class="row"><span class="badge" style="background:${colors[i]}">${i+1}</span><div><strong>${seat(i)}</strong><div class="meta">${player.out?'Bankrupt':seats[i]==='bot'?'Bot':'Local player'} · ${owned.length} deeds</div><div class="holdings">${groups}</div></div><span class="money">${money(player.cash)}</span></div>`;
   }).join('');
   $('balances').innerHTML=s.players.map((v,i)=>`<div class="ledger"><i style="background:${colors[i]}"></i>${seat(i)}<b>${v.out?'Bankrupt':money(v.cash)}</b></div>`).join('');
+  syncStage(s);
   const market=s.phase==='offer'||s.phase==='auction',at=s.auction?.tile??s.players[s.turn].pos;
   const key=`${s.round}/${s.turn}/${at}/${market}`;
   if(key!==focusKey){inspected=at;focusKey=key}
@@ -291,12 +292,13 @@ function render() {
   }else{
     title=t.name;text=s.events.at(-1);
   }
-  $('turn').innerHTML=`<h2>${title}</h2><p>${text}</p>${stats.length?facts(stats):''}`;
+  $('turn').innerHTML=`<h2>${title}</h2>${market?'<button id="inspectQuote">Rent &amp; build costs</button>':''}<p>${text}</p>${stats.length?facts(stats):''}`;
+  if(market)$('inspectQuote').onclick=()=>detail(at);
   if(seats[a]==='bot' || s.phase==='end') $('actions').innerHTML=`<small class="waiting">${s.phase==='end'?'Advancing to the next turn…':'Bot is considering the table…'}</small>`;
 }
 function initialize(types,map,seconds,seed,policy=maps[map].development.policy) {
   rules={...maps[map],development:{...maps[map].development,policy}};clockSeconds=seconds;
-  clearTimeout(cueTimer);$('receipt').hidden=true;
+  resetStage();
   focusKey='';inspected=0;
   const side=rules.tiles.length/4+1;
   const board=$('board');
@@ -304,6 +306,7 @@ function initialize(types,map,seconds,seed,policy=maps[map].development.policy) 
   board.style.gridTemplate=`repeat(${side},minmax(0,1fr)) / repeat(${side},minmax(0,1fr))`;
   board.querySelector('.ocean').style.gridArea=`2 / 2 / ${side} / ${side}`;
   board.dataset.map=map;
+  placeStage();
   const mapName={grand:'Grand Harbor',outer:'Outer Harbor',compact:'Inner Harbor'}[map];
   $('boardName').textContent=mapName;$('mapTitle').textContent=`${mapName} · ${rules.tiles.length} spaces · ${rules.dice?.count??2}d${rules.dice?.sides??6}`;
   showView('board');
@@ -313,8 +316,8 @@ function initialize(types,map,seconds,seed,policy=maps[map].development.policy) 
 async function play(types,map='grand',seconds=DEFAULT_CLOCK,policy=rules.development.policy) {
   session?.abort(); session=new AbortController(); const {signal}=session;
   initialize(types,map,seconds,crypto.getRandomValues(new Uint32Array(1))[0],policy);
+  render();
   while(!signal.aborted) {
-    render();
     if(state.phase==='over') return;
     const step=new AbortController();
     const cancel=()=>step.abort();
@@ -324,7 +327,7 @@ async function play(types,map='grand',seconds=DEFAULT_CLOCK,policy=rules.develop
       : await controllers[seats[actingSeat(state)]](state,step.signal);
     signal.removeEventListener('abort',cancel); step.abort();
     if(signal.aborted) return;
-    const before=state;state=command(action);liveFeedback(action,before,state);
+    const before=state;state=command(action);render();liveFeedback(action,before,state);
   }
 }
 function report(err){$('actions').replaceChildren();$('turn').textContent=`Game unavailable: ${err.message}`;console.error(err)}
