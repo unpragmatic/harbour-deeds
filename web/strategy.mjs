@@ -5,12 +5,13 @@ export function locked(s,rules,i){
   return s.levels?.some((l,k)=>l>0 && rules.tiles[k].group===rules.tiles[i].group);
 }
 const visitCache=new Map();
-function visits(n,turns){
-  const key=`${n}:${turns}`;if(visitCache.has(key))return visitCache.get(key);
+function visits(n,turns,{count=2,sides=6}={}){
+  const key=`${n}:${turns}:${count}:${sides}`;if(visitCache.has(key))return visitCache.get(key);
+  let odds=[1];for(let j=0;j<count;j++){const next=Array(odds.length+sides).fill(0);odds.forEach((v,i)=>{for(let k=1;k<=sides;k++)next[i+k]+=v/sides});odds=next}
   let dist=Array(n).fill(0);dist[0]=1;const totals=Array(n).fill(0);
   for(let roll=0;roll<turns;roll++){
     const next=Array(n).fill(0);
-    for(let i=0;i<n;i++)for(let d=2;d<=12;d++)next[(i+d)%n]+=dist[i]*(6-Math.abs(7-d))/36;
+    for(let i=0;i<n;i++)for(let d=count;d<odds.length;d++)next[(i+d)%n]+=dist[i]*odds[d];
     next.forEach((v,i)=>totals[i]+=v);dist=next;
   }
   visitCache.set(key,totals);return totals;
@@ -20,7 +21,7 @@ function projectedGain(q,s,rules){
   return q.tiles.reduce((sum,k)=>{
     const level=rules.development.levels[s.levels[k]];
     const gain=Math.round(rules.tiles[k].rent*level.rent_pct/100)-s.rents[k];
-    return sum+gain*s.players.reduce((hits,p,i)=>i===s.turn||p.out?hits:hits+visits(n,rules.rounds-s.round+(i>s.turn?1:0))[(k-p.pos+n)%n],0);
+    return sum+gain*s.players.reduce((hits,p,i)=>i===s.turn||p.out?hits:hits+visits(n,rules.rounds-s.round+(i>s.turn?1:0),rules.dice)[(k-p.pos+n)%n],0);
   },0);
 }
 
@@ -37,6 +38,12 @@ export function botMove(s, rules) {
   const reserve = Math.min(rules.salary, cash / 3);
   const step = rules.auction_increment;
   const send = (action, extra = {}) => ({action, actor, ...extra});
+  if(s.phase==='guild'){
+    const p=s.players[actor],t=rules.tiles[p.pos],turns=rules.rounds-s.round;
+    const exposed=s.rents.filter((_,k)=>s.owners[k]!==null&&s.owners[k]!==actor);
+    const benefit=exposed.reduce((sum,r)=>sum+Math.max(0,Math.min(t.cover_offer,r)-Math.min(p.cover,r)),0);
+    return send(exposed.length && (1-(1-exposed.length/rules.tiles.length)**turns)*benefit/exposed.length>t.cash_offer?'insure':'grant');
+  }
   if (s.phase === 'offer') {
     const tile = rules.tiles[s.players[actor].pos];
     // If rivals cannot meet the list price, try buying it cheaper at auction.

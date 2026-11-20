@@ -3,6 +3,10 @@ use std::cell::RefCell;
 
 #[derive(Deserialize)]
 struct Rules {
+    #[serde(default)]
+    dice: Dice,
+    #[serde(default)]
+    cards: Vec<Card>,
     development: Development,
     cash: i32,
     salary: i32,
@@ -10,6 +14,30 @@ struct Rules {
     rounds: usize,
     tiles: Vec<Tile>,
     notices: Vec<i32>,
+}
+#[derive(Deserialize)]
+struct Dice {
+    count: usize,
+    sides: usize,
+}
+impl Default for Dice {
+    fn default() -> Self {
+        Self { count: 2, sides: 6 }
+    }
+}
+#[derive(Deserialize)]
+struct Card {
+    title: String,
+    kind: CardKind,
+    amount: i32,
+}
+#[derive(Deserialize, Clone, Copy)]
+#[serde(rename_all = "lowercase")]
+enum CardKind {
+    Cash,
+    Deeds,
+    Levels,
+    Cover,
 }
 #[derive(Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -41,6 +69,10 @@ fn percent(n: i32, pct: i32) -> i64 {
 }
 #[derive(Deserialize)]
 struct Tile {
+    #[serde(default)]
+    cash_offer: i32,
+    #[serde(default)]
+    cover_offer: i32,
     kind: Kind,
     #[serde(default)]
     price: i32,
@@ -52,6 +84,8 @@ struct Tile {
 #[derive(Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 enum Kind {
+    Guild,
+    Exchange,
     Start,
     Deed,
     Fee,
@@ -60,6 +94,7 @@ enum Kind {
 }
 #[derive(Serialize, Default)]
 struct Player {
+    cover: i32,
     cash: i32,
     pos: usize,
     out: bool,
@@ -67,6 +102,7 @@ struct Player {
 #[derive(Serialize, PartialEq, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
 enum Phase {
+    Guild,
     Roll,
     Offer,
     Auction,
@@ -106,7 +142,10 @@ struct Game {
     owners: Vec<Option<usize>>,
     turn: usize,
     round: usize,
-    dice: [usize; 2],
+    dice: Vec<usize>,
+    #[serde(skip)]
+    deck: Vec<usize>,
+    last_card: Option<usize>,
     phase: Phase,
     auction: Option<Auction>,
     trade: Option<Trade>,
@@ -117,6 +156,12 @@ struct Game {
 #[derive(Deserialize)]
 #[serde(tag = "action", rename_all = "lowercase")]
 enum Command {
+    Grant {
+        actor: usize,
+    },
+    Insure {
+        actor: usize,
+    },
     Build {
         actor: usize,
         tile: usize,
@@ -159,7 +204,18 @@ impl Game {
         if !(2..=4).contains(&seats)
             || rules.tiles.len() < 4
             || rules.rounds == 0
-            || rules.notices.is_empty()
+            || (rules.notices.is_empty() && rules.cards.is_empty())
+            || !(1..=8).contains(&rules.dice.count)
+            || !(2..=32).contains(&rules.dice.sides)
+            || rules.cards.iter().any(|c| {
+                c.title.is_empty()
+                    || c.amount.unsigned_abs() > 10000
+                    || matches!(c.kind, CardKind::Cover) && c.amount <= 0
+            })
+            || rules
+                .tiles
+                .iter()
+                .any(|t| t.kind == Kind::Guild && (t.cash_offer <= 0 || t.cover_offer <= 0))
             || rules.cash <= 0
             || rules.salary < 0
             || rules.auction_increment <= 0
@@ -210,11 +266,13 @@ impl Game {
                 })
                 .collect(),
             owners: vec![None; rules.tiles.len()],
+            dice: vec![0; rules.dice.count],
+            deck: vec![],
+            last_card: None,
             rules,
             seed: seed.max(1),
             turn: 0,
             round: 1,
-            dice: [0, 0],
             phase: Phase::Roll,
             auction: None,
             trade: None,
@@ -452,18 +510,46 @@ impl Game {
                     q.cost
                 ));
             }
+            Command::Grant { actor } | Command::Insure { actor }
+                if actor == a && self.phase == Phase::Guild =>
+            {
+                let t = &self.rules.tiles[i];
+                let p = &mut self.players[a];
+                if matches!(cmd, Command::Grant { .. }) {
+                    p.cash += t.cash_offer;
+                    self.events.push(format!(
+                        "Seat {} took a ${} guild grant.",
+                        a + 1,
+                        t.cash_offer
+                    ))
+                } else {
+                    p.cover = p.cover.max(t.cover_offer);
+                    self.events.push(format!(
+                        "Seat {} holds ${} next-rent cover.",
+                        a + 1,
+                        p.cover
+                    ))
+                }
+                self.phase = Phase::End;
+            }
             Command::Roll { actor } if actor == a && self.phase == Phase::Roll => {
-                self.dice = [1 + self.random(6), 1 + self.random(6)];
+                self.last_card = None;
+                self.dice = (0..self.rules.dice.count)
+                    .map(|_| 1 + self.random(self.rules.dice.sides))
+                    .collect();
                 let path = i + self.dice.iter().sum::<usize>();
                 let n = self.rules.tiles.len();
                 let j = path % n;
                 self.players[a].pos = j;
                 self.phase = Phase::End;
                 self.events.push(format!(
-                    "Seat {} rolled {} + {}.",
+                    "Seat {} rolled {}.",
                     a + 1,
-                    self.dice[0],
-                    self.dice[1]
+                    self.dice
+                        .iter()
+                        .map(usize::to_string)
+                        .collect::<Vec<_>>()
+                        .join(" + ")
                 ));
                 if path >= n {
                     self.players[a].cash += self.rules.salary * (path / n) as i32;
@@ -480,7 +566,14 @@ impl Game {
                             let rent = self.rents[j];
                             self.events
                                 .push(format!("Rent due to seat {}: ${rent}.", b + 1));
-                            self.charge(rent, Some(b));
+                            let covered = rent.min(self.players[a].cover);
+                            if covered > 0 {
+                                self.players[a].cover = 0;
+                                self.players[b].cash += covered;
+                                self.events
+                                    .push(format!("Guild paid ${covered} of the rent."))
+                            }
+                            self.charge(rent - covered, Some(b));
                         }
                         _ => {}
                     },
@@ -488,6 +581,67 @@ impl Game {
                         let fee = tile.price;
                         self.events.push(format!("Harbor dues: ${fee}."));
                         self.charge(fee, None)
+                    }
+                    Kind::Guild => self.phase = Phase::Guild,
+                    Kind::Exchange => {
+                        if let Some(tile) = (1..n).map(|k| (j + k) % n).find(|&k| {
+                            self.rules.tiles[k].kind == Kind::Deed && self.owners[k].is_none()
+                        }) {
+                            self.auction = Some(Auction {
+                                actor: a,
+                                tile,
+                                high_bid: 0,
+                                leader: None,
+                                bidders: self.players.iter().map(|p| !p.out).collect(),
+                            });
+                            self.phase = Phase::Auction;
+                            self.events.push(format!(
+                                "Exchange called a public auction for deed {tile:02}."
+                            ));
+                        } else {
+                            self.events
+                                .push("Exchange closed: all deeds are owned.".into())
+                        }
+                    }
+                    Kind::Notice if !self.rules.cards.is_empty() => {
+                        if self.deck.is_empty() {
+                            self.deck = (0..self.rules.cards.len()).collect();
+                            for k in (1..self.deck.len()).rev() {
+                                let j = self.random(k + 1);
+                                self.deck.swap(k, j)
+                            }
+                        }
+                        let k = self.deck.pop().unwrap();
+                        self.last_card = Some(k);
+                        let c = &self.rules.cards[k];
+                        let units = match c.kind {
+                            CardKind::Deeds => {
+                                self.owners.iter().filter(|o| **o == Some(a)).count() as i32
+                            }
+                            CardKind::Levels => self
+                                .levels
+                                .iter()
+                                .zip(&self.owners)
+                                .filter(|(_, o)| **o == Some(a))
+                                .map(|(l, _)| *l as i32)
+                                .sum(),
+                            _ => 1,
+                        };
+                        let value = c.amount * units;
+                        if matches!(c.kind, CardKind::Cover) {
+                            self.players[a].cover = self.players[a].cover.max(value);
+                            self.events.push(format!(
+                                "{}: next-rent cover ${}.",
+                                c.title, self.players[a].cover
+                            ))
+                        } else {
+                            self.events.push(format!("{}: {value:+} dollars.", c.title));
+                            if value < 0 {
+                                self.charge(-value, None)
+                            } else {
+                                self.players[a].cash += value
+                            }
+                        }
                     }
                     Kind::Notice => {
                         let k = self.random(self.rules.notices.len());

@@ -2,7 +2,7 @@
 // guests replay accepted commands against their own copy of the seeded Rust engine.
 const protocol='harbor-deeds-v2-', alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const saveKey='harbor-deeds.table.v2', codePattern=/^[A-HJ-NP-Z2-9]{6}$/;
-const playable=new Set(['roll','buy','pass','bid','withdraw','propose','accept','reject','build']);
+const playable=new Set(['roll','buy','pass','bid','withdraw','propose','accept','reject','build','grant','insure']);
 let room=null,peerLoader=null;
 function readTable(){
   const raw=localStorage.getItem(saveKey);if(raw===null)return null;
@@ -266,7 +266,7 @@ async function connectRoom(host,code,resume=false){
 }
 function broadcast(r,msg){for(const link of r.links.values())link.send(msg)}
 function startNetwork(r,c){
-  if(!c||!['compact','outer'].includes(c.map)||!(c.policy===undefined||['even','district','free'].includes(c.policy))||![0,5,15,30].includes(c.seconds)||
+  if(!c||!Object.hasOwn(maps,c.map)||!(c.policy===undefined||['even','district','free'].includes(c.policy))||![0,5,15,30].includes(c.seconds)||
      !Number.isInteger(c.seed)||c.seed<0||c.seed>0xffffffff||!Array.isArray(c.owners)||
      c.owners.length<2||c.owners.length>4||!c.owners.every(n=>[-1,0,1,2,3].includes(n))||
      (!r.host&&!c.owners.includes(r.device)))throw Error('Invalid host settings');

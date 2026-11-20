@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {botMove} from '../web/strategy.mjs';
 
 const rules=JSON.parse(readFileSync(new URL('../web/rules.json',import.meta.url)));
 const wasm=new URL('../target/wasm32-unknown-unknown/release/harbor_deeds.wasm',import.meta.url);
@@ -32,6 +33,47 @@ const board={...rules,cash:100,salary:0,
 function start(seats=2,config=board){
   return act('start',undefined,{rules:config,seats,seed:10});
 }
+const grand={...rules,...JSON.parse(readFileSync(new URL('../web/grand-harbor.json',import.meta.url)))};
+test('configurable dice and a reproducible deck exhausted before reshuffling',()=>{
+  const config={...grand,dice:{count:3,sides:4},rounds:80,cash:10000,tiles:Array(16).fill({kind:'notice'})};
+  function draws(seed){
+    let s=act('start',undefined,{rules:config,seats:2,seed});const cards=[];
+    for(let i=0;i<16;i++){
+      const before=s.players[s.turn].pos;s=act('roll',s.turn);assert.equal(s.dice.length,3);
+      assert.ok(s.dice.every(d=>d>=1&&d<=4));assert.equal(s.players[s.turn].pos,(before+s.dice.reduce((a,b)=>a+b))%16);
+      cards.push(s.last_card);s=act('end',s.turn);
+    }return cards;
+  }
+  const seq=draws(10);assert.deepEqual(draws(10),seq);assert.notDeepEqual(draws(30),seq);
+  for(const k of [0,8])assert.equal(new Set(seq.slice(k,k+8)).size,8);
+});
+test('exchange auctions another deed; guild cover pays the landlord once',()=>{
+  const config={...grand,tiles:Array.from({length:16},(_,i)=>i===2?{kind:'exchange'}:i===7?{kind:'guild',cash_offer:3,cover_offer:60}:{kind:'deed',price:20,rent:80,group:'x'})};
+  start(2,config);let s=act('roll',0);assert.equal(s.auction.tile,3);assert.equal(s.players[0].pos,2);
+  act('bid',0,{amount:10});s=act('withdraw',1);assert.equal(s.owners[3],0);
+  act('end',0);s=act('roll',1);assert.equal(s.phase,'guild');illegal('insure',0);s=act('insure',1);assert.equal(s.players[1].cover,60);
+  for(let turn=0;turn<90;turn++){
+    s=act('end',s.turn);const a=s.turn,prior=s;s=act('roll',a);
+    if(a===1&&s.players[1].cover===0){
+      assert.equal(s.players[0].cash-prior.players[0].cash,80);
+      assert.match(s.events.join(' '),/Guild paid \$60/);return;
+    }
+    if(s.phase==='offer')s=act('buy',s.turn);
+    else if(s.phase==='guild')s=act('grant',s.turn);
+    else while(s.phase==='auction')s=act('withdraw',s.auction.actor);
+  }assert.fail('cover was never redeemed');
+});
+test('Grand Harbor games terminate and exercise all experimental spaces',()=>{
+  const phases=new Set(),cards=new Set();
+  for(let seed=1;seed<=50;seed++){
+    let s=act('start',undefined,{rules:grand,seed,seats:3}), steps=0;
+    while(s.phase!=='over'){
+      assert.ok(++steps<2000);phases.add(s.phase);if(s.last_card!==null)cards.add(s.last_card);
+      s=send(botMove(s,grand));assert.ifError(s.error&&Error(s.error));
+    }
+  }
+  assert.ok(phases.has('guild')&&phases.has('auction'));assert.equal(cards.size,grand.cards.length);
+});
 test('auction enforces turns, minimum raises, affordability and single settlement',()=>{
   start(3);
   for(const auction_increment of [0,-1])

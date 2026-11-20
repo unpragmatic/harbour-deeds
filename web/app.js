@@ -1,9 +1,9 @@
 const $ = id => document.getElementById(id);
-const maps = {compact:JSON.parse($('config').textContent),outer:JSON.parse($('outer').textContent)};
+const maps = {compact:JSON.parse($('config').textContent),outer:JSON.parse($('outer').textContent),grand:JSON.parse($('grand').textContent)};
 const DEFAULT_CLOCK=5;
 let rules=maps.compact, clockSeconds=DEFAULT_CLOCK;
 const colors = ['#a54d37','#347367','#936c20','#5d608a'];
-const bands = {'Old Town':'#b76952', Foundry:'#d39e47', Market:'#7989a9', Marina:'#589587', Shipyards:'#ac84a2', Exchange:'#7195aa'};
+const bands = {'Old Town':'#b76952', Foundry:'#d39e47', Market:'#7989a9', Marina:'#589587', Shipyards:'#ac84a2', Exchange:'#7195aa',Tidelands:'#80a357',Headlands:'#94724e'};
 const money = n => '$' + n.toLocaleString('en-US');
 const seat = n => `Seat ${n + 1}`;
 let engine, state, seats, session;
@@ -152,6 +152,10 @@ const controllers = {
         });
       }
       button('Withdraw',()=>send('withdraw'));
+    }else if(s.phase==='guild'){
+      const tile=rules.tiles[s.players[actor].pos];
+      button(`Take ${money(tile.cash_offer)}`,()=>send('grant'),true);
+      button(`Cover ${money(tile.cover_offer)}`,()=>send('insure'));
     }else if(s.phase==='trade'){
       button('Accept trade',()=>send('accept'),true);button('Decline',()=>send('reject'));
     }
@@ -190,7 +194,9 @@ function detailHtml(i) {
     deed:`${t.group} district. Price ${money(t.price ?? 0)}; rent ${money(t.rent ?? 0)}. Double rent for a complete district.`,
     start:`Collect ${money(rules.salary)} each time you pass or land here.`,
     fee:`Pay ${money(t.price ?? 0)} to the port authority.`,
-    notice:'Draw a port notice for a cash award or unexpected bill.',
+    notice:rules.cards?'Draw a Harbor Dispatch. All cards are drawn once before the deck is reshuffled.':'Draw a port notice for a cash award or unexpected bill.',
+    guild:`Take ${money(t.cash_offer??0)} now or guard your next rent payment up to ${money(t.cover_offer??0)}. Cover does not stack; the larger policy survives.`,
+    exchange:'Open bidding on the next unowned deed clockwise. Your ship stays here. If no deeds remain, the exchange closes.',
     rest:'A safe harbor. No payment is due here.'
   };
   const max=rules.development.levels.length,level=state.levels[i];
@@ -212,8 +218,8 @@ function facts(entries){
   return `<dl class="facts">${entries.map(([key,v])=>`<div><dt>${key}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
 }
 function render() {
-  const s = state, a = actingSeat(s), p = s.players[a], t = rules.tiles[s.players[s.turn].pos];
-  const phaseNames={roll:'Navigation',offer:'Deed for sale',auction:'Live auction',trade:'Trade offer',end:'Settlement',over:'Final accounts'};
+  const s = state, a = actingSeat(s), p = s.players[a], t = rules.tiles[s.auction?.tile??s.players[s.turn].pos];
+  const phaseNames={roll:'Navigation',offer:'Deed for sale',auction:'Live auction',guild:'Guild charter',trade:'Trade offer',end:s.last_card!=null?'Harbor dispatch':'Settlement',over:'Final accounts'};
   document.body.dataset.phase=s.phase;
   $('phaseLabel').textContent=phaseNames[s.phase].toUpperCase();
   $('controlType').textContent=s.phase==='over'?'TABLE CLOSED':`${seat(a)} · ${seats[a]==='bot'?'Bot':'Local'}`;
@@ -226,6 +232,7 @@ function render() {
       const [row,col] = boardPosition(i);
       b.style.gridArea=`${row} / ${col}`;
       b.className='tile '+(tile.kind==='deed'?'deed':'special');
+      b.dataset.kind=tile.kind;
       b.style.setProperty('--band',bands[tile.group] || '#718373');
       b.onclick=()=>detail(i);
       b.onkeydown=e=>{
@@ -239,6 +246,10 @@ function render() {
     const here=s.players.flatMap((player,j)=>player.pos===i&&!player.out?[j]:[]);
     b.innerHTML=`${tile.kind==='deed'?`<span class="num">Nº ${String(i).padStart(2,'0')}</span>`:`<span class="mark">${tile.mark}</span>`}<strong>${tile.name}</strong>${tile.price?`<span class="cost">${money(tile.price)}</span>`:''}${s.owners[i]!==null?`<span class="owned">●${s.owners[i]+1}</span>`:''}<span class="tokens">${here.map(j=>`<span class="token" style="background:${colors[j]}">${j+1}</span>`).join('')}</span>`;
     b.setAttribute('aria-label',`${tile.name}${here.length?', occupied by '+here.map(seat).join(', '):''}. Inspect space`);
+    if(rules.cards){
+      const stamp=b.querySelector('.num');
+      if(stamp)stamp.textContent=tile.group;
+    }
     if(s.levels[i]){
       b.querySelector('.owned').textContent=`${s.owners[i]+1}·L${s.levels[i]}`;
       b.setAttribute('aria-label',`${b.getAttribute('aria-label')}. Level ${s.levels[i]}, rent ${money(s.rents[i])}`);
@@ -253,7 +264,7 @@ function render() {
     return `<div class="row"><span class="badge" style="background:${colors[i]}">${i+1}</span><div><strong>${seat(i)}</strong><div class="meta">${player.out?'Bankrupt':seats[i]==='bot'?'Bot':'Local player'} · ${owned.length} deeds</div><div class="holdings">${groups}</div></div><span class="money">${money(player.cash)}</span></div>`;
   }).join('');
   $('balances').innerHTML=s.players.map((v,i)=>`<div class="ledger"><i style="background:${colors[i]}"></i>${seat(i)}<b>${v.out?'Bankrupt':money(v.cash)}</b></div>`).join('');
-  const market=s.phase==='offer'||s.phase==='auction',at=s.players[s.turn].pos;
+  const market=s.phase==='offer'||s.phase==='auction',at=s.auction?.tile??s.players[s.turn].pos;
   const key=`${s.round}/${s.turn}/${at}/${market}`;
   if(key!==focusKey){inspected=at;focusKey=key}
   selectSpace(inspected);
@@ -267,13 +278,17 @@ function render() {
   }
   let title, text, stats=[];
   if(s.phase==='roll'){
-    title=`${seat(a)}’s turn`;text=`${t.name} · ${money(p.cash)} available`;
+    title=`${seat(a)}’s turn`;text=`${t.name} · ${money(p.cash)} available${p.cover?` · ${money(p.cover)} rent cover`:''}`;
   }else if(s.phase==='offer'){
     title=t.name;text=`${t.group} · Buy at list price or open the deed to every bidder.`;
     stats=[['List price',money(t.price)],['Base rent',money(t.rent)],['After buying',p.cash>=t.price?money(p.cash-t.price):'Short of cash']];
   }else if(s.phase==='auction'){
     title=t.name;text=`${s.auction.leader===null?'No bids yet.':seat(s.auction.leader)+' leads.'} ${clockSeconds?'Bid before the clock runs out or withdraw.':'Raise the bid or withdraw.'}`;
     stats=[['High bid',money(s.auction.high_bid)],['Your cash',money(p.cash)],['List / rent',`${money(t.price)} / ${money(t.rent)}`]];
+  }else if(s.phase==='guild'){
+    title=t.name;text=`Cash now, or protection on your next rent bill? Current cover: ${money(p.cover)}.`;
+  }else if(s.phase==='end'&&s.last_card!=null){
+    title=rules.cards[s.last_card].title;text=s.events.slice().reverse().find(line=>line.startsWith(title+':'))??s.events.at(-1);
   }else if(s.phase==='trade'){
     const d=s.trade;title=`Offer from ${seat(d.from)}`;text=`${seat(d.to)}, review both sides. Nothing changes hands unless you accept.`;
     stats=[['You receive',summary(d.give_deed,d.give_cash)],['You give',summary(d.take_deed,d.take_cash)]];
@@ -292,12 +307,13 @@ function initialize(types,map,seconds,seed,policy=maps[map].development.policy) 
   board.style.gridTemplate=`repeat(${side},minmax(0,1fr)) / repeat(${side},minmax(0,1fr))`;
   board.querySelector('.ocean').style.gridArea=`2 / 2 / ${side} / ${side}`;
   board.dataset.map=map;
-  $('mapTitle').textContent=$('boardName').textContent=map==='outer'?'Outer Harbor':'Inner Harbor';
+  const mapName={grand:'Grand Harbor',outer:'Outer Harbor',compact:'Inner Harbor'}[map];
+  $('boardName').textContent=mapName;$('mapTitle').textContent=`${mapName} · ${rules.tiles.length} spaces · ${rules.dice?.count??2}d${rules.dice?.sides??6}`;
   showView('board');
   seats=types;
   state=command({action:'start',rules,seats:types.length,seed});
 }
-async function play(types,map='compact',seconds=DEFAULT_CLOCK,policy=rules.development.policy) {
+async function play(types,map='grand',seconds=DEFAULT_CLOCK,policy=rules.development.policy) {
   session?.abort(); session=new AbortController(); const {signal}=session;
   initialize(types,map,seconds,crypto.getRandomValues(new Uint32Array(1))[0],policy);
   while(!signal.aborted) {
@@ -317,7 +333,7 @@ async function play(types,map='compact',seconds=DEFAULT_CLOCK,policy=rules.devel
 function report(err){$('actions').replaceChildren();$('turn').textContent=`Game unavailable: ${err.message}`;console.error(err)}
 function settings(){
   return `<label class="field">Improvements<select id="policy">${[['even','Even building'],['free','Unrestricted'],['district','Whole district']].map(([v,n])=>`<option value="${v}" ${rules.development.policy===v?'selected':''}>${n}</option>`).join('')}</select></label>
-    <label class="field">Board<select id="map"><option value="compact">Inner Harbor · 20 spaces</option><option value="outer">Outer Harbor · 28 spaces</option></select></label>
+    <label class="field">Board<select id="map"><option value="grand">Grand Harbor · 40 spaces</option><option value="compact">Inner Harbor · 20 spaces</option><option value="outer">Outer Harbor · 28 spaces</option></select></label>
     <label class="field">Human bid clock<select id="clock"><option value="5" selected>5 seconds</option><option value="0">Untimed</option><option value="15">15 seconds</option><option value="30">30 seconds</option></select></label>`;
 }
 function showView(name){

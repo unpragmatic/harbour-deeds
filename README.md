@@ -57,7 +57,7 @@ Owning every deed in a district unlocks pre-roll improvements. Choose even build
 | Auction | Current bidder raises by at least the increment or withdraws | Next bidder, sale to high bidder, or unsold |
 | Settlement | No confirmation needed; rent, fees, movement and sales are logged | Next seat or final accounts |
 
-Complete districts double rent. Cash also matters: winning a bid can leave too little to pay the next bill. An 18-round limit bounds play. Mortgages, buildings and jail are outside this edition.
+Complete districts double base rent and unlock improvements. Cash also matters: winning a bid can leave too little to pay the next bill. The boards have fixed round limits.
 
 ## Gameplay and visual review
 
@@ -75,7 +75,11 @@ The original policy almost always bought and manually ended every turn. Removing
 The browser review exercised opening, offer, auction, bidder handoff, settlement, trade draft, recipient review and final scoring. Mobile now puts the active decision before the board; image inspection caught a clipped bottom row, fixed with bounded grid tracks. [View the captured decision screens](review/state-review.png). `review/screens.py` regenerates the captures using Python Playwright, Pillow and Chrome after a build.
 ## Board size and bid clocks
 
-**New table** offers Inner Harbor (20 spaces, four districts) or Outer Harbor (28 spaces, six districts). The expanded map keeps the same 18-round limit and pays $168 per lap instead of $120: the expected salary per space travelled is unchanged, but paydays are farther apart. The compact map remains the default.
+**Grand Harbor** is the default: 40 spaces, eight three-deed districts and 26 rounds. With two six-sided dice the mean move is seven spaces, so a player travels about 4.55 circuits in 26 rolls. The $240 salary keeps salary per space at $6, equal to the shorter boards. Inner Harbor (20 spaces) and Outer Harbor (28) remain available with their original 18-round games.
+
+Designer controls are in `web/grand-harbor.json`, not in a player-facing rules editor. Set `dice.count` and `dice.sides`, circuit order, deed economics, guild payouts, or the `cards` list before building. Card kinds are `cash` (flat signed payment), `deeds` (per owned deed), `levels` (per installed level), and `cover` (insurance limit). Duplicate an entry for more copies. Rust shuffles the deck with the match RNG, draws without replacement and reshuffles after exhaustion. Identical seeds, rules and commands reproduce draws and rolls. Classic boards keep their original notice draws for old journals.
+
+Guilds offer an immediate grant or a policy covering up to a stated amount of the next rival rent. Cover never stacks, the bank pays the insured portion to the landlord, and the policy expires on use. Exchanges auction the next vacant deed clockwise without moving the visitor; they close when everything is owned. The activity feed records card and space outcomes.
 
 The clock defaults to **five seconds per human bidding decision**. Hosts can choose 15 seconds, 30 seconds or untimed. Local-only games pause for dialogs and hidden tabs; a network table uses the host's deadline regardless of guest UI state. Expiry submits `withdraw`; winning, payment and ownership remain Rust decisions. Neither bots nor headless simulations consult a clock.
 

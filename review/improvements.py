@@ -13,6 +13,7 @@ with sync_playwright() as pw:
         p.click('#setupBtn')
         p.locator('#advanced summary').click()
         p.select_option('#policy', mode)
+        p.select_option('#map','compact')
         p.select_option('#clock', '0')
         p.select_option('#seat-1', 'human')
         p.select_option('#seat-2', 'off')

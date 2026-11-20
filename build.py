@@ -23,6 +23,7 @@ for marker, value in {
     "/*STYLE*/": (web / "style.css").read_text(),
     "__RULES__": (web / "rules.json").read_text(),
     "__OUTER__": json.dumps(expanded),
+    "__GRAND__": json.dumps(dict(expanded, **json.loads((web / "grand-harbor.json").read_text()))),
     "__WASM__": base64.b64encode(wasm.read_bytes()).decode(),
     "/*APP*/": "\n".join((web / name).read_text() for name in ["strategy.mjs","room.js","app.js"]),
 }.items():
