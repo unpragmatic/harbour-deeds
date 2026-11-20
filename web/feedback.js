@@ -56,7 +56,7 @@ function clearMotion(){
   $('wake').replaceChildren();releaseBerth();stopFoley();
 }
 function resetStage(){
-  clearMotion();lastDeltas=[];delete $('stage').dataset.live;delete $('stage').dataset.set;
+  clearMotion();lastDeltas=[];$('dispatchCard')?.remove();delete $('stage').dataset.live;delete $('stage').dataset.set;
 }
 function syncPrefs(){
   const effective=effectivePace();
@@ -94,19 +94,78 @@ function plate(tag,title,detail,prop,kind){
   $('stage').dataset.kind=kind;$('stageTag').textContent=tag;$('stageTitle').textContent=title;
   $('stageDetail').textContent=detail;$('stageProp').innerHTML=prop;
 }
+// A receipt is frozen at the draw. In particular, a later default can return the
+// player's deeds, and their net cash change can include one or more laps of salary.
+function dispatchReceipt(a,b,s){
+  const c=rules.cards[s.last_card],from=b.players[a],to=s.players[a];
+  const owned=deeds(b,a),levels=owned.reduce((n,i)=>n+b.levels[i],0);
+  const laps=Math.floor((from.pos+s.dice.reduce((n,d)=>n+d,0))/rules.tiles.length);
+  const salary=laps*rules.salary,cash=to.cash-from.cash-salary;
+  const units=c.kind==='deeds'?owned.length:c.kind==='levels'?levels:1;
+  const bill=c.amount*units,amount=money(Math.abs(c.amount)),verb=c.amount<0?'Pay':'Collect';
+  let order,result;
+  if(c.kind==='cover'){
+    order=`Carry ${amount} against your next rent. Keep any higher cover.`;
+    result=`${money(to.cover)} cover ${to.cover===from.cover?'retained':'in force'}`;
+  }else{
+    const unit=c.kind==='deeds'?'owned deed':c.kind==='levels'?'permanent level':null;
+    order=unit?`${verb} ${amount} per ${unit} × ${units}.`:`${verb} ${amount} ${c.amount<0?'at':'from'} the port office.`;
+    if(c.kind==='levels'&&owned.some(i=>b.bonuses?.[i]))order+=' Temporary refits do not count.';
+    result=c.amount<0?`Paid ${money(Math.abs(cash))}`:`Received ${money(cash)}`;
+    if(cash!==bill)result+=` of ${money(Math.abs(bill))}`;
+    if(s.debt?.debtor===a)result+=` · ${money(s.debt.remaining)} due at draw`;
+    if(to.out)result+=' · Bankrupt';
+  }
+  const account=[salary?`Port salary ${signed(salary)}`:'',`Cash ${money(from.cash)} → ${money(to.cash)}`].filter(Boolean).join(' · ');
+  return {title:c.title,order,result,account,kind:c.kind==='cover'?'cover':c.amount<0?'charge':'award',
+    address:`To ${seat(a)} · ${rules.tiles[to.pos].name}`,serial:`Nº ${String(s.last_card+1).padStart(2,'0')} / Round ${s.round}`};
+}
+function pinDispatch(receipt){
+  let card=$('dispatchCard');
+  if(!card){
+    card=document.createElement('article');card.id='dispatchCard';
+    card.setAttribute('aria-labelledby','dispatchTitle');
+    card.innerHTML=`<div class="dispatchMast"><b>Harbor Dispatch</b><span id="dispatchSerial"></span>
+      <button type="button" id="dismissDispatch" aria-label="Dismiss dispatch on this device">Dismiss</button></div>
+      <div class="dispatchLetter"><svg class="dispatchPostage" viewBox="0 0 84 68" aria-hidden="true" fill="none" stroke="currentColor">
+        <path stroke-width="2" d="M3 3h78v62H3z"/><path d="M6 6h72v56H6zM9 49h66M9 52h66"/>
+        <circle cx="54" cy="21" r="7"/><path d="m51 11-2-4m8 4 2-4m4 8 6-4m-5 10 8-1m-15 9 2 4"/>
+        <path stroke-width="1.8" d="M12 41h48l-8 7H22zm24-29v25H18zm4 6 14 19H40z"/>
+        <path d="M13 44h43m-33-10 10-1m-8-2 8-1m-6-2 6-1m-3-2 3-1M10 55q5-2 10 0t10 0t10 0t10 0t10 0t13 0m-58 4q6-2 12 0t12 0t12 0t12 0"/>
+      </svg><p id="dispatchAddress"></p><h3 id="dispatchTitle"></h3><p id="dispatchOrder"></p></div>
+      <div class="dispatchReceipt"><strong id="dispatchResult"></strong><span id="dispatchAccount"></span></div>`;
+    $('stage').append(card);
+    $('dismissDispatch').onclick=()=>{
+      const focused=document.activeElement===$('dismissDispatch');
+      card.remove();
+      if(focused)document.querySelector('#actions button:not(:disabled), .switcher [aria-pressed=true]')?.focus({preventScroll:true});
+    };
+  }
+  card.dataset.ink=receipt.kind;
+  for(const key of ['serial','address','title','order','result','account']){
+    $(`dispatch${key[0].toUpperCase()+key.slice(1)}`).textContent=receipt[key];
+  }
+  return card;
+}
 function ledger(s){
   const actor=actingSeat(s);
   const rows=s.players.map((p,i)=>{
-    const diff=lastDeltas[i]||0;
-    return `<div class="account ${actor===i&&s.phase!=='over'?'acting':''}" style="--seat:${colors[i]}" aria-label="${seat(i)}: ${p.out?'bankrupt':money(p.cash)}${diff?', change '+signed(diff):''}"><span class="seatDisc">${i+1}</span><span class="seatName">${seat(i)}</span><b>${p.out?'Out':money(p.cash)}</b>${diff?`<em class="${diff>0?'credit':'debit'}">${signed(diff)}</em>`:''}</div>`;
+    const diff=lastDeltas[i]||0,t=rules.tiles[p.pos],owner=s.owners[p.pos];
+    const location=p.out?'Out of play':t.name,tenure=p.out?'':t.kind!=='deed'?'Port space':owner===null?'Unowned':`Deed: ${seat(owner)}`;
+    const berth=p.out?`<span class="shipLocation">${location}</span>`:`<button type="button" class="shipLocation" data-locate="${i}" aria-label="Locate ${seat(i)} at ${location}" title="Locate ${seat(i)} on the board">${location}</button>`;
+    return `<div class="account ${actor===i&&s.phase!=='over'?'acting':''}" style="--seat:${colors[i]}" aria-label="${seat(i)}: ${p.out?'bankrupt':money(p.cash)}, ${location}. ${tenure}${diff?', change '+signed(diff):''}"><span class="seatDisc">${i+1}</span><span class="seatName">${seat(i)}</span><b>${p.out?'Out':money(p.cash)}</b>${diff?`<em class="${diff>0?'credit':'debit'}">${signed(diff)}</em>`:''}${berth}<span class="portOwner">${tenure}</span></div>`;
   }).join('');
   $('stageLedger').innerHTML=rows;$('sheetLedger').innerHTML=rows;
+}
+function shipPiece(seatId,convoy){
+  if(convoy)return `<svg viewBox="0 0 17 20" aria-hidden="true"><path d="M1 1h15v12l-7 6-8-6z" fill="var(--seat)" stroke="#fbf4d8"/><text x="8.5" y="13.8" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-weight="800" font-size="14">${seatId+1}</text></svg>`;
+  return `<svg viewBox="0 0 36 24" aria-hidden="true"><path class="sail" d="M3 16 13 3v13zm12-12 8 12h-8z"/><path d="M1 17h33l-5 6H7z" fill="var(--seat)" stroke="#13272a"/><circle cx="25" cy="10" r="9" stroke="#fff4cc" stroke-width="1.6" fill="var(--seat)"/><text x="25" y="14.8" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-weight="800" font-size="14">${seatId+1}</text></svg>`;
 }
 function syncStage(s){
   ledger(s);maskVoyager();
   if($('stage').dataset.live)return;
   const tile=s.auction?.tile??s.players[s.turn].pos;
-  const context={roll:'Ready to sail',offer:'Deed for sale',guild:'Guild charter',works:'Harbor works',auction:'At auction',trade:'Contract offered',end:'Settlement',over:'Final accounts'};
+  const context={roll:'Ready to sail',offer:'Deed for sale',guild:'Guild charter',works:'Harbor works',auction:'At auction',trade:'Contract offered',debt:'Outstanding bill',end:'Settlement',over:'Final accounts'};
   plate(context[s.phase],s.phase==='over'?s.winners.map(seat).join(' & '):rules.tiles[tile].name,
     s.phase==='roll'?`${seat(s.turn)} to roll · ${rules.dice?.count??2} dice`:s.events.at(-1)||context[s.phase],
     icon(s.phase==='auction'?'gavel':s.phase==='over'?'final':'ship'),'ready');
@@ -119,16 +178,18 @@ function outcome(m,b,s){
   let sets=[];
   if(s.phase==='over'){
     tag='Final accounts';title=`${s.winners.map(seat).join(' & ')} ${s.winners.length>1?'tie':'wins'}`;
-    detail='Cash and deed values settled';prop='final';cue='final';kind='final';targets=[];
+    detail=s.players.filter(p=>!p.out).length===1?'Last solvent merchant':'Cash and printed deed values settled';prop='final';cue='final';kind='final';targets=[];
   }else if(action==='roll'){
     tag=`${who} rolled ${dieTotal}`;title=tile.name;prop='dice';
     if(tile.kind==='deed')detail=s.owners[pos]===null?`For sale · ${money(tile.price)}`:s.owners[pos]===a?'Your own deed':`Rent to ${seat(s.owners[pos])} · ${money(b.rents[pos])}`;
     else detail=({guild:'Guild charter · cash or cover',works:s.commissions?.length?'Public works · commission a deed or skip':'Public works · no eligible project',fee:`Harbor dues · ${money(tile.price??0)}`,start:'Port salary',rest:'Safe harbor',notice:'Port notice',
       exchange:s.auction?`Auction: ${rules.tiles[s.auction.tile].name}`:'All deeds owned'})[tile.kind];
-    if(s.last_card!=null){title=rules.cards[s.last_card].title;detail=`Dispatch at ${tile.name}`;kind='dispatch'}
-    if(delta)detail+=` · Net ${signed(delta)}`;
-    if(s.players[a].cover!==b.players[a].cover&&!s.players[a].out)detail+=` · Cover ${money(s.players[a].cover)}`;
-    if(s.players[a].out)detail+=' · Bankrupt';
+    if(s.last_card!=null){detail='Dispatch delivered';kind='dispatch'}
+    else{
+      if(delta)detail+=` · Net ${signed(delta)}`;
+      if(s.players[a].cover!==b.players[a].cover&&!s.players[a].out)detail+=` · Cover ${money(s.players[a].cover)}`;
+      if(s.players[a].out)detail+=' · Bankrupt';
+    }
   }else if(b.auction&&!s.auction){
     const winner=s.owners[lot];tag='Auction closed';title=winner==null?'No sale':`Sold · ${money(action==='bid'?m.amount:b.auction.high_bid)}`;
     detail=`${tile.name} · ${winner==null?'Still on the market':seat(winner)+' takes the deed'}`;kind='sold';prop='gavel';cue=winner==null?'noSale':'sold';
@@ -142,6 +203,11 @@ function outcome(m,b,s){
     const quote=b.sells.find(q=>q.tile===lot);
     tag='Sold to the bank';title=tile.name;
     detail=`Bank paid ${money(quote.price)} · ${who}: ${money(b.players[a].cash)} → ${money(s.players[a].cash)} · Back on the market`;prop='deed';cue='sale';
+  }else if(action==='salvage'){
+    const q=b.salvages.find(q=>q.tile===lot);targets=q.tiles;
+    tag='Improvements sold';title=tile.group;detail=`${money(q.price)} raised · ${s.debt?money(s.debt.remaining)+' still due':'Bill settled'}`;prop='deed';cue='sale';
+  }else if(action==='bankrupt'){
+    tag='Bankruptcy';title=`${who} is out`;detail='Remaining deeds and improvements returned to market.';prop='deed';cue='down';targets=[];
   }else if(action==='commission'){
     const quote=b.commissions.find(q=>q.tile===lot);
     tag='Works commissioned';title=tile.name;
@@ -220,7 +286,7 @@ function cast(fast){
       {transform:rotate(5,-3),offset:.85},{transform:rotate(0,0)}],{duration});
   });
 }
-function sail(move,b,s,fast){
+function sail(move,b,s,fast,dispatch){
   const start=b.players[move.actor].pos,end=s.players[move.actor].pos;
   const total=s.dice.reduce((x,y)=>x+y,0),delay=fast?85:1000,travel=fast?490:Math.min(1530,550+95*total);
   const dockAt=delay+travel,settle=fast?145:325;
@@ -267,7 +333,7 @@ function sail(move,b,s,fast){
   later(dockAt+settle,()=>{pawn.remove();releaseBerth()});
   impact($(`tile-${end}`),dockAt,'','dock');
   readThrough=performance.now()+dockAt+settle+30;
-  foley(fast?'dice':'cast');foley('depart',delay);foley('dock',dockAt);
+  foley(dispatch?'dispatch':fast?'dice':'cast');foley('depart',delay);foley('dock',dockAt);
 }
 function liveFeedback(move,before,after){
   // A quiet network handoff may arrive before the dock; the next meaningful action supersedes it.
@@ -277,17 +343,24 @@ function liveFeedback(move,before,after){
   lastDeltas=after.players.map((p,i)=>p.cash-before.players[i].cash);
   $('stage').toggleAttribute('data-set',!!event.sets.length);
   $('stage').dataset.live=move.action;plate(event.tag,event.title,event.detail,event.prop,event.kind);ledger(after);
+  // last_card survives non-roll commands, including end; never print from render,
+  // a state-only reconnect or historical replay. A final draw still has a receipt.
+  const card=move.action==='roll'&&after.last_card!=null?pinDispatch(dispatchReceipt(move.actor,before,after)):null;
   if(document.hidden||$('modal').open)return;
   const rolling=move.action==='roll'&&event.kind!=='final';
   if(effectivePace()==='reduced'||$('boardView').hidden||!$('stage').animate){
     if(rolling)followTile(after.players[move.actor].pos);
-    foley(rolling?'dock':event.cue);if(event.sets.length)foley('district',300);return;
+    foley(card?'dispatch':rolling?'dock':event.cue);if(event.sets.length)foley('district',300);return;
   }
   const prop=$('stageProp');
+  if(card){
+    animate(card,[{transform:'translateY(7px) rotate(-.65deg)'},{transform:'none'}],{duration:240,easing:'ease-out'});
+    if(accents)animate(card.querySelector('.dispatchPostage'),[{transform:'rotate(1deg) scale(1.09)'},{}],{duration:190,easing:'ease-out'});
+  }
   if(rolling){
-    const fast=effectivePace()==='fast';cast(fast);sail(move,before,after,fast);
+    const fast=effectivePace()==='fast';cast(fast);sail(move,before,after,fast,!!card);
   }else{
-    foley(event.cue);
+    if(card)foley('dispatch');foley(event.cue,card?300:0);
     const hammer=prop.querySelector('svg');
     const frames=['build','sold','bid','commission'].includes(event.kind)?
       [{transform:'rotate(-35deg) translateY(-14px)'},{transform:'rotate(9deg)',offset:.62},{transform:'none'}]:
@@ -300,6 +373,6 @@ function liveFeedback(move,before,after){
       event.sets.forEach(tiles=>tiles.slice(0,12).forEach((id,j)=>impact($(`tile-${id}`),430+j*55,j?'':'CHARTERED','set')));
     }
   }
-  animate(document.querySelector('.stageCopy'),[{transform:event.kind==='dispatch'?'rotateX(-65deg)':'translateY(8px)',opacity:.5},{transform:'none',opacity:1}],{duration:220});
+  if(!card)animate(document.querySelector('.stageCopy'),[{transform:'translateY(8px)',opacity:.5},{transform:'none',opacity:1}],{duration:220});
   $('stageLedger').querySelectorAll('em').forEach(el=>animate(el,[{transform:'translateY(9px) scale(.85)'},{transform:'translateY(-3px) scale(1.15)',offset:.6},{transform:'none'}],{duration:380}));
 }

@@ -25,12 +25,16 @@ function visits(n,turns,dice,once=false){
   }
   return byTurn[turns];
 }
+// A rolling planning window for indefinite games, not a game or simulation limit.
+function futureTurns(s,rules,seat=s.turn){
+  return rules.victory==='elimination'?18:rules.rounds-s.round+Number(seat>s.turn);
+}
 function traffic(k,s,rules,once=false){
   const n=rules.tiles.length;
   let total=0,miss=1;
   for(const [i,p] of s.players.entries()){
     if(i===s.turn||p.out)continue;
-    const rolls=rules.rounds-s.round+Number(i>s.turn);
+    const rolls=futureTurns(s,rules,i);
     const h=visits(n,rolls,rules.dice,once)[(k-p.pos+n)%n];
     total+=h;miss*=1-h;
   }
@@ -64,7 +68,7 @@ function value(s, rules, i, who) {
   const t = rules.tiles[i];
   const district = rules.tiles.flatMap((other, k) => other.group === t.group ? [k] : []);
   const others = district.filter(k => k !== i && s.owners[k] === who).length;
-  const remaining = (rules.rounds - s.round + 1) / rules.rounds;
+  const remaining = rules.victory==='elimination'?1:(rules.rounds - s.round + 1) / rules.rounds;
   return t.price + Math.round(t.rent * remaining * (others === district.length - 1 ? 4 : others + 0.4));
 }
 
@@ -77,13 +81,21 @@ export function botMove(s, rules) {
   const duelRival=s.players.length===2?s.players[1-actor]:null;
   const rentWeight=duelRival&&!duelRival.cover?2:1;
   const send = (action, extra = {}) => ({action, actor, ...extra});
+  if(s.phase==='debt'){
+    const need=s.debt.remaining;
+    // Cover with the smallest sufficient lot, or make the largest partial
+    // payment. Prefer shedding a level to a whole deed at an equal price.
+    const options=[...s.salvages.map(q=>({...q,action:'salvage'})),...s.sells.map(q=>({...q,action:'sell'}))];
+    options.sort((a,b)=>Math.min(b.price,need)-Math.min(a.price,need)||a.price-b.price);
+    return options.length?send(options[0].action,{tile:options[0].tile}):send('bankrupt');
+  }
   if(s.phase==='works'){
     const best=s.commissions.filter(q=>q.cost<=cash-reserve)
       .map(q=>({q,net:rentWeight*traffic(q.tile,s,rules,true)*q.gain-q.cost})).sort((a,b)=>b.net-a.net)[0];
     return best?.net>0?send('commission',{tile:best.q.tile}):send('skip');
   }
   if(s.phase==='guild'){
-    const p=s.players[actor],t=rules.tiles[p.pos],turns=rules.rounds-s.round;
+    const p=s.players[actor],t=rules.tiles[p.pos],turns=futureTurns(s,rules);
     const exposed=s.rents.filter((_,k)=>s.owners[k]!==null&&s.owners[k]!==actor);
     const benefit=exposed.reduce((sum,r)=>sum+Math.max(0,Math.min(t.cover_offer,r)-Math.min(p.cover,r)),0);
     return send(exposed.length && (1-(1-exposed.length/rules.tiles.length)**turns)*benefit/exposed.length>t.cash_offer?'insure':'grant');
@@ -106,7 +118,7 @@ export function botMove(s, rules) {
     const cost = t.take_cash + (t.take_deed === null ? 0 : value(s,rules,t.take_deed,actor));
     return send(benefit >= cost && cash - t.take_cash >= reserve ? 'accept' : 'reject');
   }
-  if(s.phase==='roll'){
+  if(s.phase==='roll' && !rules.liquidation?.deeds){
     const q=rescueSale(s,rules);
     if(q)return send('sell',{tile:q.tile});
   }

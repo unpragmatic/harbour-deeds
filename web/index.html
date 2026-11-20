@@ -2,9 +2,9 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#193e36"><title>Harbor Deeds | The game table</title><style>/*STYLE*/</style></head>
 <body>
 <header><div class="mast"><span class="seal" aria-hidden="true">⚓</span><strong>Harbor Deeds</strong></div><div class="headright"><span class="live">Local table</span><button id="soundBtn" aria-label="Sound effects" aria-pressed="false">♪ Off</button><button id="prefsBtn" aria-label="Display settings" title="Display settings">⚙<span> Display</span></button><button id="rulesBtn" aria-label="Rulebook">?</button><button id="setupBtn">New table</button></div></header>
-<main><section class="treasury" aria-label="All player balances"><strong>Table funds</strong><div id="stageLedger"></div></section>
+<main><section class="treasury" aria-label="All player balances and ship positions"><strong>Fleet<br>station</strong><div id="stageLedger"></div></section>
 <div class="layout"><section class="boardbox" id="boardView" aria-label="Game board"><div class="boardhead"><strong id="mapTitle">Inner Harbor</strong><small id="round"></small></div><div class="board" id="board">
-<div class="ocean"><div class="chart"><small class="atlasMark">PORT AUTHORITY · HYDROGRAPHIC SURVEY</small>
+<div class="ocean">__CHART__<div class="chart"><small class="atlasMark">PORT AUTHORITY · HYDROGRAPHIC SURVEY</small>
 <svg viewBox="0 0 260 100" class="art" role="img" aria-label="An engraved lighthouse overlooking a sailing ship">
 <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 <path d="M12 79q29 1 43-8t37-3l11-6 28 3 19 9 23 4m-145 5 35-2 22-4 30 1m-56-3 19-4 15 1m5-4 18 2 12 4m-27-12 5-44h14l5 46m-19-42 14 3m-15 10 16 4m-17 6 18 5m-18 7 19 5M99 19h23v-3H99zm4-4V8h16v7m-17-7 9-7 9 7zm8 1v6m4-6v6m-2 47v-6h4v7"/>
@@ -16,7 +16,7 @@
 <div class="stageCopy" role="status" aria-atomic="true"><div id="stageTag"></div><div id="stageTitle"></div><div id="stageDetail"></div></div>
 <div id="stageProp" aria-hidden="true"></div></div></section>
 <div id="mobileLadder"></div></div><div id="wake" aria-hidden="true"></div></div>
-<div class="boardfoot"><span>↻ &nbsp; Clockwise</span><span>⚑ Owner · ● Visitor</span></div></section>
+<div class="boardfoot"><span>↻ &nbsp; Clockwise</span><span>DEED # = owner &nbsp; · &nbsp; Numbered ship = current position</span></div></section>
 <aside><section class="panel desk" aria-label="Current decision"><div class="panelhead"><small id="phaseLabel">TURN DESK</small><span id="controlType"></span></div><div id="turn" aria-live="polite"></div><div id="actions"></div><section id="propertyDesk" aria-label="Manage board spaces" hidden></section></section></aside>
 <section class="instruments" aria-label="Table inspector">
 <nav class="switcher" aria-label="Game views"><button data-view="board" aria-keyshortcuts="B" title="Inspect a space (B)" aria-pressed="true">Board</button><button data-view="players" aria-keyshortcuts="F" title="Player holdings (F)" aria-pressed="false">Players</button><button data-view="activity" aria-keyshortcuts="L" title="Ship’s log (L)" aria-pressed="false">Activity</button></nav>

@@ -1,0 +1,54 @@
+.charter{margin:8px 0 12px;border:1px solid #84968e}.charter legend{font-weight:750}.charter .field[hidden]{display:none}.charter>label:not(.field){display:inline-flex;align-items:center;gap:4px;padding:4px 6px 6px 0}.charter p{margin:6px 0}.charter input[type=number]{width:6em}
+.soundings{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.ocean>.chart{border:1px solid #b1b99085;inset:8px;background:none}.ocean>.chart>.art{display:none}
+.ocean{background:#24464b}.boardfoot{color:#e2d9bf}.boardhead #round{letter-spacing:.04em}
+.treasury>strong{font:750 11px/1.2 system-ui;letter-spacing:.12em;color:#e3cb91;border-right:2px solid #6f705e}
+#sheetLedger :is(.shipLocation,.portOwner){display:none}
+#stageLedger .account{display:grid;grid-template: auto auto / 26px minmax(0,1fr) auto;align-content:center;align-items:center;column-gap:7px;row-gap:2px;box-shadow:inset 4px 0 var(--seat);padding:4px 10px 4px 12px}
+#stageLedger .account.acting{box-shadow:inset 4px 0 var(--seat),inset 0 -3px #ffd577}
+#stageLedger .seatDisc{grid-area:1/1;justify-self:start;width:24px;height:24px;font-size:15px}
+#stageLedger .seatName{grid-area:1/2;font-size:14px}#stageLedger .account b{grid-area:1/3;justify-self:end}
+#stageLedger .shipLocation{grid-area:2/1/3/3;color:#fff4d6;font:700 15px/1.15 Georgia,serif}
+#stageLedger button.shipLocation{min-width:0;min-height:0;justify-self:start;margin:0;padding:0;border:0;border-radius:0;text-align:left;background:none;text-decoration:underline dotted #b6b6a5;text-underline-offset:2px}
+#stageLedger .portOwner{grid-area:2/3;justify-self:end;color:#d4dfda;font:600 11px/1.15 system-ui}
+#stageLedger .account em{position:absolute;top:3px;right:80px;font-size:11px}
+.board .tile.hasOwner{padding-inline-start:15px!important}
+.board .tile.hasOwner .tileValue{white-space:nowrap;font-size:11px}
+.board .tile>.flag{position:absolute;inset:0 auto 0 0;margin:0;padding:2px 0;display:grid;place-items:center;writing-mode:vertical-rl;transform:rotate(180deg);width:13px;border-radius:0;color:white;background:var(--seat);font:800 9px/1 system-ui;letter-spacing:.06em;z-index:1}
+.board .tile.fleetHere{background-color:#fff0c1;box-shadow:inset 0 -3px #73551b}
+.board .tile .berth{display:flex;position:static;width:100%;align-items:center;justify-content:center;gap:0;line-height:1;height:22px;flex-shrink:0}
+.board .tile .berth .token,.board .tile .berth:has(.crew) .token{display:block;position:static;width:32px;max-width:100%;height:22px;min-width:0;flex:0 1 32px;border:0;border-radius:0;background:none;line-height:1}
+.board .token svg{display:block;width:100%;height:100%;overflow:visible}.board .token .sail{fill:#fff6cf;stroke:#293c3d;stroke-width:1.6}
+.board .berth:is([data-ships="3"],[data-ships="4"]) .token{flex-basis:23px}
+.board .berth:is([data-ships="3"],[data-ships="4"]) .token .sail{display:none}
+.board .berth:is([data-ships="3"],[data-ships="4"]) .token svg{overflow:hidden}
+.board.route .tile.hasOwner .station,.board.route .tile.fleetHere .station{display:none}
+.board .tile[data-plot=off]:disabled{background:#d9dcd4;box-shadow:none}.board .tile[data-plot=candidate]{background:#e5fff2}.board .tile[data-plot][aria-pressed=true]{background:#ffe5a0}
+.board .tile.fleetHere.located{outline:3px solid #276485;outline-offset:-3px}
+@media(min-width:801px){
+  body{grid-template-rows:36px minmax(0,1fr)}main{grid-template-rows:60px minmax(0,1fr)}
+  header{background:linear-gradient(#2c3b3b,#14232a);border-bottom:1px solid #b49b66}
+  .layout .boardbox{background:repeating-linear-gradient(2deg,#39322d 0 2px,#352f2a 3px 4px,#302c28 4px 7px);padding-inline:9px}
+  .board{border-color:#6d6651;outline-color:#b8a57a}.desk .panelhead,.sheetbar{border-bottom:1px solid #8e835f}
+  .layout .desk{border-left:3px ridge #8a8064;box-shadow:inset 0 0 0 1px #36464b}
+  .instruments{border-left:3px ridge #8a8064}.instruments .switcher{border-block:1px solid #9a8b64}
+  .instruments .switcher button[aria-pressed=true]{background:#34413e;border-color:#e4c487}
+  .instruments #inspector{background-color:#faf2da;background-image:repeating-linear-gradient(0deg,#ad9a7510 0 1px,transparent 1px 5px)}
+  #actions button,.plotFoot button{box-shadow:inset 0 1px #ffffff28,0 2px 0 #07141c}
+  .ocean #stage{width:min(86%,550px);border:3px double #c2ae7b;box-shadow:0 4px 8px #081c21aa;background:linear-gradient(110deg,#243d40,#172c34)}
+  .ocean #stage::before,.ocean #stage::after{content:"";position:absolute;inset:5px auto auto 5px;width:5px;height:5px;border-radius:50%;background:#c9b17a;box-shadow:1px 1px #08151c}
+  .ocean #stage::after{inset:auto 5px 5px auto}
+  .ocean .stageFace{grid-template-columns:108px minmax(0,1fr);gap:18px;padding:15px 20px}.ocean #stageProp{min-height:62px}
+  .ocean #stageProp>svg{width:63px;height:63px}.ocean #stageTitle{font-size:clamp(28px,3vw,44px)}
+}
+@media(min-width:1200px) and (min-height:720px){
+  .board[data-map=compact] .tile.hasOwner{padding:18px 4px 3px!important}
+  .board[data-map=compact] .tile>.flag{width:auto;height:17px;inset:0 auto auto 0;writing-mode:horizontal-tb;transform:none;padding:1px 9px;clip-path:polygon(0 0,100% 0,calc(100% - 5px) 50%,100% 100%,0 100%);font-size:11px}
+  .board[data-map=compact] .tile .berth{height:30px}
+  .board[data-map=compact] .tile .berth .token{width:45px;height:30px;flex-basis:45px}
+}
+@media(max-width:800px){
+  #stageLedger .account{grid-template:auto auto auto / 19px minmax(0,1fr);padding:3px 5px 4px 7px;column-gap:2px;row-gap:0}
+  #stageLedger .seatDisc{width:17px;height:17px;font-size:11px}#stageLedger .account b{grid-area:1/2;justify-self:start}
+  #stageLedger .shipLocation{grid-area:2/1/3/3;font:700 12px/1.1 Georgia,serif}
+  #stageLedger .portOwner{grid-area:3/1/4/3;justify-self:start;font-size:10px}
+}

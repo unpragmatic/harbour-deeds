@@ -1,0 +1,133 @@
+{
+  "observed": {
+    "read-dispatch": 0,
+    "read-dispatch-phone": 0,
+    "dismiss-dispatch": 1
+  },
+  "desktop": {
+    "firstVisibleMs": 146,
+    "nextRollReadyMs": 979,
+    "continuouslyObservedMs": 6016,
+    "frames": 358,
+    "misses": 0,
+    "animated": true,
+    "peak": 0.101,
+    "cardCues": 1,
+    "input": {
+      "click": 0,
+      "pointerdown": 0,
+      "keydown": 0,
+      "wheel": 0,
+      "touchstart": 0
+    },
+    "text": [
+      "Fogbound cargo",
+      "To Seat 1 · Bottle Post",
+      "Pay $55 at the port office.",
+      "Paid $55",
+      "Port salary +$240 · Cash $240 → $425"
+    ]
+  },
+  "phone": {
+    "firstVisibleMs": 13,
+    "nextRollReadyMs": 963,
+    "continuouslyObservedMs": 6017,
+    "frames": 362,
+    "misses": 0,
+    "animated": false,
+    "peak": 0,
+    "cardCues": 1,
+    "input": {
+      "click": 0,
+      "pointerdown": 0,
+      "keydown": 0,
+      "wheel": 0,
+      "touchstart": 0
+    },
+    "text": [
+      "Mutual aid charter",
+      "To Seat 1 · Bottle Post",
+      "Carry $65 against your next rent. Keep any higher cover.",
+      "$65 cover in force",
+      "Cash $850 → $850"
+    ]
+  },
+  "accounting": {
+    "owned-deeds": {
+      "phase": "end",
+      "title": "Warehouse dividend",
+      "order": "Collect $12 per owned deed × 1.",
+      "result": "Received $12",
+      "account": "Cash $745 → $757",
+      "kind": "award",
+      "address": "To Seat 1 · Cable Office",
+      "serial": "Nº 05 / Round 2"
+    },
+    "permanent-levels": {
+      "phase": "end",
+      "title": "Fire inspection",
+      "order": "Pay $15 per permanent level × 4.",
+      "result": "Paid $60",
+      "account": "Cash $224 → $164",
+      "kind": "charge",
+      "address": "To Seat 1 · Packet Boat",
+      "serial": "Nº 06 / Round 9"
+    },
+    "exclude-refit": {
+      "phase": "end",
+      "title": "Lantern festival",
+      "order": "Collect $20 per permanent level × 0. Temporary refits do not count.",
+      "result": "Received $0",
+      "account": "Cash $510 → $510",
+      "kind": "award",
+      "address": "To Seat 2 · Packet Boat",
+      "serial": "Nº 07 / Round 4"
+    },
+    "no-levels": {
+      "phase": "end",
+      "title": "Fire inspection",
+      "order": "Pay $15 per permanent level × 0.",
+      "result": "Paid $0",
+      "account": "Cash $850 → $850",
+      "kind": "charge",
+      "address": "To Seat 1 · Bottle Post",
+      "serial": "Nº 06 / Round 1"
+    },
+    "keep-higher-cover": {
+      "phase": "end",
+      "title": "Mutual aid charter",
+      "order": "Carry $65 against your next rent. Keep any higher cover.",
+      "result": "$100 cover retained",
+      "account": "Cash $652 → $652",
+      "kind": "cover",
+      "address": "To Seat 2 · Packet Boat",
+      "serial": "Nº 08 / Round 4"
+    },
+    "insufficient-cash": {
+      "phase": "over",
+      "title": "Fogbound cargo",
+      "order": "Pay $55 at the port office.",
+      "result": "Paid $20 of $55 · Bankrupt",
+      "account": "Cash $20 → $0",
+      "kind": "charge",
+      "address": "To Seat 1 · Bottle Post",
+      "serial": "Nº 03 / Round 1"
+    },
+    "partial-payment": {
+      "phase": "debt",
+      "title": "Fogbound cargo",
+      "order": "Pay $55 at the port office.",
+      "result": "Paid $46 of $55 · $9 due at draw",
+      "account": "Cash $46 → $0",
+      "kind": "charge",
+      "address": "To Seat 2 · Packet Boat",
+      "serial": "Nº 03 / Round 4"
+    }
+  },
+  "online": {
+    "guestHandoffMs": 940,
+    "privateDismissal": true,
+    "liveCuesPerDevice": 1,
+    "rejoinCues": 0
+  }
+}

@@ -2,7 +2,7 @@
   "identifiers": [
     ["1 · Destination", "Name stays legible at all times. A gold frame means inspected; the ship markers show actual occupants."],
     ["2 · Decision value", "Vacant deed: purchase price. Owned deed: current rent. Fee: amount owed. District color is a stripe, not another line of microtext."],
-    ["3 · Ownership and presence", "Flag with seat number: owner. Numbered discs: visiting merchants. Use a separate line when both occur."],
+    ["3 · Ownership versus presence","A permanent DEED number identifies the owner even when their ship is elsewhere. The numbered ship pieces below the price are the current visitors. Fleet station always names every ship’s berth, balance and who owns its space."],
     ["4 · Detail on demand", "Inspector and accessible label carry district, level, precise amounts and full effects. Never rely on color or sound alone."],
     ["Property map · eligibility and consequence", "A hollow diamond and signed quote mark each candidate; a check identifies the selected deed. Show affected district members separately from the clicked member. See the board-target-preview criterion in the interaction and scenario audit."]
   ],
@@ -15,6 +15,8 @@
     "withdraw":["Withdraw or expire","Bidder leaves the lot, or gavel closes with winner and actual price. No sale has a separate result.","down"],
     "build":["Develop property","Hammer strikes; every improved tile gets its level stamp, with cost and new rent or district scope on the table.","build"],
     "sell":["Sell to the bank","Review proceeds and rent surrendered before returning the deed to market.","coin"],
+    "salvage":["Sell improvements to cover debt","Remove the quoted levels, credit the original bill and show any debt or cash left.","sale"],
+    "bankrupt":["Declare bankruptcy","Confirm before returning all remaining deeds; remove the debtor’s ship from play.","down"],
     "commission":["Commission works","Stamp the property that receives the project; the ship stays at the works.","build"],
     "skip":["Decline works","Keep the cash instead of commissioning a project.","down"],
     "propose":["Send proposal","Hand off to recipient","paper"],
@@ -32,7 +34,8 @@
     ["Online setup","Host, join by code, copy invite, assign seats and launch. Guests cannot change the rules."],
     ["Network recovery","Pause on disconnect. Rehost, rejoin, cancel or forget; historical commands must remain silent."],
     ["Bidding","Check presets, exact entry, insufficient cash, timer pause/expiry and final sale."],
-    ["Rent / fee / card","Confirm the amount and card name without obstructing the next action."],
+    ["Rent / fee / card","A live dispatch pins the printed instruction and actual effect through the handoff. Distinguish the card from crossing salary, payments to creditors, and the total turn movement. Muted or reduced motion must not hide information."],
+    ["Victory and debt","Choose net worth at the round limit or last solvent merchant. During an unresolved bill, preview deed or level sales, or explicitly declare bankruptcy even when sale proceeds could cover the bill."],
     ["Guild / exchange / works","Distinguish the visiting ship from the deed under auction or receiving a project; make both sides of each offer explicit."],
     ["Local presentation","Open Display settings, choose the visual pace on this device only. Keep the operating system’s reduced-motion preference and bid clock independent of presentation."],
     ["Trading","Review both legs. Cancel without a success cue."],

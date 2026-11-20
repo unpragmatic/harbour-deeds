@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 const maps = {compact:JSON.parse($('config').textContent),outer:JSON.parse($('outer').textContent),grand:JSON.parse($('grand').textContent)};
-const currentEdition='dockworks-1',legacyMaps=JSON.parse($('legacyMaps').textContent);
+const currentEdition='charter-1',legacyMaps=JSON.parse($('legacyMaps').textContent);
 const DEFAULT_CLOCK=5;
 let rules=maps.compact, clockSeconds=DEFAULT_CLOCK;
 const colors = ['#9a321f','#006458','#76500b','#53468d'];
@@ -120,6 +120,14 @@ const controllers = {
         const entry=button('Manage deeds',()=>openPlots());entry.id='manageDeeds';entry.setAttribute('aria-keyshortcuts','I S');
         enablePlots(s,send,signal);
       }
+    }else if(s.phase==='debt'){
+      button('Review assets',()=>openPlots(),true).id='manageDeeds';enablePlots(s,send,signal);
+      button('Declare bankruptcy',()=>{
+        openDialog(`<h2>Leave the game bankrupt?</h2><p>${seat(actor)} still owes ${money(s.debt.remaining)} to ${debtCreditor(s)}. All remaining deeds and improvements return to the bank. This cannot be undone.</p><button id="keepPlaying" class="primary">Keep playing</button> <button id="surrender">Declare bankruptcy</button>`);
+        $('keepPlaying').focus();$('keepPlaying').onclick=()=>$('modal').close();
+        $('surrender').onclick=()=>{$('modal').close();send('bankrupt')};
+        signal.addEventListener('abort',()=>{if($('surrender')&&$('modal').open)$('modal').close()},{once:true});
+      });
     }else if(s.phase==='offer'){
       const cost=rules.tiles[s.players[actor].pos].price;
       button(`Buy · ${money(cost)}`,()=>send('buy'),true,cash<cost);
@@ -218,14 +226,15 @@ const summary=(deed,cash)=>[deed===null?'':rules.tiles[deed].name,cash?money(cas
 function facts(entries){
   return `<dl class="facts">${entries.map(([key,v])=>`<div><dt>${key}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
 }
+const debtCreditor=s=>s.debt.creditor===null?'the bank':seat(s.debt.creditor);
 function render() {
   const s = state, a = actingSeat(s), p = s.players[a], t = rules.tiles[s.auction?.tile??s.players[s.turn].pos];
-  const phaseNames={roll:'Helm',offer:'Land office',auction:'Auction floor',works:'Public works',guild:'Guild charter',trade:'Trade offer',end:s.last_card!=null?'Harbor dispatch':'Settlement',over:'Final accounts'};
+  const phaseNames={roll:'Helm',offer:'Land office',auction:'Auction floor',works:'Public works',guild:'Guild charter',trade:'Trade offer',debt:'Outstanding bill',end:s.last_card!=null?'Harbor dispatch':'Settlement',over:'Final accounts'};
   document.body.dataset.phase=s.phase;
   $('phaseLabel').textContent=phaseNames[s.phase].toUpperCase();
   $('controlType').textContent=s.phase==='over'?'TABLE CLOSED':`${seat(a)} · ${seats[a]==='bot'?'Bot':'Local'}`;
   $('chartStatus').textContent=s.phase==='roll'?`${seat(a)} at ${t.name}`:s.phase==='auction'?`${t.name} · Auction in progress`:s.phase==='trade'?'Private negotiation':s.phase==='over'?'Port closed':`${s.dice.join(' + ')} → ${t.name}`;
-  $('round').textContent = `ROUND ${String(s.round).padStart(2,'0')} / ${rules.rounds}`;
+  $('round').textContent = `ROUND ${String(s.round).padStart(2,'0')}${rules.victory==='elimination'?' · LAST SHIP STANDING':` / ${rules.rounds} · NET WORTH`}`;
   for (const [i,tile] of rules.tiles.entries()) {
     let b = $(`tile-${i}`);
     if (!b) {
@@ -246,12 +255,14 @@ function render() {
       $('board').append(b);
     }
     b.classList.toggle('landing',s.phase!=='over'&&i===s.players[s.turn].pos);
+    b.classList.remove('located');
     const here=s.players.flatMap((player,j)=>player.pos===i&&!player.out?[j]:[]);
     const owner=s.owners[i],value=owner!==null?`Rent ${money(s.rents[i])}`:tile.kind==='fee'?`−${money(tile.price)}`:tile.price?money(tile.price):({start:'Salary',notice:'Draw',guild:'Choose',exchange:'Auction',works:'Commission',rest:'Rest'})[tile.kind];
-    const flag=owner!==null?`<span class="flag" style="--seat:${colors[owner]}">⚑${owner+1}</span>`:'';
-    const markers=here.map(j=>`<span class="token${j===s.turn?' arrived':''}" style="background:${colors[j]}">${j+1}</span>`).join('')+(here.length>1?`<span class="crew">●×${here.length}</span>`:'');
+    const flag=owner!==null?`<span class="flag" style="--seat:${colors[owner]}" aria-hidden="true">DEED ${owner+1}</span>`:'';
+    const markers=here.map(j=>`<span class="token${j===s.turn?' arrived':''}" data-ship="${j}" style="--seat:${colors[j]}" aria-hidden="true">${shipPiece(j,here.length>2)}</span>`).join('');
+    b.classList.toggle('hasOwner',owner!==null);b.classList.toggle('fleetHere',here.length>0);
     b.style.setProperty('--fold-row',1+Math.floor(i/8));b.style.setProperty('--fold-col',Math.floor(i/8)%2?8-i%8:1+i%8);
-    b.innerHTML=`<span class="station" aria-hidden="true">${String(i).padStart(2,'0')} ${Math.floor(i/8)%2?'←':'→'}</span><strong>${tile.name}</strong><span class="tileValue">${value}</span>${flag||markers?`<span class="berth">${flag}${markers}</span>`:''}`;
+    b.innerHTML=`${flag}<span class="station" aria-hidden="true">${String(i).padStart(2,'0')} ${Math.floor(i/8)%2?'←':'→'}</span><strong>${tile.name}</strong><span class="tileValue">${value}</span>${markers?`<span class="berth" data-ships="${here.length}">${markers}</span>`:''}`;
     b.setAttribute('aria-label',[tile.name,tile.group||tile.kind,value,owner===null?'':`Owned by ${seat(owner)}, level ${s.levels[i]}`,here.length?'Occupied by '+here.map(seat).join(', '):'','Inspect space'].filter(Boolean).join('. '));
   }
   $('register').innerHTML=s.players.map((player,i)=>{
@@ -274,8 +285,8 @@ function render() {
   $('log').innerHTML=[...s.events].reverse().map(e=>`<li>${e}</li>`).join('');
   $('actions').replaceChildren();
   if(s.phase==='over'){
-    $('turn').innerHTML=`<h2>${s.winners.map(seat).join(' & ')} ${s.winners.length>1?'tie':'wins'}</h2><p>Cash plus the list value of all deeds.</p>${facts(s.players.map((player,i)=>[seat(i),player.out?'Bankrupt':money(player.cash+deeds(s,i).reduce((sum,k)=>sum+rules.tiles[k].price,0))]))}`;
-    const b=document.createElement('button'); b.className='primary';b.textContent=room?'Leave table':'Rematch';b.onclick=room?()=>endRoom('You left the table.'):()=>play([...seats],$('board').dataset.map,clockSeconds).catch(report);$('actions').append(b);
+    $('turn').innerHTML=`<h2>${s.winners.map(seat).join(' & ')} ${s.winners.length>1?'tie':'wins'}</h2><p>${s.players.filter(x=>!x.out).length===1?'Last solvent merchant.':`Final net worth after ${s.round} rounds: cash plus printed deed values.`}</p>${facts(s.players.map((player,i)=>[seat(i),player.out?'Bankrupt':money(player.cash+deeds(s,i).reduce((sum,k)=>sum+rules.tiles[k].price,0))]))}`;
+    const b=document.createElement('button'); b.className='primary';b.textContent=room?'Leave table':'Rematch';b.onclick=room?()=>endRoom('You left the table.'):()=>play([...seats],$('board').dataset.map,clockSeconds,rules.development.policy,charterOf(rules)).catch(report);$('actions').append(b);
     return;
   }
   let title, text, stats=[];
@@ -287,6 +298,9 @@ function render() {
   }else if(s.phase==='auction'){
     title='Raise or withdraw?';text=`${t.name} · ${s.auction.leader===null?'No bids yet':seat(s.auction.leader)+' leads'}`;
     stats=[['High bid',money(s.auction.high_bid)],['Your cash',money(p.cash)],['List / rent',`${money(t.price)} / ${money(t.rent)}`]];
+  }else if(s.phase==='debt'){
+    title='Raise cash or declare bankruptcy';text=`${seat(s.debt.debtor)} owes ${debtCreditor(s)}. Sales pay this bill first; you keep any surplus.`;
+    stats=[['Bill',money(s.debt.amount)],['Already paid',money(s.debt.paid)],['Still due',money(s.debt.remaining)]];
   }else if(s.phase==='works'){
     title='Refit or pass?';text=`${t.name} · Pay for a one-use rent bonus. No visitor, no payoff.`;
   }else if(s.phase==='guild'){
@@ -303,9 +317,15 @@ function render() {
   if(market)$('inspectQuote').onclick=()=>detail(at);
   if(seats[a]==='bot' || s.phase==='end') $('actions').innerHTML=`<small class="waiting">${s.phase==='end'?'Advancing to the next turn…':'Bot is considering the table…'}</small>`;
 }
-function initialize(types,map,seconds,seed,policy,edition=currentEdition) {
+function initialize(types,map,seconds,seed,policy,edition=currentEdition,charter) {
   const base=(edition==='launch'?legacyMaps:maps)[map];
   rules={...base,development:{...base.development,policy:policy??base.development.policy}};clockSeconds=seconds;
+  if(edition===currentEdition&&charter){
+    if(!validCharter(charter))throw Error('Invalid victory or liquidation settings');
+    rules={...rules,rounds:charter.rounds,victory:charter.victory,liquidation:{...rules.liquidation,deeds:charter.deeds,improvements:charter.improvements}};
+  }else if(edition!==currentEdition){
+    rules={...rules,victory:'net_worth',liquidation:{deeds:false,improvements:false,improvement_rate_pct:50}};
+  }
   resetStage();
   focusKey='';inspected=0;
   const [rows,cols]=boardSize();
@@ -321,9 +341,9 @@ function initialize(types,map,seconds,seed,policy,edition=currentEdition) {
   seats=types;
   state=command({action:'start',rules,seats:types.length,seed});
 }
-async function play(types,map='grand',seconds=DEFAULT_CLOCK,policy=rules.development.policy) {
+async function play(types,map='grand',seconds=DEFAULT_CLOCK,policy=rules.development.policy,charter) {
   session?.abort(); session=new AbortController(); const {signal}=session;
-  initialize(types,map,seconds,crypto.getRandomValues(new Uint32Array(1))[0],policy);
+  initialize(types,map,seconds,crypto.getRandomValues(new Uint32Array(1))[0],policy,currentEdition,charter);
   render();
   while(!signal.aborted) {
     if(state.phase==='over') return;
@@ -339,8 +359,28 @@ async function play(types,map='grand',seconds=DEFAULT_CLOCK,policy=rules.develop
   }
 }
 function report(err){$('actions').replaceChildren();$('turn').textContent=`Game unavailable: ${err.message}`;console.error(err)}
+const charterOf=r=>({victory:r.victory??'net_worth',rounds:r.rounds,deeds:r.liquidation?.deeds??false,improvements:r.liquidation?.improvements??false});
+const validCharter=c=>c&&['net_worth','elimination'].includes(c.victory)&&Number.isSafeInteger(c.rounds)&&c.rounds>=1&&c.rounds<=200&&typeof c.deeds==='boolean'&&typeof c.improvements==='boolean';
+function charterControls(initial,onChange=()=>{}){
+  const c={...initial};
+  const changed=()=>{
+    c.victory=$('victory').value;c.rounds=$('roundLimit').valueAsNumber;c.deeds=$('debtDeeds').checked;c.improvements=$('debtLevels').checked;
+    $('roundField').hidden=c.victory==='elimination';onChange({...c});
+  };
+  $('victory').value=c.victory;$('roundLimit').value=c.rounds;$('debtDeeds').checked=c.deeds;$('debtLevels').checked=c.improvements;
+  $('victory').onchange=changed;$('roundLimit').oninput=changed;$('debtDeeds').onchange=changed;$('debtLevels').onchange=changed;changed();
+  $('map').addEventListener('change',()=>{$('roundLimit').value=maps[$('map').value].rounds;changed()});
+  return ()=>{
+    if(c.victory==='elimination'&&!$('roundLimit').validity.valid){$('roundLimit').value=maps[$('map').value].rounds;changed()}
+    if(!validCharter(c)){$('roundLimit').reportValidity();return null}
+    return {...c};
+  };
+}
 function settings(){
-  return `<label class="field">Improvements<select id="policy">${[['even','Even building'],['free','Unrestricted'],['district','Whole district']].map(([v,n])=>`<option value="${v}" ${rules.development.policy===v?'selected':''}>${n}</option>`).join('')}</select></label>
+  return `<fieldset class="charter"><legend>Victory &amp; bankruptcy</legend><label class="field">Win by<select id="victory"><option value="net_worth">Net worth at round limit</option><option value="elimination">Last solvent merchant</option></select></label>
+    <label class="field" id="roundField">Round limit<input type="number" id="roundLimit" min="1" max="200" step="1" required></label>
+    <p>To cover a bill, allow the debtor to sell:</p><label><input id="debtDeeds" type="checkbox"> Undeveloped deeds</label><label><input id="debtLevels" type="checkbox"> Improvement levels</label></fieldset>
+    <label class="field">Improvements<select id="policy">${[['even','Even building'],['free','Unrestricted'],['district','Whole district']].map(([v,n])=>`<option value="${v}" ${rules.development.policy===v?'selected':''}>${n}</option>`).join('')}</select></label>
     <label class="field">Board<select id="map"><option value="grand">Grand Harbor · 40 spaces</option><option value="compact">Inner Harbor · 20 spaces</option><option value="outer">Outer Harbor · 28 spaces</option></select></label>
     <label class="field">Human bid clock<select id="clock"><option value="5" selected>5 seconds</option><option value="0">Untimed</option><option value="15">15 seconds</option><option value="30">30 seconds</option></select></label>`;
 }
@@ -356,6 +396,13 @@ function showView(name){
 }
 desktop.addEventListener('change',()=>showView(document.querySelector('[data-view][aria-pressed=true]').dataset.view));
 $('register').onclick=e=>{const b=e.target.closest('[data-deed]');if(b)detail(+b.dataset.deed)};
+$('stageLedger').onclick=e=>{
+  const b=e.target.closest('[data-locate]');if(!b)return;
+  const i=state.players[+b.dataset.locate].pos;
+  showView('board');followTile(i);
+  $('board').querySelector('.located')?.classList.remove('located');
+  $(`tile-${i}`).classList.add('located');
+};
 document.querySelector('.switcher').onclick=e=>{if(e.target.dataset.view)showView(e.target.dataset.view)};
 document.addEventListener('keydown',e=>{
   if($('modal').open||e.repeat||e.isComposing||e.altKey||e.ctrlKey||e.metaKey||e.target.matches('input,textarea,select,[contenteditable=true]'))return;
@@ -375,20 +422,22 @@ function setup(){
     <div class="modeChoices"><button id="solo"><b>Solo</b><span>You + two bots</span></button><button id="passPlay"><b>Pass &amp; play</b><span>Two on this device</span></button><button id="host"><b>Host online</b><span>Invite devices</span></button><button id="join"><b>Join online</b><span>Enter table code</span></button></div>
     ${savedTableButton()}<details id="advanced"><summary>Custom local table</summary>${settings()}${fields}<button id="start" class="primary">Start game</button></details>`);
   bindSavedTableButton();
-  const quick=types=>{$('modal').close();play(types,$('board').dataset.map,clockSeconds).catch(report)};
+  const quick=types=>{$('modal').close();play(types,$('board').dataset.map,clockSeconds,rules.development.policy,charterOf(rules)).catch(report)};
   $('solo').onclick=()=>quick(['human','bot','bot']);$('passPlay').onclick=()=>quick(['human','human']);
   $('host').onclick=hostRoom;$('join').onclick=()=>roomMenu(true);
   $('map').value=$('board').dataset.map;$('clock').value=String(clockSeconds);
+  const chosen=charterControls(charterOf(rules));
   $('start').onclick=()=>{
     const types=[0,1,2,3].map(i=>$(`seat-${i}`).value).filter(v=>v!=='off');
     const map=$('map').value,seconds=Number($('clock').value);
-    const policy=$('policy').value;$('modal').close();play(types,map,seconds,policy).catch(report);
+    const policy=$('policy').value,charter=chosen();if(!charter)return;
+    $('modal').close();play(types,map,seconds,policy,charter).catch(report);
   };
 }
 $('setupBtn').onclick=setup;
 $('close').onclick=()=>$('modal').close();
 $('modal').setAttribute('aria-label','Table information');
-$('rulesBtn').onclick=()=>openDialog(`<h2>The rulebook</h2><p>Start with ${money(rules.cash)}. Roll two dice to move clockwise. Passing Port Office pays ${money(rules.salary)}.</p><h3>Buy or auction</h3><p>Buy a vacant deed at list price or send it to auction. Everyone, including the landing player, may bid. Raise by at least ${money(rules.auction_increment)} or withdraw. The last bidder pays their bid. Without a bid, the deed stays vacant.</p><h3>Negotiate before rolling</h3><p>Once per turn, propose a deed sale or swap. Either side may add cash; the other merchant can accept or decline. Owning a full district doubles its rent.</p><h3>Settle accounts</h3><p>If you cannot pay rent or a bill, your remaining cash is paid and your deeds return to market. Be the last solvent merchant, or finish round ${rules.rounds} with the greatest cash plus deed value. Ties share the win.</p>`);
+$('rulesBtn').onclick=()=>openDialog(`<h2>The rulebook</h2><h3>How to win this table</h3><p>${rules.victory==='elimination'?'Be the last solvent merchant. There is no round limit.':`Have the most cash plus printed deed value after ${rules.rounds} rounds, or be the last solvent merchant. Equal net worth shares the win.`}</p><p>Start with ${money(rules.cash)}. Passing Port Office pays ${money(rules.salary)}. Paying a bill down to exactly $0 is safe.</p><h3>Debt &amp; bankruptcy</h3><p>${rules.liquidation?.deeds||rules.liquidation?.improvements?`Cash goes to the creditor first. To cover the shortfall you may sell ${[rules.liquidation.deeds?'undeveloped deeds':'',rules.liquidation.improvements?`improvement levels at ${rules.liquidation.improvement_rate_pct}% of their build cost`:'' ].filter(Boolean).join(' and ')}. You can instead declare bankruptcy even if a sale would save you. With no permitted assets left, bankruptcy is automatic.`:'Emergency sales are disabled. An unpaid bill eliminates the debtor and returns their deeds to the bank.'}</p><h3>Buy or auction</h3><p>Buy at list price or auction the deed to all players. Raise by at least ${money(rules.auction_increment)} or withdraw. No bids leaves the deed on the market.</p><h3>Negotiate before rolling</h3><p>Once per turn, propose a deed sale or swap. Either side may add cash; the other merchant can accept or decline.</p>`);
 try {
   initFeedback();
   $('rulesBtn').addEventListener('click',()=>{

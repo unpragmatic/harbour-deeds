@@ -1,0 +1,11 @@
+{
+  "observed": {
+    "rival-berth": 0,
+    "owner-away": 0,
+    "locate-ship": 1,
+    "configure-win": 2,
+    "pay-debt": 2,
+    "choose-bankruptcy": 2,
+    "strip-level": 2
+  }
+}

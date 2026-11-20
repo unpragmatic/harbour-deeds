@@ -1,8 +1,8 @@
 // Only a live human controller can open a preview. The quote and command key come from Rust.
 let plotAccess=null,plotDesk=null;
-const plotModes={build:'Improve',sell:'Sell',commission:'Refit'};
+const plotModes={build:'Improve',sell:'Sell',commission:'Refit',salvage:'Sell levels'};
 const plotMembers=q=>q.tiles??[q.tile];
-const plotQuotes=(s,mode)=>({build:s.builds,sell:s.sells,commission:s.commissions}[mode]??[]);
+const plotQuotes=(s,mode)=>({build:s.builds,sell:s.sells,commission:s.commissions,salvage:s.salvages}[mode]??[]);
 const plotQuote=(s,mode,i)=>plotQuotes(s,mode).find(q=>plotMembers(q).includes(i));
 function enablePlots(s,send,signal){
   const cells=rules.tiles.map((_,i)=>{
@@ -50,7 +50,7 @@ function openPlots(mode,i){
   if(!plotAccess)return;
   const {s}=plotAccess;
   const cash=s.players[s.turn].cash;
-  mode??=s.phase==='works'?'commission':s.builds.some(q=>q.cost<=cash)||!s.sells?.length?'build':'sell';
+  mode??=s.phase==='debt'?(s.sells.length?'sell':'salvage'):s.phase==='works'?'commission':s.builds.some(q=>q.cost<=cash)||!s.sells?.length?'build':'sell';
   const preferred=i??plotDesk?.i??inspected;
   const options=plotQuotes(s,mode);
   const q=plotQuote(s,mode,preferred)??options.find(x=>!(x.cost>cash))??options[0];
@@ -74,6 +74,14 @@ function stepPlot(dir,focus=false){
 function plotImpact(s,mode,i,q){
   const t=rules.tiles[i],cash=s.players[s.turn].cash;
   const group=rules.tiles.flatMap((x,k)=>x.kind==='deed'&&x.group===t.group?[k]:[]);
+  if(s.phase==='debt'){
+    const level=mode==='salvage',affected=level?q.tiles:[i],complete=group.every(k=>s.owners[k]===s.turn);
+    const payout=q.price,due=s.debt.remaining,surplus=cash+payout-due;
+    return {metrics:[['Proceeds',money(payout)],['Still due',money(Math.max(0,-surplus))],['Cash after',money(Math.max(0,surplus))]],
+      note:level?`Remove one level from ${affected.map(k=>rules.tiles[k].name).join(', ')}. ${t.name} rent: ${money(s.rents[i])} → ${money(lowerRent(s,i))}.`:`${t.name} returns to market; lose ${money(s.rents[i])} next rent.${complete?' Breaks the set.':''}`,
+      detail:`${money(Math.min(due,payout))} goes to ${debtCreditor(s)}. ${surplus>=0?'This clears the bill.':'More liquidation is needed.'}`,
+      scope:level?affected:complete?group:[i],button:`${level?'Sell level':'Sell deed'} · ${money(payout)}`};
+  }
   if(mode==='sell'){
     const complete=group.every(k=>s.owners[k]===s.turn);
     return {metrics:[['Bank pays','+'+money(q.price)],['Cash after',money(cash+q.price)],['Rent forfeited',money(s.rents[i])]],
@@ -93,13 +101,17 @@ function plotImpact(s,mode,i,q){
   const visits=range(gains.map(g=>g>0?Math.ceil(q.cost/g):Infinity),v=>Number.isFinite(v)?String(v):'∞');
   return {metrics:[['Build cost',money(q.cost)],['Cash after',after],['Rent / visit',`${money(current(i))} → ${money(next(i))}`]],
     note:`${affected.length>1?`All ${affected.length} deeds improve. `:''}+${range(gains,money)} per paying visit · ${visits} to recover cost. ${t.group} ${s.locked[i]?'stays locked':'locks'} against sale and trade.`,
-    detail:`Level ${s.levels[i]} → ${s.levels[i]+1}. Up to ${rolls} rival rolls left. No resale value.${s.bonuses?.[i]?' Permanent rents shown; the one-use refit remains.':''}`,scope:s.locked[i]?affected:group,button:`Build for ${money(q.cost)}`};
+    detail:`Level ${s.levels[i]} → ${s.levels[i]+1}. ${rules.victory==='elimination'?'No round limit.':`Up to ${rolls} rival rolls left.`} No final score premium.${s.bonuses?.[i]?' Permanent rents shown; the one-use refit remains.':''}`,scope:s.locked[i]?affected:group,button:`Build for ${money(q.cost)}`};
+}
+function lowerRent(s,k){
+  const lv=s.levels[k]-1,d=rules.development;
+  return Math.round(rules.tiles[k].rent*(lv?d.levels[lv-1].rent_pct:d.set_rent_pct)/100)+(s.bonuses?.[k]??0);
 }
 function districtPreview(s,mode,i,q,scope){
   if(scope.length<2)return '';
   return `<table class="plotScope"><caption>${rules.tiles[i].group} · rent you collect after confirming</caption><thead><tr><th>Space</th><th>Now</th><th>After</th></tr></thead><tbody>${scope.map(k=>{
     const t=rules.tiles[k],bonus=s.bonuses?.[k]??0,before=s.rents[k];
-    const after=mode==='sell'?(k===i?0:t.rent+bonus):q.tiles.includes(k)?Math.round(t.rent*rules.development.levels[s.levels[k]].rent_pct/100)+bonus:before;
+    const after=mode==='sell'?(k===i?0:t.rent+bonus):mode==='salvage'?lowerRent(s,k):q.tiles.includes(k)?Math.round(t.rent*rules.development.levels[s.levels[k]].rent_pct/100)+bonus:before;
     return `<tr><th>${t.name}</th><td>${money(before)}</td><td>${before===after?'Unchanged':money(after)}</td></tr>`;
   }).join('')}</tbody></table>`;
 }
@@ -117,7 +129,7 @@ function setPlot(i){
     if(impact?.scope.includes(k))b.dataset.scope=members.includes(k)?'target':'district';else delete b.dataset.scope;
     b.classList.toggle('selected',k===i);
     if(option)b.setAttribute('aria-pressed',String(k===i));else b.removeAttribute('aria-pressed');
-    const price=option?(mode==='sell'?'+'+money(option.price):'−'+money(option.cost)):'';
+    const price=option?(option.price!=null?'+'+money(option.price):'−'+money(option.cost)):'';
     b.querySelector('.tileValue').textContent=option?(short?'! ':'')+price:value;
     const action=option?`${plotModes[mode]} preview, ${price}${short?', not affordable':''}`:'Not a candidate';
     b.setAttribute('aria-label',`${label.replace(/\. Inspect space$/,'')}. ${action}.${b.dataset.scope==='district'?' District affected.':''}`);
@@ -126,9 +138,9 @@ function setPlot(i){
   const count=`${spaceCount} marked ${spaceCount===1?'space':'spaces'}`;
   const district=q?districtPreview(s,mode,i,q,impact.scope):'';
   const guide=$('plotGuide');guide.hidden=false;
-  guide.innerHTML=`<small>PROPERTY MAP</small><strong>${({build:'Improvements',sell:'Bank sales',commission:'Public works'})[mode]}</strong><span><b>◇</b> ${count} · ${mode==='sell'?'bank payout':'project cost'} on each tile</span><span><b>✓</b> Selected${options.some(x=>x.cost>cash)?' · ! Insufficient cash':''}. Select a tile to preview; no money moves.</span>${district}`;
+  guide.innerHTML=`<small>PROPERTY MAP</small><strong>${({build:'Improvements',sell:'Bank sales',commission:'Public works',salvage:'Remove improvements'})[mode]}</strong><span><b>◇</b> ${count} · ${['sell','salvage'].includes(mode)?'bank payout':'project cost'} on each tile</span><span><b>✓</b> Selected${options.some(x=>x.cost>cash)?' · ! Insufficient cash':''}. Select a tile to preview; no money moves.</span>${district}`;
   if(q)$('inspector').innerHTML=`<small class="plate">${rules.tiles[i].name} / ${rules.tiles[i].group}</small>${curve(i)}`;
-  const desk=$('propertyDesk'),modes=s.phase==='works'?['commission']:['build','sell'];
+  const desk=$('propertyDesk'),modes=s.phase==='debt'?['sell','salvage'].filter(m=>plotQuotes(s,m).length):s.phase==='works'?['commission']:['build','sell'];
   desk.innerHTML=`<div class="plotTools">${modes.map(m=>`<button data-mode="${m}" aria-pressed="${m===mode}">${plotModes[m]} <b>${plotQuotes(s,m).length}</b></button>`).join('')}<button id="plotCancel" aria-label="Close property desk">Cancel</button></div>
     <div role="status" aria-atomic="true" class="plotReadout"><small>${q?`${rules.tiles[i].group} · `:''}${count}</small><h2>${q?rules.tiles[i].name:`Nothing to ${plotModes[mode].toLowerCase()}`}</h2>
     ${q?facts(impact.metrics)+`<p>${impact.note}</p><p class="plotDetail">${impact.detail}</p>`:`<p>${mode==='build'?'Complete a district and meet its level rules before building.':'No owned deed is available for this action.'}</p>`}</div>

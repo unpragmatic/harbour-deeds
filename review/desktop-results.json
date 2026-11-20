@@ -77,8 +77,8 @@
     },
     "Inspector secondary text": {
       "fg": "rgb(67, 80, 94)",
-      "bg": "rgb(255, 248, 233)",
-      "ratio": 7.79,
+      "bg": "rgb(250, 242, 218)",
+      "ratio": 7.37,
       "minimum": 4.5
     },
     "Deed price": {
@@ -95,8 +95,8 @@
     },
     "Selected pane label": {
       "fg": "rgb(255, 223, 148)",
-      "bg": "rgb(45, 65, 84)",
-      "ratio": 8.13,
+      "bg": "rgb(52, 65, 62)",
+      "ratio": 8.23,
       "minimum": 4.5
     },
     "Bid clock text": {

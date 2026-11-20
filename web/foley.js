@@ -69,6 +69,9 @@ function foley(kind,delayMs=0){
     case 'gavel': knock(0,.35,240);knock(.125,.14,170);break;
     case 'build': knock(0,.25,290);knock(.11,.29,230);chime(.24,660);break;
     case 'paper': strike('noise',2500,0,0,.14,.27);knock(.12,.16,280);break;
+    case 'dispatch': // Envelope across the blotter, unfolding paper, then a short datestamp.
+      strike('noise',1450,0,0,.17,.22);strike('noise',3100,0,.105,.115,.15);
+      knock(.235,.21,218);strike('sine',506,462,.249,.075,.075);break;
     case 'coin': chime(0,1046);chime(.095,1396);break;
     case 'bid': knock(0,.16,520);chime(.038,740);break;
     case 'down': strike('triangle',350,145,0,.17,.22);break;

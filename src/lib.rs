@@ -10,6 +10,10 @@ struct Rules {
     development: Development,
     // Frozen tables without a bank-sale rule keep their original economy.
     bank_sale: Option<BankSale>,
+    #[serde(default)]
+    victory: Victory,
+    #[serde(default)]
+    liquidation: Liquidation,
     cash: i32,
     salary: i32,
     auction_increment: i32,
@@ -70,6 +74,29 @@ enum Basis {
     List,
     Acquisition,
 }
+#[derive(Deserialize, Default, PartialEq)]
+#[serde(rename_all = "snake_case")]
+enum Victory {
+    #[default]
+    NetWorth,
+    Elimination,
+}
+#[derive(Deserialize)]
+#[serde(default)]
+struct Liquidation {
+    deeds: bool,
+    improvements: bool,
+    improvement_rate_pct: i32,
+}
+impl Default for Liquidation {
+    fn default() -> Self {
+        Self {
+            deeds: false,
+            improvements: false,
+            improvement_rate_pct: 50,
+        }
+    }
+}
 #[derive(Serialize)]
 struct Quote {
     tile: usize,
@@ -81,6 +108,20 @@ struct Quote {
 struct Sale {
     tile: usize,
     price: i32,
+}
+#[derive(Serialize)]
+struct Salvage {
+    tile: usize,
+    tiles: Vec<usize>,
+    price: i32,
+}
+#[derive(Serialize)]
+struct Debt {
+    debtor: usize,
+    creditor: Option<usize>,
+    amount: i32,
+    paid: i32,
+    remaining: i32,
 }
 #[derive(Serialize)]
 struct Commission {
@@ -137,6 +178,7 @@ enum Phase {
     Offer,
     Auction,
     Trade,
+    Debt,
     End,
     Over,
 }
@@ -166,6 +208,8 @@ struct Game {
     locked: Vec<bool>,
     acquisition: Vec<Option<i32>>,
     sells: Vec<Sale>,
+    salvages: Vec<Salvage>,
+    debt: Option<Debt>,
     commissions: Vec<Commission>,
     rents: Vec<i32>,
     builds: Vec<Quote>,
@@ -191,6 +235,13 @@ struct Game {
 #[derive(Deserialize)]
 #[serde(tag = "action", rename_all = "lowercase")]
 enum Command {
+    Salvage {
+        actor: usize,
+        tile: usize,
+    },
+    Bankrupt {
+        actor: usize,
+    },
     Sell {
         actor: usize,
         tile: usize,
@@ -265,6 +316,7 @@ impl Game {
             || rules.cash <= 0
             || rules.salary < 0
             || rules.auction_increment <= 0
+            || !(0..=100).contains(&rules.liquidation.improvement_rate_pct)
             || rules
                 .bank_sale
                 .as_ref()
@@ -323,6 +375,8 @@ impl Game {
             locked: vec![false; rules.tiles.len()],
             acquisition: vec![None; rules.tiles.len()],
             sells: vec![],
+            salvages: vec![],
+            debt: None,
             commissions: vec![],
             rents: vec![],
             builds: vec![],
@@ -365,11 +419,46 @@ impl Game {
         self.levels[i] = 0;
         self.bonuses[i] = 0;
     }
+    fn sale_price(&self, i: usize) -> Option<i32> {
+        let sale = self.rules.bank_sale.as_ref()?;
+        let basis = match sale.basis {
+            Basis::List => self.rules.tiles[i].price,
+            Basis::Acquisition => self.acquisition[i]?,
+        };
+        Some(percent(basis, sale.rate_pct) as i32)
+    }
+    fn build_cost(&self, tiles: &[usize], tier: usize) -> i32 {
+        let rate = self.rules.development.levels[tier].cost_pct;
+        tiles
+            .iter()
+            .map(|&k| percent(self.rules.tiles[k].price, rate) as i32)
+            .sum()
+    }
+    fn salvage_price(&self, tiles: &[usize], tier: usize) -> i32 {
+        percent(
+            self.build_cost(tiles, tier),
+            self.rules.liquidation.improvement_rate_pct,
+        ) as i32
+    }
+    // Even a zero-price removal may unlock a deed or an earlier, valuable tier.
+    fn can_unlock_value(&self, group: &[usize]) -> bool {
+        if self.rules.liquidation.deeds && group.iter().any(|&k| self.sale_price(k) > Some(0)) {
+            return true;
+        }
+        if self.rules.development.policy == Policy::District {
+            (0..self.levels[group[0]]).any(|l| self.salvage_price(group, l) > 0)
+        } else {
+            group
+                .iter()
+                .any(|&k| (0..self.levels[k]).any(|l| self.salvage_price(&[k], l) > 0))
+        }
+    }
     fn refresh(&mut self) {
         let d = &self.rules.development;
         self.builds.clear();
         self.commissions.clear();
         self.sells.clear();
+        self.salvages.clear();
         self.locked.fill(false);
         self.rents = vec![0; self.owners.len()];
         for (i, t) in self
@@ -388,16 +477,14 @@ impl Game {
             self.rents[i] += self.bonuses[i];
             if owner == self.turn {
                 let player = &self.players[owner];
-                if self.phase == Phase::Roll && !self.locked[i] {
-                    if let Some(sale) = &self.rules.bank_sale {
-                        let basis = match sale.basis {
-                            Basis::List => t.price,
-                            Basis::Acquisition => {
-                                self.acquisition[i].expect("bank receipt for owned deed")
-                            }
-                        };
-                        let price = percent(basis, sale.rate_pct) as i32;
-                        if player.cash.checked_add(price).is_some() {
+                if !self.locked[i]
+                    && (self.phase == Phase::Roll
+                        || self.phase == Phase::Debt && self.rules.liquidation.deeds)
+                {
+                    if let Some(price) = self.sale_price(i) {
+                        if player.cash.checked_add(price).is_some()
+                            && (self.phase == Phase::Roll || price > 0)
+                        {
                             self.sells.push(Sale { tile: i, price });
                         }
                     }
@@ -428,7 +515,26 @@ impl Game {
                 },
             ) as i32
                 + self.bonuses[i];
-            if owner != self.turn || self.phase != Phase::Roll || lv >= d.levels.len() {
+            if owner != self.turn {
+                continue;
+            }
+            if self.phase == Phase::Debt && self.rules.liquidation.improvements && lv > 0 {
+                let tiles = match d.policy {
+                    Policy::District if i == group[0] => group.clone(),
+                    Policy::District => continue,
+                    Policy::Even if group.iter().any(|&k| self.levels[k] > lv) => continue,
+                    _ => vec![i],
+                };
+                let price = self.salvage_price(&tiles, lv - 1);
+                if price > 0 || self.can_unlock_value(&group) {
+                    self.salvages.push(Salvage {
+                        tile: i,
+                        tiles,
+                        price,
+                    });
+                }
+            }
+            if self.phase != Phase::Roll || lv >= d.levels.len() {
                 continue;
             }
             let tiles = match d.policy {
@@ -437,11 +543,10 @@ impl Game {
                 Policy::Even if group.iter().any(|&k| self.levels[k] < lv) => continue,
                 _ => vec![i],
             };
-            let mut cost = 0;
+            let cost = self.build_cost(&tiles, lv);
             let mut gain = 0i64;
             for &k in &tiles {
                 let x = &self.rules.tiles[k];
-                cost += percent(x.price, d.levels[lv].cost_pct) as i32;
                 let prior = if lv == 0 {
                     d.set_rent_pct
                 } else {
@@ -465,27 +570,78 @@ impl Game {
         self.seed = x;
         x as usize % n
     }
-    fn charge(&mut self, amount: i32, to: Option<usize>) {
+    fn remit(&mut self, amount: i32, to: Option<usize>) -> i32 {
         let a = self.turn;
         let paid = amount.min(self.players[a].cash);
         self.players[a].cash -= paid;
         if let Some(b) = to {
             self.players[b].cash += paid
         }
+        paid
+    }
+    fn charge(&mut self, amount: i32, creditor: Option<usize>) {
+        let paid = self.remit(amount, creditor);
         if paid < amount {
-            self.players[a].out = true;
-            for i in 0..self.owners.len() {
-                if self.owners[i] == Some(a) {
-                    self.return_to_bank(i);
-                }
+            if self.rules.liquidation.deeds || self.rules.liquidation.improvements {
+                self.debt = Some(Debt {
+                    debtor: self.turn,
+                    creditor,
+                    amount,
+                    paid,
+                    remaining: amount - paid,
+                });
+                self.phase = Phase::Debt;
+            } else {
+                self.bankrupt();
             }
+        }
+    }
+    // A landing is never run again. Only the outstanding part of its net bill
+    // is remitted; excess sale proceeds stay with the solvent debtor.
+    fn collect_proceeds(&mut self) {
+        if let Some(mut debt) = self.debt.take() {
+            let paid = self.remit(debt.remaining, debt.creditor);
+            debt.paid += paid;
+            debt.remaining -= paid;
+            if debt.remaining == 0 {
+                self.phase = Phase::End;
+                self.events.push(format!(
+                    "Seat {} settled the ${} bill.",
+                    self.turn + 1,
+                    debt.amount
+                ));
+            } else {
+                self.debt = Some(debt);
+            }
+        }
+    }
+    fn bankrupt(&mut self) {
+        let a = self.turn;
+        // All cash (including any earlier asset-sale proceeds) has already
+        // been remitted. Declaring forfeits the assets, not a second payment.
+        if let Some(debt) = self.debt.take() {
             self.events.push(format!(
-                "Seat {} is bankrupt. Their deeds return to market.",
-                a + 1
+                "Seat {} paid ${} of ${}; ${} remains unpaid.",
+                a + 1,
+                debt.paid,
+                debt.amount,
+                debt.remaining
             ));
-            if self.players.iter().filter(|p| !p.out).count() == 1 {
-                self.finish()
+        }
+        self.players[a].out = true;
+        for i in 0..self.owners.len() {
+            if self.owners[i] == Some(a) {
+                self.return_to_bank(i);
             }
+        }
+        self.events.push(format!(
+            "Seat {} is bankrupt. Their deeds return to market.",
+            a + 1
+        ));
+        if self.players.iter().filter(|p| !p.out).count() == 1 {
+            self.finish()
+        } else {
+            self.phase = Phase::End;
         }
     }
     fn finish(&mut self) {
@@ -498,14 +654,14 @@ impl Game {
             .map(|(i, p)| {
                 (
                     i,
-                    p.cash
+                    i64::from(p.cash)
                         + self
                             .owners
                             .iter()
                             .enumerate()
                             .filter(|(_, o)| **o == Some(i))
-                            .map(|(n, _)| self.rules.tiles[n].price)
-                            .sum::<i32>(),
+                            .map(|(n, _)| i64::from(self.rules.tiles[n].price))
+                            .sum::<i64>(),
                 )
             })
             .collect();
@@ -594,7 +750,9 @@ impl Game {
         let a = self.turn;
         let i = self.players[a].pos;
         match cmd {
-            Command::Sell { actor, tile } if actor == a && self.phase == Phase::Roll => {
+            Command::Sell { actor, tile }
+                if actor == a && matches!(self.phase, Phase::Roll | Phase::Debt) =>
+            {
                 let price = self
                     .sells
                     .iter()
@@ -607,6 +765,28 @@ impl Game {
                     "Seat {} sold deed {tile:02} to the bank for ${price}.",
                     a + 1
                 ));
+                self.collect_proceeds();
+            }
+            Command::Salvage { actor, tile } if actor == a && self.phase == Phase::Debt => {
+                let q = self
+                    .salvages
+                    .iter()
+                    .find(|q| q.tile == tile)
+                    .ok_or("This improvement cannot be salvaged")?;
+                for &k in &q.tiles {
+                    self.levels[k] -= 1;
+                }
+                self.players[a].cash += q.price;
+                self.events.push(format!(
+                    "Seat {} salvaged a level in {} for ${}.",
+                    a + 1,
+                    self.rules.tiles[tile].group,
+                    q.price
+                ));
+                self.collect_proceeds();
+            }
+            Command::Bankrupt { actor } if actor == a && self.phase == Phase::Debt => {
+                self.bankrupt();
             }
             Command::Commission { actor, tile } if actor == a && self.phase == Phase::Works => {
                 let q = self
@@ -876,7 +1056,9 @@ impl Game {
                 loop {
                     self.turn = (self.turn + 1) % self.players.len();
                     if self.turn == 0 {
-                        if self.round == self.rules.rounds {
+                        if self.rules.victory == Victory::NetWorth
+                            && self.round == self.rules.rounds
+                        {
                             self.finish();
                             self.refresh();
                             return Ok(());
@@ -892,6 +1074,10 @@ impl Game {
             _ => return Err("Action is not legal for this seat and phase"),
         }
         self.refresh();
+        if self.phase == Phase::Debt && self.sells.is_empty() && self.salvages.is_empty() {
+            self.bankrupt();
+            self.refresh();
+        }
         Ok(())
     }
 }
@@ -944,6 +1130,9 @@ mod tests {
     fn reject_invalid_designer_terms_before_play() {
         for rate in [-1, 101] {
             let mut r = config();
+            r["liquidation"]["improvement_rate_pct"] = rate.into();
+            assert!(Game::new(serde_json::from_value(r).unwrap(), 2, 1).is_err());
+            let mut r = config();
             r["bank_sale"]["rate_pct"] = rate.into();
             assert!(Game::new(serde_json::from_value(r).unwrap(), 2, 1).is_err());
         }
@@ -981,5 +1170,118 @@ mod tests {
             (None, None, 0)
         );
         assert_eq!(g.rents[1], 20);
+    }
+
+    // Give the active seat a complete pair. Rolls, builds, salvage and payments
+    // below still go through their real validators and refresh transitions.
+    fn district_game(policy: &str, rate: i32, deeds: bool, fee: i32) -> Game {
+        let mut r = config();
+        r["salary"] = 0.into();
+        r["development"] = serde_json::json!({"policy":policy,"set_rent_pct":200,
+            "levels":[{"cost_pct":10,"rent_pct":300},{"cost_pct":33,"rent_pct":410}]});
+        r["liquidation"] =
+            serde_json::json!({"deeds":deeds,"improvements":true,"improvement_rate_pct":rate});
+        r["tiles"] = serde_json::json!([{"kind":"start"},{"kind":"deed","group":"A","price":101,"rent":20},
+            {"kind":"fee","price":fee},{"kind":"deed","group":"A","price":119,"rent":25}]);
+        let mut g = Game::new(serde_json::from_value(r).unwrap(), 3, 10).unwrap();
+        for i in [1, 3] {
+            g.owners[i] = Some(0);
+            // Deliberately unlike list; build/salvage use the actual build cost.
+            g.acquisition[i] = Some(10);
+        }
+        g.refresh();
+        g
+    }
+
+    #[test]
+    fn even_and_free_salvage_top_tiers_without_repricing_a_level_based_bill() {
+        for policy in ["even", "free"] {
+            let mut g = district_game(policy, 50, false, 0);
+            g.rules.tiles[2].kind = Kind::Notice;
+            g.rules.cards.push(Card {
+                title: "Inspection".into(),
+                kind: CardKind::Levels,
+                amount: -8,
+            });
+            for tile in [1, 3, 1] {
+                g.apply(Command::Build { actor: 0, tile }).unwrap();
+            }
+            assert_eq!(g.players[0].cash, 750 - 10 - 12 - 33);
+            assert!(g.apply(Command::Build { actor: 0, tile: 1 }).is_err());
+            assert!(g.apply(Command::Salvage { actor: 0, tile: 1 }).is_err());
+            g.players[0].cash = 7;
+            g.apply(Command::Roll { actor: 0 }).unwrap();
+            assert_eq!(g.debt.as_ref().unwrap().amount, 24); // 3 levels x $8
+            assert_eq!(g.debt.as_ref().unwrap().remaining, 17);
+            assert!(g.sells.is_empty() && g.builds.is_empty());
+            assert_eq!(g.salvages[0].price, 17); // half of the rounded $33 tier
+            if policy == "even" {
+                assert!(g.apply(Command::Salvage { actor: 0, tile: 3 }).is_err());
+            } else {
+                g.apply(Command::Salvage { actor: 0, tile: 3 }).unwrap();
+                let d = g.debt.as_ref().unwrap();
+                assert_eq!((d.amount, d.paid, d.remaining), (24, 13, 11));
+                assert_eq!(g.levels[3], 0);
+            }
+            g.apply(Command::Salvage { actor: 0, tile: 1 }).unwrap();
+            assert!(g.phase == Phase::End && g.debt.is_none() && !g.players[0].out);
+            assert_eq!(g.players[0].cash, if policy == "even" { 0 } else { 6 });
+            assert_eq!((g.levels[1], g.rents[1]), (1, 60));
+            assert!(g.locked[3] && g.salvages.is_empty());
+            assert_eq!(
+                g.events
+                    .iter()
+                    .filter(|e| e.starts_with("Inspection:"))
+                    .count(),
+                1
+            );
+        }
+    }
+
+    #[test]
+    fn district_salvage_reverses_one_whole_build_then_unlocks_deeds() {
+        let mut g = district_game("district", 50, true, 105);
+        for _ in 0..2 {
+            g.apply(Command::Build { actor: 0, tile: 1 }).unwrap();
+        }
+        assert_eq!(g.players[0].cash, 750 - 22 - 72);
+        g.players[0].cash = 7;
+        g.apply(Command::Roll { actor: 0 }).unwrap();
+        for price in [36, 11] {
+            assert!(g.apply(Command::Sell { actor: 0, tile: 3 }).is_err());
+            assert!(g.apply(Command::Salvage { actor: 0, tile: 3 }).is_err());
+            assert_eq!(g.salvages.len(), 1);
+            assert_eq!(g.salvages[0].tiles, [1, 3]);
+            assert_eq!(g.salvages[0].price, price);
+            g.apply(Command::Salvage { actor: 0, tile: 1 }).unwrap();
+            assert_eq!(g.levels[1], g.levels[3]);
+        }
+        assert_eq!(g.debt.as_ref().unwrap().remaining, 51);
+        assert!(g.salvages.is_empty() && !g.locked[3]);
+        assert_eq!(g.rents[3], 50); // intact set, no levels
+        g.apply(Command::Sell { actor: 0, tile: 1 }).unwrap();
+        assert_eq!(g.rents[3], 25); // set broken
+        assert_eq!(g.players[0].cash, 0);
+        assert!(g.phase == Phase::End && !g.players[0].out);
+    }
+
+    #[test]
+    fn zero_price_removal_can_unlock_a_sale_but_cannot_stall_bankruptcy() {
+        for deeds in [true, false] {
+            let mut g = district_game("even", 0, deeds, 160);
+            g.apply(Command::Build { actor: 0, tile: 3 }).unwrap();
+            g.players[0].cash = 1;
+            g.apply(Command::Roll { actor: 0 }).unwrap();
+            if deeds {
+                assert_eq!(g.salvages[0].price, 0);
+                g.apply(Command::Salvage { actor: 0, tile: 3 }).unwrap();
+                for tile in [3, 1] {
+                    g.apply(Command::Sell { actor: 0, tile }).unwrap();
+                }
+                assert!(g.events.iter().any(|e| e.contains("$48 remains unpaid")));
+            }
+            assert!(g.players[0].out && g.debt.is_none() && g.phase == Phase::End);
+            assert!(g.owners.iter().all(Option::is_none));
+        }
     }
 }

@@ -130,7 +130,7 @@ function tradeTable(){
 }
 const swap={to:1,give_deed:2,take_deed:7,give_cash:5,take_cash:0};
 test('frozen rules without bank_sale replay original charges, rent and level cap',()=>{
-  const {bank_sale,...legacy}=board;
+  const {bank_sale,victory,liquidation,...legacy}=board;
   const levels=[10,15,20].map((c,i)=>({cost_pct:c,rent_pct:[300,380,440][i]}));
   for(const policy of ['even','free','district']){
     const tiles=board.tiles.map((_,k)=>[2,7].includes(k)?{kind:'deed',group:'pair',price:100,rent:25}:{kind:'rest'});
@@ -307,5 +307,97 @@ test('complete seeded bot matches with multiple seat counts',()=>{
     assert.equal(s.phase,'over');
     const scores=s.players.map((p,i)=>p.out?-Infinity:p.cash+s.owners.reduce((v,o,k)=>v+(o===i?rules.tiles[k].price:0),0));
     assert.deepEqual(s.winners,scores.flatMap((v,i)=>v===Math.max(...scores)?[i]:[]));
+  }
+});
+
+test('only net worth closes on the final round, with cash + list ties; paying to zero is solvent',()=>{
+  const tiles=Array(16).fill({kind:'rest'});
+  tiles[2]={kind:'deed',price:100,rent:10};tiles[7]={kind:'deed',price:50,rent:10};
+  const {victory,liquidation,...old}=board;
+  for(const config of [old,board,{...board,victory:'elimination'}]){
+    start(2,{...config,rounds:1,tiles});
+    for(const a of [0,1]){act('roll',a);act('buy',a);var s=act('end',a)}
+    assert.deepEqual(s.players.map(p=>[p.cash,p.out]),[[0,false],[50,false]]);
+    if(config.victory==='elimination'){
+      assert.equal(s.phase,'roll');assert.equal(s.round,2);assert.deepEqual(s.winners,[]);
+    }else{
+      assert.equal(s.phase,'over');assert.deepEqual(s.winners,[0,1]);
+    }
+  }
+  for(const config of [old,board,{...board,liquidation:{deeds:true}}]){
+    const fees=tiles.slice();fees[2]={kind:'fee',price:100};fees[7]={kind:'fee',price:101};
+    start(2,{...config,tiles:fees});
+    const zero=act('roll',0);assert.equal(zero.players[0].cash,0);assert.equal(zero.players[0].out,false);
+    act('end',0);const over=act('roll',1);
+    assert.equal(over.phase,'over');assert.deepEqual(over.winners,[0]);assert.equal(over.debt,null);
+  }
+  illegal('start',undefined,{rules:{...board,victory:'time'},seats:2,seed:10});
+});
+
+// Fully replayable: two purchases, landlord's one-use refit, renter's guild
+// policy, then a short rent past the nominal round count of the elimination game.
+function rentDebt(options={}){
+  const tiles=Array(16).fill({kind:'rest'});
+  for(const [i,price,rent] of [[2,90,10],[7,60,70],[9,70,10]])
+    tiles[i]={kind:'deed',price,rent,group:String(i)};
+  tiles[1]={kind:'guild',cash_offer:10,cover_offer:25};tiles[15]=works;
+  const config={...board,cash:200,rounds:1,victory:'elimination',liquidation:{deeds:true},
+    development:{...board.development,set_rent_pct:100},tiles,...options};
+  let s=start(2,config);
+  for(const [a,action] of [[0,'buy'],[1,'buy'],[0,'buy'],[1,'commission'],[0,'insure'],
+    [1],[0],[1],[0],[1,'grant']]){
+    s=act('roll',a);
+    if(action==='commission'&&config.victory==='elimination'){
+      assert.ok(s.round>config.rounds);
+      assert.ok(['skip','commission'].includes(botMove(s,config).action));
+    }
+    if(action)s=act(action,a,action==='commission'?{tile:7}:{});
+    s=act('end',a);
+  }
+  const creditorCash=s.players[1].cash;
+  return {s:act('roll',0),creditorCash,config};
+}
+
+test('debtor chooses sales or declaration; rent, refit and guild settle once to the original landlord',()=>{
+  for(const decision of ['pay','declare','declare-after-sale']){
+    const {s:opened,creditorCash,config}=rentDebt();let s=opened;
+    assert.equal(s.phase,'debt');
+    assert.deepEqual(s.debt,{debtor:0,creditor:1,amount:115,paid:40,remaining:75});
+    assert.equal(s.players[1].cash,creditorCash+25+40);
+    assert.deepEqual(s.sells,[{tile:2,price:45},{tile:9,price:35}]);
+    assert.equal(s.players[0].cover,0);assert.equal(s.bonuses[7],0);
+    for(const action of ['end','roll','buy','build','salvage'])illegal(action,0,{tile:2});
+    illegal('bankrupt',1);illegal('sell',1,{tile:7});
+    if(decision!=='declare'){
+      s=act('sell',0,{tile:9});
+      assert.deepEqual(s.debt,{debtor:0,creditor:1,amount:115,paid:75,remaining:40});
+      assert.equal(s.players[1].cash,creditorCash+100);illegal('sell',0,{tile:9});
+    }
+    if(decision==='pay'){
+      const move=botMove(s,config);assert.deepEqual(move,{action:'sell',actor:0,tile:2});
+      s=send(move);
+      assert.equal(s.phase,'end');assert.equal(s.players[0].cash,5);assert.equal(s.players[0].out,false);
+      assert.equal(s.players[1].cash,creditorCash+140);
+    }else{
+      s=act('bankrupt',0);
+      assert.equal(s.phase,'over');assert.deepEqual(s.winners,[1]);assert.equal(s.players[0].out,true);
+      assert.equal(s.players[1].cash,creditorCash+(decision==='declare'?65:100));
+    }
+    assert.equal(s.debt,null);
+    assert.equal(s.owners[2],null);assert.equal(s.acquisition[9],null);
+    assert.equal(s.events.filter(e=>e.startsWith('Guild paid')).length,1);
+    assert.equal(s.events.filter(e=>e.startsWith('Refit on')).length,1);
+    illegal('bankrupt',0);illegal('salvage',0,{tile:2});
+  }
+});
+
+test('only enabled, legal sales delay insolvency; frozen and explicitly disabled rules agree',()=>{
+  const old=rentDebt({victory:undefined,rounds:10,liquidation:undefined});
+  for(const options of [{deeds:false,improvements:false},{improvements:true},{deeds:true}]){
+    const missingBank=options.deeds?{bank_sale:undefined}:{};
+    const {s,creditorCash}=rentDebt({victory:'net_worth',rounds:10,liquidation:options,...missingBank});
+    assert.equal(s.phase,'over');assert.deepEqual(s.winners,[1]);assert.equal(s.debt,null);
+    assert.equal(s.players[1].cash,creditorCash+65);
+    if(!options.improvements&&!options.deeds)assert.deepEqual(s,old.s);
   }
 });

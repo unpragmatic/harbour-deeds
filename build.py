@@ -21,7 +21,8 @@ expanded["development"] = dict(base["development"], levels=[
     zip(base["development"]["levels"], outer["development_cost_pct"], strict=True)
 ])
 for marker, value in {
-    "/*STYLE*/": "\n".join((web / name).read_text() for name in ["style.css","table.css","workspace.css"]),
+    "/*STYLE*/": "\n".join((web / name).read_text() for name in ["style.css","table.css","workspace.css","bridge.css","dispatch.css"]),
+    "__CHART__": (web/"harbor-chart.svg").read_text(),
     "__RULES__": (web / "rules.json").read_text(),
     "__OUTER__": json.dumps(expanded),
     "__LEGACY__": (web/"edition-launch.json").read_text(),

@@ -16,6 +16,9 @@ sections = {
         ('desktop-auction','After: timed auction','Bidder, next commitment, time remaining and all cash balances remain visible. Inspecting the lot is not a bid.'),
     ],
     'Read the table in play': [
+        ('fleet-stations','Whose ship, and whose deed?','Seat 2 is on Silk Arcade; its DEED 1 ribbon belongs to Seat 1, whose ship is at Port Office. Fleet station spells out both locations without hovering. Select a berth name to locate that ship without changing the chosen deed.'),
+        ('dispatch-desktop','A card, not a transient notification','Fogbound cargo charged Seat 1 $55. Passing Port Office also earned $240: the letter separates both amounts, even when Seat 2 is already up. It stays until replaced or dismissed on this device.'),
+        ('dispatch-phone','Read through a handoff','Muted and reduced motion: the card still names its recipient and displays $65 of cover, with the next player’s roll available underneath.'),
         ('display-settings','Presentation, per device','Standard separates the cast, the journey and the landing. Fast shortens presentation; reduced motion uses the same final result. This is not a host rule and does not change the five-second clock.'),
         ('motion-roll','Roll and travel','The dice settle to the Rust result and the numbered ship moves clockwise. The arrival and price remain readable after motion stops.'),
         ('motion-sale','Hammer falls','The lot is stamped and the ledger debits the winner, not the player who withdrew. The next decision is available separately.'),
@@ -30,7 +33,7 @@ sections = {
         ('recovery', 'Interrupted table', 'Distinguish a paused network table from a completed match. A returning device needs a recovery action, not a fresh local game.'),
     ],
     'Navigate and inspect': [
-        ('crowded-space', 'Four visitors on an improved deed', 'Density fixture: the name and current rent remain visible above the owner flag and four seat discs. The inspector carries the development ladder instead of squeezing it onto the tile.'),
+        ('crowded-space', 'Four visitors on an improved deed', 'Density fixture: the deed ribbon is separate from all four numbered ship markers. Nobody disappears into an anonymous count; the inspector keeps the development ladder.'),
         ('grand-harbor', 'Grand Harbor circuit', 'The 40-space circuit distinguishes guilds, dispatches, exchanges, fees and deed districts. Inspect a space to read its effect.'),
         ('grand-chart', 'Pocket chart', 'On small devices the larger circuit becomes a scrollable route in movement order. The desktop perimeter is not shrunk to fit a phone.'),
         ('workbench', 'Purchase decision on desktop', 'The landed deed opens beside the board. See every tier’s construction cost, total rent and incremental payoff before buying or opening an auction.'),
@@ -49,6 +52,7 @@ sections = {
         ('trade', 'Trade response', 'Label each side from the recipient’s perspective. Accept and decline remain side by side.'),
     ],
     'Settle the game': [
+        ('debt-sale','Sell a deed or declare bankruptcy','The debtor owes $40. Selling Copper Yard nets $70: the creditor gets $40 and the debtor keeps $30. Declaring bankruptcy instead requires explicit confirmation.'),
         ('settled', 'Settlement', 'Show the outcome, then advance automatically. The activity feed preserves results that go by too quickly.'),
         ('final', 'Final accounts', 'Show the winner and each seat’s net worth. Local rematch reuses settings instead of reopening setup.'),
     ],
@@ -91,14 +95,15 @@ out.append('<p><b>What still takes effort:</b> from Manage deeds, choosing a non
            'Changing a map and one controller costs seven clicks from play; these infrequent controls stay out of quick start. '
            'Leaving an active network match costs three: the last confirmation protects every device. '
            'Budgets measure effort, not enjoyment; they are not human playtest results.</p>')
-obs=results['observed']|json.loads((root/'property-results.json').read_text())['observed']
+obs=results['observed'].copy()
+for file in ('property-results.json','charter-results.json','dispatch-results.json'):
+    obs.update(json.loads((root/file).read_text())['observed'])
 criteria=survey['criteria']
 for c in criteria:
     if not set(c['scenarios'])<=obs.keys():raise ValueError(f'Missing measured paths for {c["id"]}')
-    out.append(f'<h3 id="{escape(c["id"])}">{escape(c["name"])}</h3><p>{escape(c["rule"])}</p>'
-               '<p>The previous sale and build sheets met the default two-click budget but hid the board and required a dropdown for another deed. '
-               'The browser review now compares marked tiles with live Rust quotes, checks preview-only clicks against the command count, '
-               'and exercises a whole-district sibling, an unaffordable project and narrow screens. <a href="#group6">Inspect the captures.</a></p>')
+    out.append(f'<h3 id="{escape(c["id"])}">{escape(c["name"])}</h3><p>{escape(c["rule"])}</p>')
+    if c['id']=='read-through-handoff':out.append('<p>After the handoff, the browser checks the text line boxes for six seconds on each device. Reading costs zero input. <a href="#group1">See the letters.</a></p>')
+    if c['id']=='board-target-preview':out.append('<p>The previous sale and build sheets met the two-click budget but hid the board. The current review also compares marked tiles with the engine’s quotes. <a href="#group6">Inspect the captures.</a></p>')
 def criterion_for(scope,key):
     return ', '.join(c['name'] for c in criteria if key in c[scope]) or '—'
 out.append(f'<h3>Scenario inventory</h3><p>{len(obs)} paths below counted trusted pointer events in Chromium. Other counts are traced through the shipped controls. '

@@ -1,6 +1,8 @@
 {
   "dice":{"count":2,"sides":6},
   "cash": 750, "salary": 120, "auction_increment": 10, "rounds": 18, "notices": [90,-60,120,-80,50],
+  "victory": "net_worth",
+  "liquidation": {"deeds": false, "improvements": false, "improvement_rate_pct": 50},
   "bank_sale": {"rate_pct": 50, "basis": "list"},
   "development": {
     "policy": "even", "set_rent_pct": 200,

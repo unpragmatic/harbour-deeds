@@ -76,6 +76,7 @@ with contextlib.ExitStack() as stack:
         expect(p.locator('#roomInfo')).to_contain_text(f'Device {i}', timeout=18000)
     capture(guest.locator('#modal'), 'guest-wait.png')
     host.select_option('#map', 'outer')
+    host.select_option('#victory','elimination');host.check('#debtDeeds');host.check('#debtLevels')
     host.select_option('#owner0', '1')
     host.select_option('#owner1', '1')
     host.select_option('#owner2', '2')
@@ -84,6 +85,7 @@ with contextlib.ExitStack() as stack:
     host.click('#launch')
     for p in pages:
         expect(p.locator('.tile')).to_have_count(28)
+        expect(p.locator('#round')).to_contain_text('LAST SHIP STANDING')
     expect(host.get_by_role('button', name='Roll dice')).to_have_count(0)
     expect(guest.get_by_role('button', name='Roll dice')).to_be_visible()
     for n in range(16):
@@ -131,6 +133,7 @@ with contextlib.ExitStack() as stack:
     expect(guest.get_by_role('button', name='Withdraw')).to_be_visible()
     expect(other.get_by_role('button', name='Withdraw')).to_have_count(0)
     expect(host.locator('#stage[data-live]')).to_have_count(0)
+    expect(guest.locator('#round')).to_contain_text('LAST SHIP STANDING')
     # Guest modal does not pause the host clock; bidding authority transfers to device 2.
     guest.click('#rulesBtn')
     expect(other.get_by_role('button', name='Bid $20', exact=True)).to_be_visible(timeout=8000)

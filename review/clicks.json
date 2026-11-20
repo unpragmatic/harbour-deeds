@@ -1,10 +1,17 @@
 {
   "method": "Desktop mouse paths from the named starting state. Count each deliberate activation, including opening a native select and picking an option (2). Typing, waiting, automatic resolution, and site navigation are excluded and named where relevant. Reading at 0 means no click, hover, scroll, or keyboard shortcut. Decisions with several participants count each participant’s clicks. Repeated bids and edits add their own costs. Budgets are ceilings, not an instruction to remove safeguards.",
   "criteria": [
+    {"id":"read-through-handoff","name":"An automatic event must outlive the handoff","rule":"A seated player must be able to read a card's title, recipient, instruction and applied effect with no acknowledgement, click, hover or scroll after the next turn is ready. Test the bill separately from salary, on both desktop and muted reduced-motion phone. The receipt must not delay the next command or any peer’s clock.","interactions":["cardRead","cardDismiss"],"scenarios":["read-dispatch","read-dispatch-phone","dismiss-dispatch"]},
+    {"id":"fleet-location","name":"Position is not ownership","rule":"At rest, distinguish the owner of the occupied deed, the visiting ship and the owner's actual location without navigating, scrolling, hovering or relying on color. Test a visitor on a rival deed when the owner is somewhere else, plus several ships sharing a berth.","interactions":["positions","titleHolder"],"scenarios":["rival-berth","owner-away"]},
     {"id":"board-target-preview","name":"Board target and consequence visibility","rule":"For any direct property action, keep the board usable. Mark every quoted space on its actual tile with a non-color cue and cost or payout; distinguish unaffordable and affected spaces. Selecting a different tile takes one activation, updates the named outcome and cash after without opening a sheet, and does not change game state. Confirm separately or cancel without spending. Review default and nondefault targets, district scope and the folded phone board; a low click count alone does not pass.","interactions":["improve","project","build","sellSheet","saleSelect","saleMode","plotRead","sell","worksQuote","commission","keepDeed","hold"],"scenarios":["build-from-board","sell-from-board","build-other","sale-other","district-member","switch-use","works-project","hold","cancel-sale","liquidate"]}
   ],
   "interactions": {
     "Read and navigate": [
+      ["cardRead","Live dispatch and the next turn","Read the printed instruction, recipient, resolved amount and resulting balance or cover",0],
+      ["cardDismiss","Printed dispatch visible","Dismiss this device's last card without advancing the game",1],
+      ["positions","Fleet station during play","Read each ship's current named berth",0],
+      ["titleHolder","A rival is on an owned deed","Distinguish its owner and visiting ships by labels and shapes",0],
+      ["locate","Fleet station","Bring that ship into view without changing the selected deed, auction or turn",1],
       ["funds","Any live table view or game sheet","Read every seat’s cash or Out status",0],
       ["turn","Table, outside a sheet","Read actor, phase and available commands",0],
       ["result","Board after an accepted move","Read last outcome and changed cash",0],
@@ -28,6 +35,9 @@
       ["economics","An improved deed is selected","Read owner, current rent, level and district constraints",0]
     ],
     "Set up local play": [
+      ["victory","Custom local settings or host lobby","Choose net worth or elimination",2],
+      ["rounds","Net worth settings","Focus round limit and replace number",1],
+      ["debtPolicy","Victory settings","Allow or disallow one class of emergency sales",1],
       ["start","Fresh browser without saved network table","Start default solo game automatically",0],
       ["setup","Live local game","Open New table",1],
       ["solo","New table chooser","Replace with quick solo game",1],
@@ -57,6 +67,11 @@
       ["rematch","Local results","Rematch with same settings",1]
     ],
     "Trade and develop": [
+      ["debtRead","Unpaid bill with a legal sale","Read creditor, paid and still owed",0],
+      ["debtAssets","Outstanding bill","Preview an eligible deed or highest improvement level",1],
+      ["salvage","Selected salvage quote","Sell the quoted improvement levels",1],
+      ["surrender","Outstanding bill","Request bankruptcy even if a sale could cover the bill",1],
+      ["bankrupt","Bankruptcy confirmation","Confirm permanent elimination",1],
       ["trade","Eligible pre-roll decision","Draft a prefilled offer (T)",1],
       ["partner","Trade composer","Select a different partner; terms reset",2],
       ["tradeDeed","Trade composer","Change either deed select",2],
@@ -102,6 +117,16 @@
     ]
   },
   "scenarios": [
+    ["read-dispatch","Automatic handoff on desktop after a card and salary","Distinguish the card's payment from the turn's net cash movement","cardRead",0],
+    ["read-dispatch-phone","Next player ready on a muted reduced-motion phone","Read who gained what rent cover after the handoff","cardRead",0],
+    ["dismiss-dispatch","Pinned dispatch at the table","Put away this device's card without changing the turn","cardDismiss",1],
+    ["rival-berth","Rival has landed on an owned deed","Read the visitor and the deed owner without input","titleHolder",0],
+    ["owner-away","The deed owner is at a different space","Locate the owner's ship without leaving the turn","positions",0],
+    ["locate-ship","Phone on Activity or a folded board","Center the owner's actual board space","locate",1],
+    ["pay-debt","Emergency sale would cover the unpaid bill","Preview the deed and sell it to pay the creditor","debtRead debtAssets sell",2],
+    ["strip-level","Outstanding bill with permitted improvements","Choose the default level sale and pay toward the bill","debtRead debtAssets salvage",2],
+    ["choose-bankruptcy","Outstanding bill with an available rescue sale","Decline the rescue and confirm bankruptcy instead","surrender bankrupt",2],
+    ["configure-win","Custom local settings with net worth selected","Set a round limit and launch","rounds launchLocal",2],
     ["cash-board","Board · four seats","Compare all balances","funds",0],
     ["cash-log","Activity selected","Compare all balances without leaving the log","funds",0],
     ["cash-fleet","Players selected","Compare all balances without scanning holdings","funds",0],

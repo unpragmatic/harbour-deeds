@@ -17,7 +17,7 @@ with sync_playwright() as pw:
     page=browser.new_page(reduced_motion='reduce')
     page.route('http://review.test/',lambda route: route.fulfill(body=html,content_type='text/html'))
     page.goto('http://review.test/')
-    target=page.get_by_role('button',name='Glass Strand',exact=False)
+    target=page.locator('#board').get_by_role('button',name='Glass Strand',exact=False)
     target.locator('.flag').wait_for()
     for w,h in [(1440,1000),(1200,941),(1280,900),(1101,741),(1366,768),(1024,680),(801,610),(390,844),(320,680)]:
         page.set_viewport_size({'width':w,'height':h})

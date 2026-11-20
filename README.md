@@ -21,7 +21,7 @@ node --test tests/engine.mjs
 
 Each seat selects a controller implementing `(snapshot, abortSignal) => Promise<command>`. The host routes the decision to the turn owner, current auction bidder, or trade recipient. All commands go to the same WASM handler.
 
-**Across devices:** Choose **New table → Host online**. Copy the six-character code; guests enter it under **New table → Join online**. The host chooses the board, bid clock and seat assignments. A single device may operate several seats.
+**Across devices:** Choose **New table → Host online**. Copy the six-character code; guests enter it under **New table → Join online**. The host chooses the victory and bankruptcy rules, board, bid clock and seat assignments. A single device may operate several seats.
 
 **Recover a network match:** Reopen the site in the same browser profile. The original host chooses **Rehost table** to restore the same code and match; guests choose **Rejoin table** to reclaim their seats. Both actions are also accessible under **New table**. The match and auction clock pause until assigned devices reconnect. Confirming **Leave table** ends the match; a reload does not. Recovery stores one in-progress table per browser and site, not a cloud backup. Clearing site data or losing the original host profile prevents rehosting; another device cannot take over as host.
 
@@ -67,7 +67,11 @@ Owning every deed in a district unlocks pre-roll improvements. Choose even build
 | Auction | Current bidder raises by at least the increment or withdraws | Next bidder, sale to high bidder, or unsold |
 | Settlement | No confirmation needed; rent, fees, movement and sales are logged | Next seat or final accounts |
 
-Complete districts double base rent and unlock improvements. Cash also matters: winning a bid can leave too little to pay the next bill. The boards have fixed round limits.
+**Victory is a Rust game parameter.** `victory: "net_worth"` (default) ranks solvent players by cash plus printed deed values after `rounds`; exact ties share the win. `"elimination"` ignores the round limit and plays until one merchant is solvent. A sole survivor wins early in either mode. A solvent table in elimination mode is not guaranteed to finish: bound the *runner*, not the engine, when simulating.
+
+**Emergency sales are separate from routine pre-roll sales.** The designer rules `liquidation.deeds` and `liquidation.improvements` default to false. Enable either in custom local setup or the host lobby. On an unpaid bill, cash is paid first. Sale proceeds go to the original creditor until the bill clears; any surplus stays with the debtor. While a sale is available, the debtor may instead **declare bankruptcy**, even if they could afford a rescue. Exactly $0 after payment is solvent. A level pays `improvement_rate_pct` of its rounded construction price (50% by default); even building removes highest levels first and whole-district building removes one tier together. Improvement value does not count in the final net-worth score.
+
+Fleet station permanently names each ship's berth and the owner of the occupied space; selecting a berth name locates it without committing a move. A card stays on the chart until locally dismissed or replaced. `review/charter.py` exercises victory, debt and rival occupancy; `review/dispatch.py --online` measures card readability across the local and network handoffs. Both feed the illustrated inventory.
 
 `bank_sale.rate_pct` and `bank_sale.basis` are designer rules, not local display settings. Shipped sales pay **50% of printed list**: paying $60 at auction for a $200 deed and selling it back for $100 is intentional. The alternative basis tracks the original price paid to the bank across player trades. Permanent development locks a district against both sale and trade. Dock Works and Rigging Works instead offer a one-use bonus on the next rival rent: no complete district required, no permanent rent increase, no recovery if no rival visits. See the [economics report](https://unpragmatic.github.io/harbour-deeds/development.html) for the assumptions behind the permanent curve.
 
