@@ -51,11 +51,25 @@ function wait(ms,signal) {
     signal.addEventListener('abort',()=>{clearTimeout(t);resolve()},{once:true});
   });
 }
-// Measure active time, not interval ticks. A blocked event loop must not grant a late bid.
+function makeBidMeter(prefix,totalMs) {
+  const element=document.createElement('div');element.className='bidClock';
+  const label=document.createElement('span');label.setAttribute('role','timer');
+  const bar=document.createElement('progress');bar.max=totalMs;bar.value=totalMs;
+  bar.setAttribute('aria-label','Bid time remaining');
+  element.append(label,bar);
+  function update(ms,paused=false){
+    bar.value=Math.max(0,Math.min(ms,totalMs));
+    const seconds=Math.ceil(bar.value/1000);
+    label.textContent=`${paused?'Paused':prefix} · ${seconds}s remaining`;
+    bar.setAttribute('aria-valuetext',`${seconds} seconds remaining`);
+    element.classList.toggle('urgent',!paused&&bar.value<=2000);
+  }
+  update(totalMs);
+  return {element,update};
+}
 function bidClock(seconds,signal,onExpiry) {
-  const display=document.createElement('span');
-  display.className='bidClock'; display.setAttribute('role','timer');
-  $('actions').prepend(display);
+  const meter=makeBidMeter('Bid clock',seconds*1000);
+  $('actions').prepend(meter.element);
   let left=seconds*1000, since=null, expired=false;
   const remaining=()=>left-(since===null?0:performance.now()-since);
   function update(){
@@ -65,7 +79,7 @@ function bidClock(seconds,signal,onExpiry) {
     }else if(since===null){since=performance.now()}
     const ms=remaining();
     if(ms<=0){expired=true;onExpiry();return}
-    display.textContent=`${since===null?'Paused':'Bid clock'} · ${Math.ceil(ms/1000)}s · withdraws at zero`;
+    meter.update(ms,since===null);
   }
   const timer=setInterval(update,100);
   document.addEventListener('visibilitychange',update,{signal});
@@ -142,7 +156,7 @@ function detail(i) {
     notice:'Draw a port notice for a cash award or unexpected bill.',
     rest:'A safe harbor. No payment is due here.'
   };
-  openDialog(`<h2>${t.name}</h2><p>${info[t.kind]}</p>${t.kind==='deed'?`<small>${owner===null?'ON THE MARKET':'OWNED BY '+seat(owner).toUpperCase()}</small>`:''}`);
+  openDialog(`<h2>${t.name}</h2>${t.kind==='deed'?`<p>${t.group} · ${owner===null?'On the market':`Owned by ${seat(owner)}`}</p>${facts([['List price',money(t.price)],['Base rent',money(t.rent)],['Full district',money(t.rent*2)]])}`:`<p>${info[t.kind]}</p>`}`);
 }
 const summary=(deed,cash)=>[deed===null?'':rules.tiles[deed].name,cash?money(cash):''].filter(Boolean).join(' + ');
 function facts(entries){
@@ -194,7 +208,7 @@ function render() {
     title=t.name;text=`${t.group} · Buy at list price or open the deed to every bidder.`;
     stats=[['List price',money(t.price)],['Base rent',money(t.rent)],['After buying',p.cash>=t.price?money(p.cash-t.price):'Short of cash']];
   }else if(s.phase==='auction'){
-    title=t.name;text=`${seat(a)} bids next. ${s.auction.leader===null?'No bids yet.':seat(s.auction.leader)+' leads.'} Withdraw to leave this auction.`;
+    title=t.name;text=`${s.auction.leader===null?'No bids yet.':seat(s.auction.leader)+' leads.'} ${clockSeconds?'Bid before the clock runs out or withdraw.':'Raise the bid or withdraw.'}`;
     stats=[['High bid',money(s.auction.high_bid)],['Your cash',money(p.cash)],['List / rent',`${money(t.price)} / ${money(t.rent)}`]];
   }else if(s.phase==='trade'){
     const d=s.trade;title=`Offer from ${seat(d.from)}`;text=`${seat(d.to)}, review both sides. Nothing changes hands unless you accept.`;
@@ -252,7 +266,8 @@ function setup(){
   const fields=Array.from({length:4},(_,i)=>`<label class="field">${seat(i)}<select id="seat-${i}">${(i<2?['human','bot']:['off','human','bot']).map(v=>`<option value="${v}" ${v===(seats[i]??'off')?'selected':''}>${{human:'Local player',bot:'Bot',off:'Empty'}[v]}</option>`).join('')}</select></label>`).join('');
   openDialog(`<h2>New table</h2><p>Choose how to play. Starting replaces this match.</p>
     <div class="modeChoices"><button id="solo"><b>Solo</b><span>You + two bots</span></button><button id="passPlay"><b>Pass &amp; play</b><span>Two on this device</span></button><button id="host"><b>Host online</b><span>Invite devices</span></button><button id="join"><b>Join online</b><span>Enter table code</span></button></div>
-    <details id="advanced"><summary>Custom local table</summary>${settings()}${fields}<button id="start" class="primary">Start game</button></details>`);
+    ${savedTableButton()}<details id="advanced"><summary>Custom local table</summary>${settings()}${fields}<button id="start" class="primary">Start game</button></details>`);
+  bindSavedTableButton();
   const quick=types=>{$('modal').close();play(types,$('board').dataset.map,clockSeconds).catch(report)};
   $('solo').onclick=()=>quick(['human','bot','bot']);$('passPlay').onclick=()=>quick(['human','human']);
   $('host').onclick=hostRoom;$('join').onclick=()=>roomMenu(true);
@@ -270,5 +285,5 @@ $('rulesBtn').onclick=()=>openDialog(`<h2>The rulebook</h2><p>Start with ${money
 try {
   const bytes=Uint8Array.from(atob($('binary').textContent),c=>c.charCodeAt(0));
   engine=(await WebAssembly.instantiate(bytes)).instance.exports;
-  await play(['human','bot','bot']);
+  const initialGame=play(['human','bot','bot']);promptSavedTable();await initialGame;
 } catch(err){report(err)}

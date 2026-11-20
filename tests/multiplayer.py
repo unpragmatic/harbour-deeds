@@ -1,4 +1,4 @@
-"""Run after npm ci, python3 build.py and playwright install firefox."""
+"""Exercise a freshly built game on a private signaling server and real WebRTC."""
 import contextlib
 import os
 import json
@@ -7,11 +7,28 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import socket
 import subprocess
+import sys
 import threading
 import time
 from playwright.sync_api import sync_playwright, expect
 
 root = Path(__file__).resolve().parents[1]
+subprocess.run([sys.executable, root/'build.py'], check=True)
+review = (root/'review').resolve()
+screens = os.environ.get('REVIEW_SCREEN_DIR')
+if screens:
+    directory = Path(screens).resolve()
+    if not directory.is_relative_to(review):
+        raise ValueError('REVIEW_SCREEN_DIR must be inside the test review directory')
+    directory.mkdir(parents=True, exist_ok=True)
+
+def capture(locator, name):
+    if screens:
+        target = directory / name
+        if target.is_symlink():
+            raise ValueError('Refusing to overwrite a symlink')
+        locator.screenshot(path=target)
+
 with contextlib.ExitStack() as stack:
     http = ThreadingHTTPServer(('127.0.0.1', 0), partial(SimpleHTTPRequestHandler, directory=root/'dist'))
     threading.Thread(target=http.serve_forever, daemon=True).start()
@@ -35,12 +52,14 @@ with contextlib.ExitStack() as stack:
     stack.callback(browser.close)
     pages = [browser.new_page() for _ in range(3)]
     host, guest, other = pages
-    for p in pages:
-        p.on('pageerror', lambda e: print('Page error:', e))
+    visitor = browser.new_page()
+    errors = []
+    for p in [*pages, visitor]:
+        p.on('pageerror', lambda e: errors.append(str(e)))
         # Substitute only discovery and ICE configuration; keep the real WebRTC data channel.
         client = (root/'dist/peerjs.min.js').read_text() + f"""
         ;window.Peer = class extends window.Peer {{
-          constructor(id) {{super(id || undefined,{{debug:3,host:'127.0.0.1',port:{port},secure:false,config:{{iceServers:{json.dumps(json.loads(os.environ.get('TEST_ICE_SERVERS','[]')))}}}}})}}
+          constructor(id) {{super(id || undefined,{{host:'127.0.0.1',port:{port},secure:false,config:{{iceServers:{json.dumps(json.loads(os.environ.get('TEST_ICE_SERVERS','[]')))}}}}})}}
         }};"""
         p.route('**/peerjs.min.js', lambda route: route.fulfill(body=client, content_type='application/javascript'))
         p.add_init_script('const rng=crypto.getRandomValues.bind(crypto);crypto.getRandomValues=a=>a instanceof Uint32Array&&a.length===1?(a[0]=1,a):rng(a)')
@@ -54,17 +73,14 @@ with contextlib.ExitStack() as stack:
         p.click('#join')
         p.fill('#code', code.lower())
         p.locator('#joinForm button').click()
-        try:
-            expect(p.locator('#roomInfo')).to_contain_text(f'Device {i}', timeout=18000)
-        except AssertionError:
-            for tab in [host,p]:
-                print([msg.text for msg in tab.console_messages()])
-            raise
+        expect(p.locator('#roomInfo')).to_contain_text(f'Device {i}', timeout=18000)
+    capture(guest.locator('#modal'), 'guest-wait.png')
     host.select_option('#map', 'outer')
     host.select_option('#owner0', '1')
     host.select_option('#owner1', '1')
     host.select_option('#owner2', '2')
     host.select_option('#owner3', '-1')
+    capture(host.locator('#modal'), 'host-lobby.png')
     host.click('#launch')
     for p in pages:
         expect(p.locator('.tile')).to_have_count(28)
@@ -78,6 +94,38 @@ with contextlib.ExitStack() as stack:
     acting.get_by_role('button', name='Start auction').click()
     acting.get_by_role('button', name='Bid $10', exact=True).click()
     expect(guest.locator('#controlType')).to_contain_text('Seat 2')
+    other.reload()
+    expect(other.locator('#resumeTable')).to_have_text(f'Rejoin table {code}')
+    expect(host.locator('#actions')).to_contain_text('Waiting for Device 2 to rejoin')
+    expect(guest.locator('#actions')).to_contain_text('Table paused')
+    expect(guest.get_by_role('button', name='Withdraw')).to_have_count(0)
+    before = host.locator('#log').inner_text()
+    left = host.locator('.bidClock progress').get_attribute('value')
+    time.sleep(5.2)
+    assert host.locator('.bidClock progress').get_attribute('value') == left
+    assert host.locator('#log').inner_text() == before
+    # A fresh browser with the code cannot claim the absent device's seat.
+    visitor.click('#join')
+    visitor.fill('#code', code)
+    visitor.locator('#joinForm button').click()
+    expect(visitor.locator('#reason')).to_contain_text('unavailable')
+    # Rejoin a running host mid-auction. Then take the host offline as well.
+    other.click('#resumeTable')
+    expect(guest.get_by_role('button', name='Withdraw')).to_be_visible()
+    host.reload()
+    expect(host.locator('#resumeTable')).to_have_text(f'Rehost table {code}')
+    capture(host.locator('#modal'), 'recovery.png')
+    for p in (guest, other):
+        expect(p.locator('#reason')).to_contain_text('disconnected', timeout=15000)
+    host.click('#resumeTable')
+    expect(host.locator('#actions')).to_contain_text('Table paused')
+    assert host.locator('#log').inner_text() == before
+    for p in (other, guest):  # Reverse arrival order must not change seat ownership.
+        p.click('#savedTable')
+        p.click('#resumeTable')
+        expect(p.locator('.tile')).to_have_count(28)
+    expect(guest.get_by_role('button', name='Withdraw')).to_be_visible()
+    expect(other.get_by_role('button', name='Withdraw')).to_have_count(0)
     # Guest modal does not pause the host clock; bidding authority transfers to device 2.
     guest.click('#rulesBtn')
     expect(other.get_by_role('button', name='Bid $20', exact=True)).to_be_visible(timeout=8000)
@@ -90,4 +138,10 @@ with contextlib.ExitStack() as stack:
     other.click('#setupBtn')
     other.once('dialog', lambda dialog: dialog.accept())
     other.click('#leave')
-    expect(host.locator('#reason')).to_contain_text('disconnected')
+    expect(host.locator('#reason')).to_contain_text('deliberately left')
+    for p in pages:
+        expect(p.locator('#reason')).to_be_visible()
+        p.reload()
+        p.click('#setupBtn')
+        expect(p.locator('#savedTable')).to_have_count(0)
+    assert not errors, errors

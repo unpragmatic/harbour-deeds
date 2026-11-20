@@ -25,8 +25,11 @@ with sync_playwright() as pw:
     button('Bid $10').click()
     bidder = page.locator('#controlType').inner_text()
     page.clock.run_for(5000)
+    remaining=lambda: page.locator('.bidClock progress').evaluate('(p)=>p.value')
+    assert 9750<=remaining()<=10100
     button('Rulebook').click()
     page.clock.run_for(18000)
+    assert 9750<=remaining()<=10100
     assert page.locator('#controlType').inner_text() == bidder
     button('Close dialog').click()
     page.clock.run_for(8000)

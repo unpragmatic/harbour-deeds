@@ -1,6 +1,6 @@
 # Harbor Deeds
 
-A self-contained, original property game for 2–4 merchants. [Play on GitHub Pages](https://unpragmatic.github.io/harbour-deeds/) or open `docs/index.html` in a modern browser. Choose **New table** to mix local humans and bots. The current match lives in memory; reloading opens a fresh table.
+A self-contained, original property game for 2–4 merchants. [Play on GitHub Pages](https://unpragmatic.github.io/harbour-deeds/) or open `docs/index.html` in a modern browser. Local-only games live in memory. In-progress network tables can be recovered in the original browsers.
 
 ## Build and publish
 
@@ -21,9 +21,13 @@ node --test tests/engine.mjs
 
 Each seat selects a controller implementing `(snapshot, abortSignal) => Promise<command>`. The host routes the decision to the turn owner, current auction bidder, or trade recipient. All commands go to the same WASM handler.
 
-**Across devices:** Choose **New table → Host online**. Copy the six-character code; guests enter it under **New table → Join online**. The host chooses the board, bid clock and owner of each seat (host, connected device, or bot). A single device may operate several seats. Keep the host tab active. Leaving or losing a connected device during a match ends the table; rejoining, persistence and host migration are not supported.
+**Across devices:** Choose **New table → Host online**. Copy the six-character code; guests enter it under **New table → Join online**. The host chooses the board, bid clock and seat assignments. A single device may operate several seats.
+
+**Recover a network match:** Reopen the site in the same browser profile. The original host chooses **Rehost table** to restore the same code and match; guests choose **Rejoin table** to reclaim their seats. Both actions are also accessible under **New table**. The match and auction clock pause until assigned devices reconnect. Confirming **Leave table** ends the match; a reload does not. Recovery stores one in-progress table per browser and site, not a cloud backup. Clearing site data or losing the original host profile prevents rehosting; another device cannot take over as host.
 
 ## Interaction review
+
+[Open the illustrated component overview](https://unpragmatic.github.io/harbour-deeds/components.html) for the controls, decision screens and recovery flow in one place. Expand a capture to inspect it. Each card explains a change or an improvement opportunity.
 
 The phone shell keeps the decision dock visible while the board, portfolios or activity scroll independently. Desktop uses the same decisions alongside the workspace. Native buttons, selects, numeric inputs and dismissible dialogs support touch and keyboard use. The review counts deliberate control activations from the indicated starting screen, not typing, elapsed time or human-study observations.
 
