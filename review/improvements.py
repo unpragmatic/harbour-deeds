@@ -40,6 +40,10 @@ with sync_playwright() as pw:
             if width==390 and mode!='free':
                 p.locator('#modal').screenshot(path=root/f'build-{mode}.png')
         first=p.locator('.buildChoice:enabled').first
+        assert p.locator('#projectCurve tbody tr').count()==5
+        if mode!='district':
+            p.select_option('#project',index=1)
+            first=p.locator('.buildChoice:visible:enabled').first
         deed=first.locator('strong').inner_text().split(' · ')[0]
         first.click()
         assert p.locator('body').get_attribute('data-phase')=='roll'

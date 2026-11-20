@@ -7,6 +7,8 @@ const bands = {'Old Town':'#b76952', Foundry:'#d39e47', Market:'#7989a9', Marina
 const money = n => '$' + n.toLocaleString('en-US');
 const seat = n => `Seat ${n + 1}`;
 let engine, state, seats, session;
+let inspected=0, focusKey='';
+const desktop=matchMedia('(min-width:801px)');
 
 function command(input) {
   const bytes = new TextEncoder().encode(JSON.stringify(input));
@@ -110,10 +112,11 @@ const controllers = {
       if(s.builds.length)button('Improve',()=>{
         const after=s.players.filter((p,i)=>!p.out&&i>actor).length;
         const rolls=(rules.rounds-s.round)*(s.players.filter(p=>!p.out).length-1)+after;
-        openDialog(`<h2>Build or hold?</h2><p>${money(cash)} cash · up to ${rolls} opponent rolls left. A build costs cash now; you only earn it back if opponents land there and pay.</p><p class="buildNote">No resale value. Building locks every deed in this district against trades.</p><div id="builds"></div><button id="hold">Keep cash</button>`);
+        openDialog(`<h2>Build or hold?</h2><p>${money(cash)} cash · up to ${rolls} opponent rolls left.</p><label class="field">Project<select id="project"></select></label><div id="projectCurve"></div><p class="buildNote">No resale value. Building locks every deed in this district against trades.</p><div id="builds"></div><button id="hold">Keep cash</button>`);
         $('hold').onclick=()=>$('modal').close();
         for(const q of s.builds){
           const el=document.createElement('button');const t=rules.tiles[q.tile];
+          $('project').add(new Option(q.tiles.length>1?t.group:t.name,String(q.tile)));
           const district=q.tiles.length>1;
           const gains=q.tiles.map(k=>Math.round(rules.tiles[k].rent*rules.development.levels[s.levels[k]].rent_pct/100)-s.rents[k]);
           const lo=Math.min(...gains),hi=Math.max(...gains);
@@ -123,6 +126,11 @@ const controllers = {
           el.innerHTML=`<strong>${district?t.group:t.name} · Level ${s.levels[q.tile]+1}</strong><b>Build ${money(q.cost)}</b><span>+${money(lo)}${lo===hi?'':`–${money(hi)}`} per paying visit · ${needed} to recover cost</span><span>${q.cost>cash?`${money(q.cost-cash)} short`:`Cash after: ${money(cash-q.cost)}`}</span>`;
           el.disabled=q.cost>cash;el.onclick=()=>{$('modal').close();send('build',{tile:q.tile})};$('builds').append(el);
         }
+        const preview=()=>{
+          const n=$('project').selectedIndex,q=s.builds[n];
+          $('projectCurve').innerHTML=curve(q.tile);
+          [...$('builds').children].forEach((el,i)=>el.hidden=i!==n);
+        };$('project').onchange=preview;preview();
       });
     }else if(s.phase==='offer'){
       const cost=rules.tiles[s.players[actor].pos].price;
@@ -165,7 +173,18 @@ function openDialog(html) {
   $('modal').scrollTop=0;
   $('modal').dispatchEvent(new Event('clockchange'));
 }
-function detail(i) {
+function curve(i) {
+  const t=rules.tiles[i],d=rules.development,all=d.policy==='district';
+  const members=all?rules.tiles.flatMap((x,k)=>x.kind==='deed'&&x.group===t.group?[k]:[]):[i];
+  const range=a=>{const lo=Math.min(...a),hi=Math.max(...a);return lo===hi?money(lo):`${money(lo)}–${money(hi)}`};
+  const rent=(k,pct)=>Math.round(rules.tiles[k].rent*pct/100);
+  const rows=[['Base',null,100],['Set',null,d.set_rent_pct],...d.levels.map((l,n)=>[`L${n+1}`,l.cost_pct,l.rent_pct])];
+  return `<div class="curve"><table><caption>${all?`${t.group} · whole district`:'Deed development'}</caption><thead><tr><th>Tier</th><th>Build</th><th>Rent</th><th>Gain / hit</th></tr></thead><tbody>${rows.map(([name,cost,pct],j)=>{
+    const active=j===0?state.owners[i]===null||state.rents[i]===t.rent:state.owners[i]!==null&&state.levels[i]===j-1&&state.rents[i]===rent(i,pct);
+    return `<tr${active?' class="currentTier"':''}><th>${name}</th><td>${cost===null?'—':money(members.reduce((v,k)=>v+Math.round(rules.tiles[k].price*cost/100),0))}</td><td>${range(members.map(k=>rent(k,pct)))}</td><td>${j?'+'+range(members.map(k=>rent(k,pct)-rent(k,rows[j-1][2]))):'—'}</td></tr>`;
+  }).join('')}</tbody></table><small>${all?'Build cost covers all deeds. Rent is per landing.':'Build is the one-time cost. Rent is per paying landing.'}</small></div>`;
+}
+function detailHtml(i) {
   const t = rules.tiles[i], owner = state.owners[i];
   const info = {
     deed:`${t.group} district. Price ${money(t.price ?? 0)}; rent ${money(t.rent ?? 0)}. Double rent for a complete district.`,
@@ -179,7 +198,14 @@ function detail(i) {
   const have=group.filter(k=>state.owners[k]===owner).length;
   const status=owner===null?'Complete the district to build.':have<group.length?`${seat(owner)} has ${have}/${group.length} deeds. A complete district unlocks building.`:
     level===max?'Fully improved.':rules.development.policy==='even'&&group.some(k=>state.levels[k]<level)?'Improve the lower-level deeds first.':'The owner can improve before rolling.';
-  openDialog(`<h2>${t.name}</h2>${t.kind==='deed'?`<p>${t.group} · ${owner===null?'On the market':`Owned by ${seat(owner)}`} · Level ${level}/${max}</p>${facts([['List price',money(t.price)],['Current rent',money(state.rents[i])]])}<p>${status}${locked(state,rules,i)?' This district cannot be traded.':''}</p>`:`<p>${info[t.kind]}</p>`}`);
+  return `<small class="plate">SPACE ${String(i).padStart(2,'0')} / ${t.kind==='deed'?t.group:'Port services'}</small><h2>${t.name}</h2>${t.kind==='deed'?`<p>${owner===null?'On the market':`Owned by ${seat(owner)}`} · Level ${level}/${max}</p>${facts([['List price',money(t.price)],['Current rent',money(state.rents[i])]])}${curve(i)}<p>${status}${locked(state,rules,i)?' This district cannot be traded.':''}</p>`:`<p>${info[t.kind]}</p>`}`;
+}
+function selectSpace(i){
+  inspected=i;$('inspector').innerHTML=detailHtml(i);
+  document.querySelectorAll('.tile').forEach(el=>el.classList.toggle('selected',el.id===`tile-${i}`));
+}
+function detail(i) {
+  selectSpace(i);if(!desktop.matches)openDialog(detailHtml(i));
 }
 const summary=(deed,cash)=>[deed===null?'':rules.tiles[deed].name,cash?money(cash):''].filter(Boolean).join(' + ');
 function facts(entries){
@@ -202,6 +228,11 @@ function render() {
       b.className='tile '+(tile.kind==='deed'?'deed':'special');
       b.style.setProperty('--band',bands[tile.group] || '#718373');
       b.onclick=()=>detail(i);
+      b.onkeydown=e=>{
+        const dir={ArrowLeft:-1,ArrowRight:1}[e.key];if(!dir||!desktop.matches)return;
+        e.preventDefault();const next=(i+dir+rules.tiles.length)%rules.tiles.length;
+        $(`tile-${next}`).focus();selectSpace(next);
+      };
       $('board').append(b);
     }
     b.classList.toggle('landing',s.phase!=='over'&&i===s.players[s.turn].pos);
@@ -222,6 +253,11 @@ function render() {
     return `<div class="row"><span class="badge" style="background:${colors[i]}">${i+1}</span><div><strong>${seat(i)}</strong><div class="meta">${player.out?'Bankrupt':seats[i]==='bot'?'Bot':'Local player'} · ${owned.length} deeds</div><div class="holdings">${groups}</div></div><span class="money">${money(player.cash)}</span></div>`;
   }).join('');
   $('balances').innerHTML=s.players.map((v,i)=>`<div class="ledger"><i style="background:${colors[i]}"></i>${seat(i)}<b>${v.out?'Bankrupt':money(v.cash)}</b></div>`).join('');
+  const market=s.phase==='offer'||s.phase==='auction',at=s.players[s.turn].pos;
+  const key=`${s.round}/${s.turn}/${at}/${market}`;
+  if(key!==focusKey){inspected=at;focusKey=key}
+  selectSpace(inspected);
+  $('mobileLadder').innerHTML=market?curve(at):'';
   $('log').innerHTML=[...s.events].reverse().map(e=>`<li>${e}</li>`).join('');
   $('actions').replaceChildren();
   if(s.phase==='over'){
@@ -249,6 +285,7 @@ function render() {
 }
 function initialize(types,map,seconds,seed,policy=maps[map].development.policy) {
   rules={...maps[map],development:{...maps[map].development,policy}};clockSeconds=seconds;
+  focusKey='';inspected=0;
   const side=rules.tiles.length/4+1;
   const board=$('board');
   board.querySelectorAll('.tile').forEach(tile=>tile.remove());

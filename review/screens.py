@@ -24,8 +24,8 @@ with sync_playwright() as pw:
     p.locator('#passPlay').click()
     shot('table')
     p.locator('#tile-1').click()
-    shot('deed','dialog')
-    button('Close dialog').click()
+    assert not p.locator('dialog').is_visible()
+    shot('deed','#inspector')
     button('Rulebook').click()
     shot('help','dialog')
     button('Close dialog').click()
@@ -33,6 +33,8 @@ with sync_playwright() as pw:
         button('Roll dice').click()
         if p.locator('body').get_attribute('data-phase')=='offer':break
     shot('offer','.desk')
+    assert p.locator('#inspector tbody tr').count()==5
+    shot('workbench')
     button('Start auction').click()
     shot('auction','.desk')
     button('Custom').click()
