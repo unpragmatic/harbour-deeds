@@ -1,0 +1,25 @@
+{
+  "cash": 750, "salary": 120, "auction_increment": 10, "rounds": 18, "notices": [90,-60,120,-80,50],
+  "tiles": [
+    {"name":"Port Office","kind":"start","mark":"⚓"},
+    {"name":"Rope Walk","kind":"deed","group":"Old Town","price":80,"rent":20},
+    {"name":"Net Loft","kind":"deed","group":"Old Town","price":100,"rent":25},
+    {"name":"Port Notice","kind":"notice","mark":"✉"},
+    {"name":"Salt Row","kind":"deed","group":"Old Town","price":120,"rent":30},
+    {"name":"Beacon Hill","kind":"rest","mark":"☼"},
+    {"name":"Copper Yard","kind":"deed","group":"Foundry","price":140,"rent":35},
+    {"name":"Iron Works","kind":"deed","group":"Foundry","price":160,"rent":40},
+    {"name":"Harbor Dues","kind":"fee","mark":"§","price":80},
+    {"name":"Kiln Street","kind":"deed","group":"Foundry","price":180,"rent":45},
+    {"name":"North Point","kind":"rest","mark":"✥"},
+    {"name":"Market Hall","kind":"deed","group":"Market","price":200,"rent":50},
+    {"name":"Silk Arcade","kind":"deed","group":"Market","price":220,"rent":55},
+    {"name":"Port Notice","kind":"notice","mark":"✉"},
+    {"name":"Pearl Court","kind":"deed","group":"Market","price":240,"rent":60},
+    {"name":"Ferry Dock","kind":"rest","mark":"≈"},
+    {"name":"East Basin","kind":"deed","group":"Marina","price":260,"rent":65},
+    {"name":"Sail Quay","kind":"deed","group":"Marina","price":280,"rent":70},
+    {"name":"Dock Levy","kind":"fee","mark":"§","price":100},
+    {"name":"Crown Pier","kind":"deed","group":"Marina","price":300,"rent":75}
+  ]
+}
