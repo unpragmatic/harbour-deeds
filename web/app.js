@@ -1,7 +1,8 @@
 const $ = id => document.getElementById(id);
-const rules = JSON.parse($('config').textContent);
+const maps = {compact:JSON.parse($('config').textContent),outer:JSON.parse($('outer').textContent)};
+let rules=maps.compact, clockSeconds=0;
 const colors = ['#a54d37','#347367','#936c20','#5d608a'];
-const bands = {'Old Town':'#b76952', Foundry:'#d39e47', Market:'#7989a9', Marina:'#589587'};
+const bands = {'Old Town':'#b76952', Foundry:'#d39e47', Market:'#7989a9', Marina:'#589587', Shipyards:'#ac84a2', Exchange:'#7195aa'};
 const money = n => '$' + n.toLocaleString('en-US');
 const seat = n => `Seat ${n + 1}`;
 let engine, state, seats, session;
@@ -42,6 +43,30 @@ function wait(ms,signal) {
     signal.addEventListener('abort',()=>{clearTimeout(t);resolve()},{once:true});
   });
 }
+// Measure active time, not interval ticks. A blocked event loop must not grant a late bid.
+function bidClock(seconds,signal,onExpiry) {
+  const display=document.createElement('span');
+  display.className='bidClock'; display.setAttribute('role','timer');
+  $('actions').prepend(display);
+  let left=seconds*1000, since=null, expired=false;
+  const remaining=()=>left-(since===null?0:performance.now()-since);
+  function update(){
+    if(expired||signal.aborted)return;
+    if(document.hidden||$('modal').open){
+      left=remaining();since=null;
+    }else if(since===null){since=performance.now()}
+    const ms=remaining();
+    if(ms<=0){expired=true;onExpiry();return}
+    display.textContent=`${since===null?'Paused':'Bid clock'} · ${Math.ceil(ms/1000)}s · withdraws at zero`;
+  }
+  const timer=setInterval(update,100);
+  document.addEventListener('visibilitychange',update,{signal});
+  $('modal').addEventListener('clockchange',update,{signal});
+  $('modal').addEventListener('close',update,{signal});
+  signal.addEventListener('abort',()=>clearInterval(timer),{once:true});
+  update();
+  return ()=>{update();return !expired};
+}
 const controllers = {
   human: (s, signal) => new Promise(resolve => {
     const actor=actingSeat(s), cash=s.players[actor].cash;
@@ -64,11 +89,12 @@ const controllers = {
       button('Start auction',()=>send('pass'));
     }else if(s.phase==='auction'){
       const min=s.auction.high_bid+rules.auction_increment;
+      const inTime=clockSeconds?bidClock(clockSeconds,signal,()=>send('withdraw')):()=>true;
       if(cash>=min) {
         const label=document.createElement('label');
         label.className='bidField';label.innerHTML=`Your bid ($)<input id="amount" type="number" min="${min}" max="${cash}" step="1" required value="${min}">`;
         $('actions').append(label);
-        button('Place bid',()=>{if($('amount').reportValidity())send('bid',{amount:+$('amount').value})},true);
+        button('Place bid',()=>{if(inTime()&&$('amount').reportValidity())send('bid',{amount:+$('amount').value})},true);
       }
       button('Withdraw',()=>send('withdraw'));
     }else if(s.phase==='trade'){
@@ -79,14 +105,16 @@ const controllers = {
 };
 
 function boardPosition(i) {
-  if (i <= 5) return [6-i,1];
-  if (i <= 10) return [1,i-4];
-  if (i <= 15) return [i-9,6];
-  return [6,21-i];
+  const edge=rules.tiles.length/4, side=edge+1;
+  if(i<=edge)return [side-i,1];
+  if(i<=2*edge)return [1,i-edge+1];
+  if(i<=3*edge)return [i-2*edge+1,side];
+  return [side,4*edge+1-i];
 }
 function openDialog(html) {
   $('content').innerHTML = html;
   if (!$('modal').open) $('modal').showModal();
+  $('modal').dispatchEvent(new Event('clockchange'));
 }
 function detail(i) {
   const t = rules.tiles[i], owner = state.owners[i];
@@ -159,8 +187,15 @@ function render() {
   $('turn').innerHTML=`<h2>${title}</h2><p>${text}</p>${stats.length?facts(stats):''}`;
   if(seats[a]==='bot' || s.phase==='end') $('actions').innerHTML=`<small class="waiting">${s.phase==='end'?'Advancing to the next turn…':'Bot is considering the table…'}</small>`;
 }
-async function play(types) {
+async function play(types,map='compact',seconds=0) {
   session?.abort(); session=new AbortController(); const {signal}=session;
+  rules=maps[map];clockSeconds=seconds;
+  const side=rules.tiles.length/4+1;
+  const board=$('board');
+  board.querySelectorAll('.tile').forEach(tile=>tile.remove());
+  board.style.gridTemplate=`repeat(${side},minmax(0,1fr)) / repeat(${side},minmax(0,1fr))`;
+  board.querySelector('.ocean').style.gridArea=`2 / 2 / ${side} / ${side}`;
+  board.dataset.map=map;
   seats=types;
   state=command({action:'start',rules,seats:types.length,seed:crypto.getRandomValues(new Uint32Array(1))[0]});
   while(!signal.aborted) {
@@ -180,10 +215,15 @@ async function play(types) {
 function report(err){$('actions').replaceChildren();$('turn').textContent=`Game unavailable: ${err.message}`;console.error(err)}
 function setup(){
   const fields=Array.from({length:4},(_,i)=>`<label class="field">${seat(i)}<select id="seat-${i}">${(i<2?['human','bot']:['off','human','bot']).map(v=>`<option value="${v}" ${v===(seats[i]??'off')?'selected':''}>${{human:'Local player',bot:'Bot',off:'Empty'}[v]}</option>`).join('')}</select></label>`).join('');
-  openDialog(`<h2>Open a new table</h2><p>Choose who controls each seat. Starting replaces the current game.</p>${fields}<button id="start" class="primary">Start game</button>`);
+  openDialog(`<h2>Open a new table</h2><p>Starting replaces the current game.</p>
+    <label class="field">Board<select id="map"><option value="compact">Inner Harbor · 20 spaces</option><option value="outer">Outer Harbor · 28 spaces</option></select></label>
+    <label class="field">Human bid clock<select id="clock"><option value="0">Untimed</option><option value="15">15 seconds</option><option value="30">30 seconds</option></select></label>
+    <p>Each human bidder gets a fresh clock. At zero they withdraw. Hidden tabs and open dialogs pause it.</p>${fields}<button id="start" class="primary">Start game</button>`);
+  $('map').value=$('board').dataset.map;$('clock').value=String(clockSeconds);
   $('start').onclick=()=>{
     const types=[0,1,2,3].map(i=>$(`seat-${i}`).value).filter(v=>v!=='off');
-    $('modal').close();play(types).catch(report);
+    const map=$('map').value,seconds=Number($('clock').value);
+    $('modal').close();play(types,map,seconds).catch(report);
   };
 }
 $('setupBtn').onclick=setup;

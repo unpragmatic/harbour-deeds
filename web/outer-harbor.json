@@ -1,0 +1,17 @@
+{
+  "salary": 168,
+  "inserts": [
+    {"after":"Salt Row","tiles":[
+      {"name":"Slipway","kind":"deed","group":"Shipyards","price":150,"rent":38},
+      {"name":"Dry Dock","kind":"deed","group":"Shipyards","price":170,"rent":43}]},
+    {"after":"Kiln Street","tiles":[
+      {"name":"Spar Yard","kind":"deed","group":"Shipyards","price":190,"rent":48},
+      {"name":"Pilot Station","kind":"rest","mark":"✥"}]},
+    {"after":"Pearl Court","tiles":[
+      {"name":"Fish Hall","kind":"deed","group":"Exchange","price":190,"rent":48},
+      {"name":"Tea Wharf","kind":"deed","group":"Exchange","price":210,"rent":53}]},
+    {"after":"Crown Pier","tiles":[
+      {"name":"Grain Quay","kind":"deed","group":"Exchange","price":230,"rent":58},
+      {"name":"Port Notice","kind":"notice","mark":"✉"}]}
+  ]
+}
