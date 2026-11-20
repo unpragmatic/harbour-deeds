@@ -1,6 +1,7 @@
 const $ = id => document.getElementById(id);
 const maps = {compact:JSON.parse($('config').textContent),outer:JSON.parse($('outer').textContent)};
-let rules=maps.compact, clockSeconds=0;
+const DEFAULT_CLOCK=5;
+let rules=maps.compact, clockSeconds=DEFAULT_CLOCK;
 const colors = ['#a54d37','#347367','#936c20','#5d608a'];
 const bands = {'Old Town':'#b76952', Foundry:'#d39e47', Market:'#7989a9', Marina:'#589587', Shipyards:'#ac84a2', Exchange:'#7195aa'};
 const money = n => '$' + n.toLocaleString('en-US');
@@ -89,7 +90,7 @@ const controllers = {
       button('Start auction',()=>send('pass'));
     }else if(s.phase==='auction'){
       const min=s.auction.high_bid+rules.auction_increment;
-      const inTime=clockSeconds?bidClock(clockSeconds,signal,()=>send('withdraw')):()=>true;
+      const inTime=clockSeconds&&!room?bidClock(clockSeconds,signal,()=>send('withdraw')):()=>true;
       if(cash>=min) {
         const label=document.createElement('label');
         label.className='bidField';label.innerHTML=`Your bid ($)<input id="amount" type="number" min="${min}" max="${cash}" step="1" required value="${min}">`;
@@ -166,7 +167,7 @@ function render() {
   $('actions').replaceChildren();
   if(s.phase==='over'){
     $('turn').innerHTML=`<h2>${s.winners.map(seat).join(' & ')} ${s.winners.length>1?'tie':'wins'}</h2><p>Cash plus the list value of all deeds.</p>${facts(s.players.map((player,i)=>[seat(i),player.out?'Bankrupt':money(player.cash+deeds(s,i).reduce((sum,k)=>sum+rules.tiles[k].price,0))]))}`;
-    const b=document.createElement('button'); b.className='primary';b.textContent='Play again';b.onclick=setup;$('actions').append(b);
+    const b=document.createElement('button'); b.className='primary';b.textContent=room?'Leave table':'Play again';b.onclick=room?()=>endRoom('You left the table.'):setup;$('actions').append(b);
     return;
   }
   let title, text, stats=[];
@@ -187,8 +188,7 @@ function render() {
   $('turn').innerHTML=`<h2>${title}</h2><p>${text}</p>${stats.length?facts(stats):''}`;
   if(seats[a]==='bot' || s.phase==='end') $('actions').innerHTML=`<small class="waiting">${s.phase==='end'?'Advancing to the next turn…':'Bot is considering the table…'}</small>`;
 }
-async function play(types,map='compact',seconds=0) {
-  session?.abort(); session=new AbortController(); const {signal}=session;
+function initialize(types,map,seconds,seed) {
   rules=maps[map];clockSeconds=seconds;
   const side=rules.tiles.length/4+1;
   const board=$('board');
@@ -197,7 +197,11 @@ async function play(types,map='compact',seconds=0) {
   board.querySelector('.ocean').style.gridArea=`2 / 2 / ${side} / ${side}`;
   board.dataset.map=map;
   seats=types;
-  state=command({action:'start',rules,seats:types.length,seed:crypto.getRandomValues(new Uint32Array(1))[0]});
+  state=command({action:'start',rules,seats:types.length,seed});
+}
+async function play(types,map='compact',seconds=DEFAULT_CLOCK) {
+  session?.abort(); session=new AbortController(); const {signal}=session;
+  initialize(types,map,seconds,crypto.getRandomValues(new Uint32Array(1))[0]);
   while(!signal.aborted) {
     render();
     if(state.phase==='over') return;
@@ -213,12 +217,17 @@ async function play(types,map='compact',seconds=0) {
   }
 }
 function report(err){$('actions').replaceChildren();$('turn').textContent=`Game unavailable: ${err.message}`;console.error(err)}
-function setup(){
-  const fields=Array.from({length:4},(_,i)=>`<label class="field">${seat(i)}<select id="seat-${i}">${(i<2?['human','bot']:['off','human','bot']).map(v=>`<option value="${v}" ${v===(seats[i]??'off')?'selected':''}>${{human:'Local player',bot:'Bot',off:'Empty'}[v]}</option>`).join('')}</select></label>`).join('');
-  openDialog(`<h2>Open a new table</h2><p>Starting replaces the current game.</p>
+function settings(){
+  return `
     <label class="field">Board<select id="map"><option value="compact">Inner Harbor · 20 spaces</option><option value="outer">Outer Harbor · 28 spaces</option></select></label>
-    <label class="field">Human bid clock<select id="clock"><option value="0">Untimed</option><option value="15">15 seconds</option><option value="30">30 seconds</option></select></label>
-    <p>Each human bidder gets a fresh clock. At zero they withdraw. Hidden tabs and open dialogs pause it.</p>${fields}<button id="start" class="primary">Start game</button>`);
+    <label class="field">Human bid clock<select id="clock"><option value="5" selected>5 seconds</option><option value="0">Untimed</option><option value="15">15 seconds</option><option value="30">30 seconds</option></select></label>`;
+}
+function setup(){
+  if(room){roomMenu();return}
+  const fields=Array.from({length:4},(_,i)=>`<label class="field">${seat(i)}<select id="seat-${i}">${(i<2?['human','bot']:['off','human','bot']).map(v=>`<option value="${v}" ${v===(seats[i]??'off')?'selected':''}>${{human:'Local player',bot:'Bot',off:'Empty'}[v]}</option>`).join('')}</select></label>`).join('');
+  openDialog(`<h2>Open a new table</h2><p>Starting replaces the current game.</p>${settings()}
+    <p>Each human bidder gets a fresh clock. At zero they withdraw. Hidden tabs and open dialogs pause it in local play.</p>${fields}<button id="start" class="primary">Start game</button><hr><button id="online">Play across devices</button>`);
+  $('online').onclick=roomMenu;
   $('map').value=$('board').dataset.map;$('clock').value=String(clockSeconds);
   $('start').onclick=()=>{
     const types=[0,1,2,3].map(i=>$(`seat-${i}`).value).filter(v=>v!=='off');

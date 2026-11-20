@@ -1,0 +1,6 @@
+{
+  "name": "harbor-deeds-network",
+  "private": true,
+  "dependencies": {"peerjs": "1.5.5"},
+  "devDependencies": {"peer": "1.0.2"}
+}

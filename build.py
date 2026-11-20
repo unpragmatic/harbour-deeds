@@ -20,8 +20,11 @@ for marker, value in {
     "__RULES__": (web / "rules.json").read_text(),
     "__OUTER__": json.dumps(expanded),
     "__WASM__": base64.b64encode(wasm.read_bytes()).decode(),
-    "/*APP*/": (web / "strategy.mjs").read_text() + "\n" + (web / "app.js").read_text(),
+    "/*APP*/": "\n".join((web / name).read_text() for name in ["strategy.mjs","room.js","app.js"]),
 }.items():
     html = html.replace(marker, value)
 (root / "dist").mkdir(exist_ok=True)
 (root / "dist/index.html").write_text(html)
+peer = root / "node_modules/peerjs"
+(root / "dist/peerjs.min.js").write_bytes((peer / "dist/peerjs.min.js").read_bytes())
+(root / "dist/peerjs-LICENSE.txt").write_bytes((peer / "LICENSE").read_bytes())
