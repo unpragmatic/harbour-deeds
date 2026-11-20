@@ -1,5 +1,8 @@
 {
   "method": "Desktop mouse paths from the named starting state. Count each deliberate activation, including opening a native select and picking an option (2). Typing, waiting, automatic resolution, and site navigation are excluded and named where relevant. Reading at 0 means no click, hover, scroll, or keyboard shortcut. Decisions with several participants count each participant’s clicks. Repeated bids and edits add their own costs. Budgets are ceilings, not an instruction to remove safeguards.",
+  "criteria": [
+    {"id":"board-target-preview","name":"Board target and consequence visibility","rule":"For any direct property action, keep the board usable. Mark every quoted space on its actual tile with a non-color cue and cost or payout; distinguish unaffordable and affected spaces. Selecting a different tile takes one activation, updates the named outcome and cash after without opening a sheet, and does not change game state. Confirm separately or cancel without spending. Review default and nondefault targets, district scope and the folded phone board; a low click count alone does not pass.","interactions":["improve","project","build","sellSheet","saleSelect","saleMode","plotRead","sell","worksQuote","commission","keepDeed","hold"],"scenarios":["build-from-board","sell-from-board","build-other","sale-other","district-member","switch-use","works-project","hold","cancel-sale","liquidate"]}
+  ],
   "interactions": {
     "Read and navigate": [
       ["funds","Any live table view or game sheet","Read every seat’s cash or Out status",0],
@@ -61,17 +64,19 @@
       ["propose","Valid composer","Send proposal",1],
       ["accept","Recipient’s pending trade","Accept both legs",1],
       ["reject","Recipient’s pending trade","Decline with no asset transfer",1],
-      ["improve","Eligible owner before roll","Inspect a build quote (I)",1],
-      ["project","Open improvement sheet","Select a different project",2],
+      ["improve","Owner with an affordable build before roll","Manage deeds (defaults to Improve), or preview the marked buildable tile directly",1],
+      ["project","Improvement map","Select any other marked board space, including a district sibling",1],
       ["build","Affordable selected project","Commit construction",1],
-      ["sellSheet","Pre-roll with a saleable deed","Open bank sale quote",1],
-      ["saleSelect","Multiple saleable deeds","Select another deed and update bank quote",2],
+      ["sellSheet","Pre-roll with a sale-only deed","Select it on the board, or Manage deeds when no affordable build is available",1],
+      ["saleSelect","Sale map with several candidates","Select a different marked deed on the board",1],
+      ["saleMode","Improvement map","Switch to Sell; retain the selected deed if eligible",1],
+      ["plotRead","Open property preview","Identify candidates, payout or cost, cash after, and consequence without committing",0],
       ["sell","Quoted sale","Accept exact bank payout",1],
       ["keepDeed","Quoted sale","Keep the property with no change to assets",1],
-      ["worksQuote","Public works with eligible property","Open the project quote",1],
+      ["worksQuote","Public works with eligible property","Open the board refit preview",1],
       ["commission","Affordable works project","Commission the selected project",1],
       ["skip","Works decision","Pass on the project",1],
-      ["hold","Open improvement sheet","Keep cash and return without building",1]
+      ["hold","Improvement map","Leave the preview without spending",1]
     ],
     "Host, join and recover": [
       ["host","New table chooser","Host a table and display its code",1],
@@ -132,7 +137,12 @@
     ["edit-offer","Pre-roll with another eligible partner","Choose partner, edit one cash field, send valid terms","trade partner tradeCash propose",5],
     ["cancel-trade","Eligible pre-roll","Inspect and discard draft","trade close",2],
     ["build-first","Eligible, affordable project before roll","Build default quoted project","improve build",2],
-    ["build-other","Two affordable projects before roll","Choose nondefault deed and build","improve project build",4],
+    ["build-other","Two affordable projects before roll","Choose nondefault board deed and build","improve project plotRead build",3],
+    ["build-from-board","Ordinary turn board; desired deed is buildable","Select the exact deed on the board and confirm its improvement","improve plotRead build",2],
+    ["sell-from-board","Ordinary turn board; desired deed can only be sold","Select the exact deed on the board and confirm its sale","sellSheet plotRead sell",2],
+    ["sale-other","Sale map already open with multiple candidates","Select a different deed and complete the quoted sale","saleSelect plotRead sell",2],
+    ["district-member","Whole-district build map open","Preview a district project from a non-representative member","project plotRead",1],
+    ["switch-use","Build preview for a deed also eligible for sale","Compare the bank sale for that same deed without spending","saleMode plotRead",1],
     ["hold","Eligible pre-roll","Review risk, then hold cash","improve hold",2],
     ["solo","Fresh browser, no pending recovery","Begin solo","start",0],
     ["quick-solo","Local table","Restart quick solo","setup solo",2],

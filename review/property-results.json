@@ -1,0 +1,11 @@
+{
+  "observed": {
+    "hold": 2,
+    "build-other": 3,
+    "district-member": 1,
+    "switch-use": 1,
+    "sale-other": 2,
+    "build-from-board": 2,
+    "sell-from-board": 2
+  }
+}

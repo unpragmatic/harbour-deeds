@@ -107,3 +107,38 @@ dialog[open]{display:flex;flex-direction:column}#content{overflow:auto;min-heigh
 @media(max-width:540px){
   #prefsBtn span{display:none}.headright #prefsBtn{padding-inline:6px;font-size:16px}
 }
+
+/* Property mode retains the actual map and treasury; only the turn controls change. */
+.board .tile[data-actionable]:not([data-plot=off]) .tileValue:before{content:"◇";font-weight:850}
+body[data-plot] :is(#turn,#actions,#stage){display:none!important}
+#plotGuide{position:relative;max-width:90%;padding:16px 24px;text-align:left;background:#f8f2de;border:1px solid #576d69;border-inline-start:5px solid #1b595b;color:#1b3741}
+#plotGuide:not([hidden]){display:grid;gap:4px}#plotGuide strong{font:700 clamp(19px,2.4vw,36px)/1.1 Georgia,serif}
+#plotGuide small,.plotReadout>small{font:750 11px/1.3 system-ui;letter-spacing:.08em;text-transform:uppercase}
+#plotGuide span{font:550 14px/1.4 system-ui}#plotGuide b{color:#145459}
+.board .tile[data-plot=off]:disabled{opacity:1;filter:none;background:#d9dcd4;color:#59625e;box-shadow:none;outline:0;cursor:default}
+.board .tile[data-plot=off] .tileValue{color:#53605e}.board .tile[data-plot=off]:before{opacity:.3}
+.board .tile:is([data-plot=candidate],[data-plot=short]){background:#e5fff2;color:#133a39;box-shadow:inset 0 0 0 2px #236958}
+.board .tile[data-plot=short]{background:#f8f1df;box-shadow:inset 0 0 0 2px #776344}
+.board .tile[data-plot]:not([data-plot=off]) .tileValue{font-weight:800;color:#07483f}
+.board .tile[data-scope=district]{border-bottom:4px double #155256}
+.board .tile[data-scope=target]:not([aria-pressed=true]){outline:2px dashed #236958;outline-offset:-5px}
+.board .tile[aria-pressed=true]{background:#ffe5a0;color:#282817;box-shadow:inset 0 0 0 3px #8e5000;outline:0}
+.board .tile[data-plot][aria-pressed=true] .tileValue:before{content:"✓"}.board .tile[data-plot]:focus-visible{outline:3px dashed #00588a;outline-offset:-5px}
+.plotScope{margin:8px 0 2px;width:100%;border-collapse:collapse;font:14px/1.3 system-ui;font-variant-numeric:tabular-nums}
+.plotScope caption{text-align:left;font-weight:750}.plotScope th,.plotScope td{padding:3px 4px;border-bottom:1px solid #9fae9f;text-align:right}.plotScope th:first-child{text-align:left}
+.plotTools,.plotFoot,.plotNav{display:flex;align-items:center;gap:5px}.plotTools{border-bottom:1px solid #82918d;padding-bottom:7px}.plotTools b{font-variant-numeric:tabular-nums}
+#propertyDesk button{min-height:38px;border:1px solid #718a91;border-radius:2px;background:#fff9e8;color:#183541;font:650 14px/1.15 system-ui}
+.plotTools button[aria-pressed=true]{box-shadow:inset 0 -3px 0 #067561}.plotTools #plotCancel,.plotNav{margin-left:auto}
+.plotReadout{margin:9px 0}.plotReadout h2{margin:2px 0;font:700 clamp(22px,2.1vw,30px)/1.1 Georgia,serif}.plotReadout p{font:500 14px/1.35 system-ui;margin:5px 0}
+.plotReadout .facts{display:flex;gap:10px;justify-content:space-between;margin:9px 0}.plotReadout .facts div{min-width:0}.plotReadout .facts dd{font:750 17px/1.1 system-ui;font-variant-numeric:tabular-nums}
+#propertyDesk #plotCommit{min-height:44px;background:#17604e;color:#fff;border-color:#16493e}.plotNav [data-step]{min-width:34px;font-size:22px}
+@media(min-width:801px){
+  #propertyDesk button{background:#243c4d;color:#eef6fa;border-color:#8da5b3}.plotTools button[aria-pressed=true]{background:#3a5366!important;box-shadow:inset 0 -3px 0 #ffcc61}
+  #propertyDesk #plotCommit{background:#ffcc61;color:#172130;border-color:#ffdc93}#propertyDesk #plotCommit:disabled{background:#485966;color:#e9edf0;opacity:.72}
+  .plotReadout>small{color:#ffda8b}.plotReadout .plotDetail{color:#c9d8e1}.plotNav #plotLadder{display:none}
+}
+@media(max-width:800px){
+  body[data-plot] .layout .switcher{display:none}body[data-plot] .layout{grid-template-rows:0 minmax(0,1fr) auto}
+  .plotTools{padding-bottom:4px}.plotReadout{margin:5px 0}.plotReadout .facts{margin:5px 0;padding:4px 0}
+  .plotReadout p{font-size:13px}.plotReadout .plotDetail{color:#43505e}.plotFoot{flex-wrap:wrap}
+}

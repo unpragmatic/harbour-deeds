@@ -53,10 +53,11 @@ sections = {
         ('final', 'Final accounts', 'Show the winner and each seat’s net worth. Local rematch reuses settings instead of reopening setup.'),
     ],
     'Develop a district': [
-        ('bank-quote','Bank sale, not a trade','Shows the bank’s exact quote, cash after sale, and the next rent given up. Opening or dismissing it never changes ownership.'),
-        ('works-quote','One-use refit','Compare the fee now against a bonus on exactly one future rival rent. No visitor means no payoff, and no full set is required.'),
-        ('build-even', 'Build or hold', 'Compare cash left after construction with the rent per visit. Keep cash dismisses the quote without spending or advancing the turn.'),
-        ('build-district', 'Whole-district quote', 'Show the full purchase cost and the range earned from one paying visitor. A visitor lands on only one deed, not the whole district.'),
+        ('board-sale','Sell a different deed','Each saleable deed shows the bank’s payout on the actual tile. Selecting Silk Arcade quotes its cash and forfeited rent; the board also shows the fall in rent on the rest of the set.'),
+        ('works-quote','One-use refit','The same board picker previews a refit on Dry Dock while the ship stays at Dock Works. No rival visit means no payoff.'),
+        ('build-even', 'Build or hold', 'Diamond marks give every available construction price; the check identifies the selected deed. Compare its rent before and after without leaving the map. Cancel spends nothing.'),
+        ('build-district', 'Whole-district quote', 'Selecting any sibling previews the same project. Dashed outlines mark the other deeds that will improve; the map shows each one’s rent before and after, for one combined construction price.'),
+        ('board-phone','Board targeting on a phone','The folded board scrolls independently above the quote. Tap a deed or step between candidates; cash, the actual outcome, and the confirmation stay in reach.'),
         ('built-deed', 'After construction', 'The deed shows its current rent, level cap and why its next level is blocked. District lock and investment are also visible in the portfolio.'),
     ],
 }
@@ -86,22 +87,31 @@ out.append(f'<section id="clicks"><h2>Desktop interaction and scenario audit</h2
            'The old Activity view hid all balances. The new treasury is independent of the selected instrument; game sheets have their own fixed funds strip. '
            'The board and decision dock do not disappear to show portfolios or history.</p>')
 out.append('<p>'+escape(survey['method'])+'</p>')
-out.append('<p><b>What still takes effort:</b> a nondefault build costs four clicks because choosing a project is separate from committing it. '
+out.append('<p><b>What still takes effort:</b> from Manage deeds, choosing a nondefault build and confirming takes three clicks including entry, down from four via the old select. Selecting the desired buildable tile directly skips the entry click. '
            'Changing a map and one controller costs seven clicks from play; these infrequent controls stay out of quick start. '
            'Leaving an active network match costs three: the last confirmation protects every device. '
            'Budgets measure effort, not enjoyment; they are not human playtest results.</p>')
-obs=results['observed']
+obs=results['observed']|json.loads((root/'property-results.json').read_text())['observed']
+criteria=survey['criteria']
+for c in criteria:
+    if not set(c['scenarios'])<=obs.keys():raise ValueError(f'Missing measured paths for {c["id"]}')
+    out.append(f'<h3 id="{escape(c["id"])}">{escape(c["name"])}</h3><p>{escape(c["rule"])}</p>'
+               '<p>The previous sale and build sheets met the default two-click budget but hid the board and required a dropdown for another deed. '
+               'The browser review now compares marked tiles with live Rust quotes, checks preview-only clicks against the command count, '
+               'and exercises a whole-district sibling, an unaffordable project and narrow screens. <a href="#group6">Inspect the captures.</a></p>')
+def criterion_for(scope,key):
+    return ', '.join(c['name'] for c in criteria if key in c[scope]) or '—'
 out.append(f'<h3>Scenario inventory</h3><p>{len(obs)} paths below counted trusted pointer events in Chromium. Other counts are traced through the shipped controls. '
            'Keyboard typing and shortcuts are not silently substituted for required mouse activations.</p>')
 rows=[]
 for key,start,goal,path,budget in scenarios:
     count=sum(actions[a][2] for a in path.split())
     if key in obs and count!=obs[key]:raise ValueError(f'Stale browser count: {key}')
-    rows.append([goal,start,count,budget,' → '.join(path.split()),'Browser counted' if key in obs else 'Control trace'])
-out.append(table(['Goal','Starting state','Clicks','Budget','Interaction IDs','Evidence'],rows))
+    rows.append([goal,start,count,budget,' → '.join(path.split()),'Browser counted' if key in obs else 'Control trace',criterion_for('scenarios',key)])
+out.append(table(['Goal','Starting state','Clicks','Budget','Interaction IDs','Evidence','UX criterion'],rows))
 out.append('<h3>Interaction inventory</h3>')
 for group,entries in survey['interactions'].items():
-    out.append(f'<details><summary>{escape(group)} ({len(entries)})</summary>'+table(['ID','Starting state','Action / result','Clicks'],entries)+'</details>')
+    out.append(f'<details><summary>{escape(group)} ({len(entries)})</summary>'+table(['ID','Starting state','Action / result','Clicks','UX criterion'],[row+[criterion_for('interactions',row[0])] for row in entries])+'</details>')
 out.append('</section><section id="contrast"><h2>Palette and measured contrast</h2><p>Navy surrounds the controls, cream is the reading surface, amber marks action and selection. '
            'Seat numbers, underlines, signed amounts and labeled buttons also carry meaning without color. '
            'These are relative-luminance ratios for rendered CSS pairs, not a whole-app accessibility certification. '

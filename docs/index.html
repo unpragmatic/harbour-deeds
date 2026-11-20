@@ -346,6 +346,41 @@ dialog[open]{display:flex;flex-direction:column}#content{overflow:auto;min-heigh
 @media(max-width:540px){
   #prefsBtn span{display:none}.headright #prefsBtn{padding-inline:6px;font-size:16px}
 }
+
+/* Property mode retains the actual map and treasury; only the turn controls change. */
+.board .tile[data-actionable]:not([data-plot=off]) .tileValue:before{content:"◇";font-weight:850}
+body[data-plot] :is(#turn,#actions,#stage){display:none!important}
+#plotGuide{position:relative;max-width:90%;padding:16px 24px;text-align:left;background:#f8f2de;border:1px solid #576d69;border-inline-start:5px solid #1b595b;color:#1b3741}
+#plotGuide:not([hidden]){display:grid;gap:4px}#plotGuide strong{font:700 clamp(19px,2.4vw,36px)/1.1 Georgia,serif}
+#plotGuide small,.plotReadout>small{font:750 11px/1.3 system-ui;letter-spacing:.08em;text-transform:uppercase}
+#plotGuide span{font:550 14px/1.4 system-ui}#plotGuide b{color:#145459}
+.board .tile[data-plot=off]:disabled{opacity:1;filter:none;background:#d9dcd4;color:#59625e;box-shadow:none;outline:0;cursor:default}
+.board .tile[data-plot=off] .tileValue{color:#53605e}.board .tile[data-plot=off]:before{opacity:.3}
+.board .tile:is([data-plot=candidate],[data-plot=short]){background:#e5fff2;color:#133a39;box-shadow:inset 0 0 0 2px #236958}
+.board .tile[data-plot=short]{background:#f8f1df;box-shadow:inset 0 0 0 2px #776344}
+.board .tile[data-plot]:not([data-plot=off]) .tileValue{font-weight:800;color:#07483f}
+.board .tile[data-scope=district]{border-bottom:4px double #155256}
+.board .tile[data-scope=target]:not([aria-pressed=true]){outline:2px dashed #236958;outline-offset:-5px}
+.board .tile[aria-pressed=true]{background:#ffe5a0;color:#282817;box-shadow:inset 0 0 0 3px #8e5000;outline:0}
+.board .tile[data-plot][aria-pressed=true] .tileValue:before{content:"✓"}.board .tile[data-plot]:focus-visible{outline:3px dashed #00588a;outline-offset:-5px}
+.plotScope{margin:8px 0 2px;width:100%;border-collapse:collapse;font:14px/1.3 system-ui;font-variant-numeric:tabular-nums}
+.plotScope caption{text-align:left;font-weight:750}.plotScope th,.plotScope td{padding:3px 4px;border-bottom:1px solid #9fae9f;text-align:right}.plotScope th:first-child{text-align:left}
+.plotTools,.plotFoot,.plotNav{display:flex;align-items:center;gap:5px}.plotTools{border-bottom:1px solid #82918d;padding-bottom:7px}.plotTools b{font-variant-numeric:tabular-nums}
+#propertyDesk button{min-height:38px;border:1px solid #718a91;border-radius:2px;background:#fff9e8;color:#183541;font:650 14px/1.15 system-ui}
+.plotTools button[aria-pressed=true]{box-shadow:inset 0 -3px 0 #067561}.plotTools #plotCancel,.plotNav{margin-left:auto}
+.plotReadout{margin:9px 0}.plotReadout h2{margin:2px 0;font:700 clamp(22px,2.1vw,30px)/1.1 Georgia,serif}.plotReadout p{font:500 14px/1.35 system-ui;margin:5px 0}
+.plotReadout .facts{display:flex;gap:10px;justify-content:space-between;margin:9px 0}.plotReadout .facts div{min-width:0}.plotReadout .facts dd{font:750 17px/1.1 system-ui;font-variant-numeric:tabular-nums}
+#propertyDesk #plotCommit{min-height:44px;background:#17604e;color:#fff;border-color:#16493e}.plotNav [data-step]{min-width:34px;font-size:22px}
+@media(min-width:801px){
+  #propertyDesk button{background:#243c4d;color:#eef6fa;border-color:#8da5b3}.plotTools button[aria-pressed=true]{background:#3a5366!important;box-shadow:inset 0 -3px 0 #ffcc61}
+  #propertyDesk #plotCommit{background:#ffcc61;color:#172130;border-color:#ffdc93}#propertyDesk #plotCommit:disabled{background:#485966;color:#e9edf0;opacity:.72}
+  .plotReadout>small{color:#ffda8b}.plotReadout .plotDetail{color:#c9d8e1}.plotNav #plotLadder{display:none}
+}
+@media(max-width:800px){
+  body[data-plot] .layout .switcher{display:none}body[data-plot] .layout{grid-template-rows:0 minmax(0,1fr) auto}
+  .plotTools{padding-bottom:4px}.plotReadout{margin:5px 0}.plotReadout .facts{margin:5px 0;padding:4px 0}
+  .plotReadout p{font-size:13px}.plotReadout .plotDetail{color:#43505e}.plotFoot{flex-wrap:wrap}
+}
 </style></head>
 <body>
 <header><div class="mast"><span class="seal" aria-hidden="true">⚓</span><strong>Harbor Deeds</strong></div><div class="headright"><span class="live">Local table</span><button id="soundBtn" aria-label="Sound effects" aria-pressed="false">♪ Off</button><button id="prefsBtn" aria-label="Display settings" title="Display settings">⚙<span> Display</span></button><button id="rulesBtn" aria-label="Rulebook">?</button><button id="setupBtn">New table</button></div></header>
@@ -358,12 +393,13 @@ dialog[open]{display:flex;flex-direction:column}#content{overflow:auto;min-heigh
 <path d="m161 72 44 1-9 7h-26zm20-3V27l-19 42zm3-1 16 2-16-30zm-3-39 9 2-9 3M5 89q14-3 28 0t28 0m18 4q16-3 29 0t29 0m2-7q13-3 25 0t25 0m16-3q13-3 25 0t24 0M37 33q4-3 8 1 3-5 8-4m136-14q4-3 7 1 3-5 8-4m8 25q4-3 7 1 3-5 8-4"/>
 </g></svg>
 <h2 id="boardName">Inner Harbor</h2><div id="chartStatus"></div></div>
+<div id="plotGuide" hidden></div>
 <section id="stage" aria-label="Table action"><div class="stageFace">
 <div class="stageCopy" role="status" aria-atomic="true"><div id="stageTag"></div><div id="stageTitle"></div><div id="stageDetail"></div></div>
 <div id="stageProp" aria-hidden="true"></div></div></section>
 <div id="mobileLadder"></div></div><div id="wake" aria-hidden="true"></div></div>
 <div class="boardfoot"><span>↻ &nbsp; Clockwise</span><span>⚑ Owner · ● Visitor</span></div></section>
-<aside><section class="panel desk" aria-label="Current decision"><div class="panelhead"><small id="phaseLabel">TURN DESK</small><span id="controlType"></span></div><div id="turn" aria-live="polite"></div><div id="actions"></div></section></aside>
+<aside><section class="panel desk" aria-label="Current decision"><div class="panelhead"><small id="phaseLabel">TURN DESK</small><span id="controlType"></span></div><div id="turn" aria-live="polite"></div><div id="actions"></div><section id="propertyDesk" aria-label="Manage board spaces" hidden></section></section></aside>
 <section class="instruments" aria-label="Table inspector">
 <nav class="switcher" aria-label="Game views"><button data-view="board" aria-keyshortcuts="B" title="Inspect a space (B)" aria-pressed="true">Board</button><button data-view="players" aria-keyshortcuts="F" title="Player holdings (F)" aria-pressed="false">Players</button><button data-view="activity" aria-keyshortcuts="L" title="Ship’s log (L)" aria-pressed="false">Activity</button></nav>
 <section id="inspector" aria-label="Selected board space"></section>
@@ -412,7 +448,8 @@ dialog[open]{display:flex;flex-direction:column}#content{overflow:auto;min-heigh
     ["1 · Destination", "Name stays legible at all times. A gold frame means inspected; the ship markers show actual occupants."],
     ["2 · Decision value", "Vacant deed: purchase price. Owned deed: current rent. Fee: amount owed. District color is a stripe, not another line of microtext."],
     ["3 · Ownership and presence", "Flag with seat number: owner. Numbered discs: visiting merchants. Use a separate line when both occur."],
-    ["4 · Detail on demand", "Inspector and accessible label carry district, level, precise amounts and full effects. Never rely on color or sound alone."]
+    ["4 · Detail on demand", "Inspector and accessible label carry district, level, precise amounts and full effects. Never rely on color or sound alone."],
+    ["Property map · eligibility and consequence", "A hollow diamond and signed quote mark each candidate; a check identifies the selected deed. Show affected district members separately from the clicked member. See the board-target-preview criterion in the interaction and scenario audit."]
   ],
   "commands": {
     "start":["Start or rematch","Fresh board; no startup fanfare","quiet"],
@@ -443,7 +480,8 @@ dialog[open]{display:flex;flex-direction:column}#content{overflow:auto;min-heigh
     ["Rent / fee / card","Confirm the amount and card name without obstructing the next action."],
     ["Guild / exchange / works","Distinguish the visiting ship from the deed under auction or receiving a project; make both sides of each offer explicit."],
     ["Local presentation","Open Display settings, choose the visual pace on this device only. Keep the operating system’s reduced-motion preference and bid clock independent of presentation."],
-    ["Trading / building","Review both legs or project economics. Cancel or hold without a success cue."],
+    ["Trading","Review both legs. Cancel without a success cue."],
+    ["Manage deeds / public works","Select the actual deed, not a menu entry. Compare Improve and Sell without leaving the map. Show all engine-quoted candidates, the selected deed, cash afterward and the effect of confirming. Selection, mode switching and cancellation must never issue a game command."],
     ["Audio / motion","Local foley starts after user interaction unless muted. Reduced motion keeps the settled dice, outcome and balance changes without a moving pawn, stamp or ripple. Review with review/motion.py."],
     ["Results / leave","Show winners and scores. Rematch locally or explicitly end the network table."]
   ]
@@ -1321,6 +1359,154 @@ function networkStep(r){
   window.addEventListener('pageshow',e=>{if(e.persisted&&!room&&$('setupBtn').textContent==='Network table')location.reload()});
 }
 
+// Only a live human controller can open a preview. The quote and command key come from Rust.
+let plotAccess=null,plotDesk=null;
+const plotModes={build:'Improve',sell:'Sell',commission:'Refit'};
+const plotMembers=q=>q.tiles??[q.tile];
+const plotQuotes=(s,mode)=>({build:s.builds,sell:s.sells,commission:s.commissions}[mode]??[]);
+const plotQuote=(s,mode,i)=>plotQuotes(s,mode).find(q=>plotMembers(q).includes(i));
+function enablePlots(s,send,signal){
+  const cells=rules.tiles.map((_,i)=>{
+    const b=$(`tile-${i}`),label=b.getAttribute('aria-label'),value=b.querySelector('.tileValue').textContent;
+    const modes=Object.keys(plotModes).filter(mode=>plotQuote(s,mode,i));
+    if(modes.length){b.dataset.actionable='';b.setAttribute('aria-label',`${label}. Preview: ${modes.map(m=>plotModes[m]).join(' or ')}`)}
+    return {b,label,value,modes};
+  });
+  const access={s,send,cells};
+  plotAccess=access;
+  $('turn').insertAdjacentHTML('beforeend','<p class="plotHint">◇ Select a marked deed on the board to preview your options.</p>');
+  signal.addEventListener('abort',()=>{if(plotAccess===access)releasePlots()},{once:true});
+}
+function releasePlots(){
+  if(!plotAccess)return;
+  closePlots();
+  for(const {b,label} of plotAccess.cells){delete b.dataset.actionable;b.setAttribute('aria-label',label)}
+  $('turn').querySelector('.plotHint')?.remove();
+  plotAccess=null;
+}
+function closePlots(focus=false){
+  if(!plotDesk)return;
+  const {origin}=plotDesk;
+  plotDesk=null;
+  delete document.body.dataset.plot;
+  $('propertyDesk').hidden=$('plotGuide').hidden=true;
+  $('propertyDesk').replaceChildren();$('plotGuide').replaceChildren();
+  for(const {b,label,value,modes} of plotAccess.cells){
+    delete b.dataset.plot;delete b.dataset.scope;
+    b.disabled=false;b.removeAttribute('aria-pressed');b.removeAttribute('title');
+    b.setAttribute('aria-label',label+(modes.length?`. Preview: ${modes.map(m=>plotModes[m]).join(' or ')}`:''));
+    b.querySelector('.tileValue').textContent=value;
+  }
+  selectSpace(inspected);
+  if(focus)(origin?.isConnected&&origin!==document.body?origin:$('manageDeeds'))?.focus({preventScroll:true});
+}
+function pickPlot(i){
+  if(!plotAccess)return false;
+  const {s,cells}=plotAccess;
+  if(plotDesk){if(plotQuote(s,plotDesk.mode,i))setPlot(i);return true}
+  if(!cells[i].modes.length)return false;
+  openPlots(cells[i].modes[0],i);return true;
+}
+function openPlots(mode,i){
+  if(!plotAccess)return;
+  const {s}=plotAccess;
+  const cash=s.players[s.turn].cash;
+  mode??=s.phase==='works'?'commission':s.builds.some(q=>q.cost<=cash)||!s.sells?.length?'build':'sell';
+  const preferred=i??plotDesk?.i??inspected;
+  const options=plotQuotes(s,mode);
+  const q=plotQuote(s,mode,preferred)??options.find(x=>!(x.cost>cash))??options[0];
+  const origin=plotDesk?.origin??document.activeElement;
+  showView('board');
+  plotDesk={origin,mode,i:null};
+  document.body.dataset.plot=mode;
+  $('propertyDesk').hidden=false;
+  setPlot(q?(plotMembers(q).includes(preferred)?preferred:q.tile):null);
+  // Keep the focus on a non-spending control, never on a new confirmation.
+  (i!==undefined?$(`tile-${i}`):$('propertyDesk').querySelector('[aria-pressed=true]')??$('plotCancel')).focus({preventScroll:true});
+}
+function stepPlot(dir,focus=false){
+  const {s}=plotAccess,{mode,i}=plotDesk;
+  const spaces=plotQuotes(s,mode).flatMap(plotMembers).sort((a,b)=>a-b);
+  if(!spaces.length)return;
+  const next=spaces[(spaces.indexOf(i)+dir+spaces.length)%spaces.length];
+  setPlot(next);
+  if(focus)$(`tile-${next}`).focus({preventScroll:true});
+}
+function plotImpact(s,mode,i,q){
+  const t=rules.tiles[i],cash=s.players[s.turn].cash;
+  const group=rules.tiles.flatMap((x,k)=>x.kind==='deed'&&x.group===t.group?[k]:[]);
+  if(mode==='sell'){
+    const complete=group.every(k=>s.owners[k]===s.turn);
+    return {metrics:[['Bank pays','+'+money(q.price)],['Cash after',money(cash+q.price)],['Rent forfeited',money(s.rents[i])]],
+      note:`Returns to market.${complete?' Breaks the set: remaining deeds lose their set rent.':''}${s.bonuses?.[i]?' The unused refit is lost.':''}`,
+      detail:bankTerms(),scope:complete?group:[i],button:`Sell for ${money(q.price)}`};
+  }
+  const short=q.cost>cash,after=short?`${money(q.cost-cash)} short`:money(cash-q.cost);
+  if(mode==='commission')return {metrics:[['Fee now',money(q.cost)],['Cash after',after],['Next rent',`${money(s.rents[i])} → ${money(s.rents[i]+q.gain)}`]],
+    note:`+${money(q.gain)} once: gain ${money(q.gain-q.cost)} net if collected in full; lose ${money(q.cost)} if unused.`,
+    detail:'No full set required. This is not a permanent level.',scope:[i],button:`Refit for ${money(q.cost)}`};
+  const d=rules.development,affected=plotMembers(q);
+  const next=k=>Math.round(rules.tiles[k].rent*d.levels[s.levels[k]].rent_pct/100);
+  const current=k=>s.rents[k]-(s.bonuses?.[k]??0);
+  const gains=affected.map(k=>next(k)-current(k));
+  const range=(nums,format)=>{const lo=Math.min(...nums),hi=Math.max(...nums);return lo===hi?format(lo):`${format(lo)}–${format(hi)}`};
+  const rolls=(rules.rounds-s.round)*(s.players.filter(p=>!p.out).length-1)+s.players.filter((p,k)=>!p.out&&k>s.turn).length;
+  const visits=range(gains.map(g=>g>0?Math.ceil(q.cost/g):Infinity),v=>Number.isFinite(v)?String(v):'∞');
+  return {metrics:[['Build cost',money(q.cost)],['Cash after',after],['Rent / visit',`${money(current(i))} → ${money(next(i))}`]],
+    note:`${affected.length>1?`All ${affected.length} deeds improve. `:''}+${range(gains,money)} per paying visit · ${visits} to recover cost. ${t.group} ${s.locked[i]?'stays locked':'locks'} against sale and trade.`,
+    detail:`Level ${s.levels[i]} → ${s.levels[i]+1}. Up to ${rolls} rival rolls left. No resale value.${s.bonuses?.[i]?' Permanent rents shown; the one-use refit remains.':''}`,scope:s.locked[i]?affected:group,button:`Build for ${money(q.cost)}`};
+}
+function districtPreview(s,mode,i,q,scope){
+  if(scope.length<2)return '';
+  return `<table class="plotScope"><caption>${rules.tiles[i].group} · rent you collect after confirming</caption><thead><tr><th>Space</th><th>Now</th><th>After</th></tr></thead><tbody>${scope.map(k=>{
+    const t=rules.tiles[k],bonus=s.bonuses?.[k]??0,before=s.rents[k];
+    const after=mode==='sell'?(k===i?0:t.rent+bonus):q.tiles.includes(k)?Math.round(t.rent*rules.development.levels[s.levels[k]].rent_pct/100)+bonus:before;
+    return `<tr><th>${t.name}</th><td>${money(before)}</td><td>${before===after?'Unchanged':money(after)}</td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+function setPlot(i){
+  const {s,cells}=plotAccess,{mode}=plotDesk;
+  plotDesk.i=i;
+  const options=plotQuotes(s,mode),q=i===null?null:plotQuote(s,mode,i),members=q?plotMembers(q):[];
+  const impact=q?plotImpact(s,mode,i,q):null;
+  if(q)selectSpace(i);
+  const cash=s.players[s.turn].cash,spaceCount=options.flatMap(plotMembers).length;
+  for(const [k,{b,label,value}] of cells.entries()){
+    const option=plotQuote(s,mode,k),short=option?.cost>cash;
+    b.disabled=!option;
+    b.dataset.plot=!option?'off':short?'short':'candidate';
+    if(impact?.scope.includes(k))b.dataset.scope=members.includes(k)?'target':'district';else delete b.dataset.scope;
+    b.classList.toggle('selected',k===i);
+    if(option)b.setAttribute('aria-pressed',String(k===i));else b.removeAttribute('aria-pressed');
+    const price=option?(mode==='sell'?'+'+money(option.price):'−'+money(option.cost)):'';
+    b.querySelector('.tileValue').textContent=option?(short?'! ':'')+price:value;
+    const action=option?`${plotModes[mode]} preview, ${price}${short?', not affordable':''}`:'Not a candidate';
+    b.setAttribute('aria-label',`${label.replace(/\. Inspect space$/,'')}. ${action}.${b.dataset.scope==='district'?' District affected.':''}`);
+    b.title=action;
+  }
+  const count=`${spaceCount} marked ${spaceCount===1?'space':'spaces'}`;
+  const district=q?districtPreview(s,mode,i,q,impact.scope):'';
+  const guide=$('plotGuide');guide.hidden=false;
+  guide.innerHTML=`<small>PROPERTY MAP</small><strong>${({build:'Improvements',sell:'Bank sales',commission:'Public works'})[mode]}</strong><span><b>◇</b> ${count} · ${mode==='sell'?'bank payout':'project cost'} on each tile</span><span><b>✓</b> Selected${options.some(x=>x.cost>cash)?' · ! Insufficient cash':''}. Select a tile to preview; no money moves.</span>${district}`;
+  if(q)$('inspector').innerHTML=`<small class="plate">${rules.tiles[i].name} / ${rules.tiles[i].group}</small>${curve(i)}`;
+  const desk=$('propertyDesk'),modes=s.phase==='works'?['commission']:['build','sell'];
+  desk.innerHTML=`<div class="plotTools">${modes.map(m=>`<button data-mode="${m}" aria-pressed="${m===mode}">${plotModes[m]} <b>${plotQuotes(s,m).length}</b></button>`).join('')}<button id="plotCancel" aria-label="Close property desk">Cancel</button></div>
+    <div role="status" aria-atomic="true" class="plotReadout"><small>${q?`${rules.tiles[i].group} · `:''}${count}</small><h2>${q?rules.tiles[i].name:`Nothing to ${plotModes[mode].toLowerCase()}`}</h2>
+    ${q?facts(impact.metrics)+`<p>${impact.note}</p><p class="plotDetail">${impact.detail}</p>`:`<p>${mode==='build'?'Complete a district and meet its level rules before building.':'No owned deed is available for this action.'}</p>`}</div>
+    ${q?`<div class="plotFoot"><button class="primary" id="plotCommit" ${q.cost>cash?'disabled':''}>${impact.button}</button><div class="plotNav">${spaceCount>1?'<button data-step="-1" aria-label="Previous candidate">‹</button><button data-step="1" aria-label="Next candidate">›</button>':''}<button id="plotLadder">Rent tiers</button></div></div>`:''}`;
+  for(const b of desk.querySelectorAll('[data-mode]'))b.onclick=()=>openPlots(b.dataset.mode);
+  $('plotCancel').onclick=()=>closePlots(true);
+  if(!q)return;
+  $('plotCommit').onclick=()=>{const {send}=plotAccess;send(mode,{tile:q.tile})};
+  $('plotLadder').onclick=()=>openDialog(`<h2>${rules.tiles[i].name}</h2>${district}${curve(i)}`);
+  for(const b of desk.querySelectorAll('[data-step]'))b.onclick=()=>{const d=b.dataset.step;stepPlot(+d);desk.querySelector(`[data-step="${d}"]`)?.focus({preventScroll:true})};
+  // Scroll the folded chart only, not the treasury or the command panel.
+  if($('board').classList.contains('route')){
+    const pane=$('boardView'),box=pane.getBoundingClientRect(),tile=cells[i].b.getBoundingClientRect();
+    if(tile.top<box.top||tile.bottom>box.bottom)pane.scrollTop+=tile.top-box.top-(box.height-tile.height)/2;
+  }
+}
+
 const $ = id => document.getElementById(id);
 const maps = {compact:JSON.parse($('config').textContent),outer:JSON.parse($('outer').textContent),grand:JSON.parse($('grand').textContent)};
 const currentEdition='dockworks-1',legacyMaps=JSON.parse($('legacyMaps').textContent);
@@ -1345,35 +1531,9 @@ function command(input) {
 }
 
 const deeds = (s, who) => s.owners.flatMap((owner,i)=>owner===who?[i]:[]);
-function sellSheet(s,send){
-  const a=s.turn;
-  openDialog(`<small>BANK COUNTER · ${seat(a)}</small><h2>Sell a deed</h2><label class="field">Property<select id="saleDeed">${s.sells.map(q=>`<option value="${q.tile}">${rules.tiles[q.tile].name}</option>`).join('')}</select></label><div id="saleQuote"></div><button id="sellConfirm" class="primary"></button> <button id="keepDeed">Keep deed</button>`);
-  const selected=s.sells.find(q=>q.tile===inspected);
-  if(selected)$('saleDeed').value=String(selected.tile);
-  const preview=()=>{
-    const q=s.sells[$('saleDeed').selectedIndex],t=rules.tiles[q.tile];
-    const complete=rules.tiles.every((x,k)=>x.group!==t.group||s.owners[k]===a);
-    $('saleQuote').innerHTML=facts([['Bank pays',money(q.price)],['Cash after',money(s.players[a].cash+q.price)],['Next rent given up',money(s.rents[q.tile])]])+`<p>${bankTerms()} ${t.name} returns to market. ${complete?'Selling breaks your set and removes its rent bonus. ':''}${s.bonuses?.[q.tile]?'The unused refit is cancelled without reimbursement. ':''}You can still roll this turn.</p>`;
-    $('sellConfirm').textContent=`Sell for ${money(q.price)}`;
-    $('sellConfirm').onclick=()=>{$('modal').close();send('sell',{tile:q.tile})};
-  };
-  $('saleDeed').onchange=preview;$('keepDeed').onclick=()=>$('modal').close();preview();
-}
 function bankTerms(){
   const sale=rules.bank_sale??{rate_pct:50,basis:'list'};
   return `The bank pays ${sale.rate_pct}% of ${sale.basis==='list'?'the printed list price':'the price last paid to the bank'}.`;
-}
-function worksSheet(s,send){
-  const a=s.turn;
-  openDialog(`<small>PUBLIC WORKS · ${seat(a)}</small><h2>Refit a deed</h2><label class="field">Project<select id="worksDeed">${s.commissions.map(q=>`<option value="${q.tile}">${rules.tiles[q.tile].name}</option>`).join('')}</select></label><div id="commissionQuote"></div><button class="primary" id="commissionPay"></button> <button id="worksBack">Back</button>`);
-  const preview=()=>{
-    const q=s.commissions[$('worksDeed').selectedIndex];
-    $('commissionQuote').innerHTML=facts([['Pay now',money(q.cost)],['Next rent',money(s.rents[q.tile]+q.gain)],['Bonus once','+'+money(q.gain)]])+`<p>${money(q.gain-q.cost)} net gain if a rival pays the bonus in full; lose the ${money(q.cost)} fee if no rival visits. No permanent level or resale premium.</p><p>Cash after: ${q.cost>s.players[a].cash?'Not affordable':money(s.players[a].cash-q.cost)}</p>`;
-    $('commissionPay').textContent=`Commission · ${money(q.cost)}`;
-    $('commissionPay').disabled=q.cost>s.players[a].cash;
-    $('commissionPay').onclick=()=>{$('modal').close();send('commission',{tile:q.tile})};
-  };
-  $('worksDeed').onchange=preview;$('worksBack').onclick=()=>$('modal').close();preview();
 }
 function compose(s, send) {
   const deeds=(snapshot,who)=>snapshot.owners.flatMap((owner,i)=>owner===who&&!locked(snapshot,rules,i)?[i]:[]);
@@ -1449,7 +1609,7 @@ function bidClock(seconds,signal,onExpiry) {
 const controllers = {
   human: (s, signal) => new Promise(resolve => {
     const actor=actingSeat(s), cash=s.players[actor].cash;
-    const send=(action,extra={})=>resolve({action,actor,...extra});
+    const send=(action,extra={})=>{if(plotAccess?.s===s)releasePlots();resolve({action,actor,...extra})};
     signal.addEventListener('abort',()=>resolve(null),{once:true});
     function button(label,fn,primary=false,disabled=false) {
       const b = document.createElement('button');
@@ -1465,30 +1625,10 @@ const controllers = {
     if(s.phase==='roll'){
       button('Roll dice',()=>send('roll'),true);
       if(!s.traded && s.owners.some((o,i)=>o!==null&&!locked(s,rules,i))) button('Draft trade',()=>compose(s,send));
-      if(s.sells?.length)button('Sell deed',()=>sellSheet(s,send));
-      if(s.builds.length)button('Improve',()=>{
-        const after=s.players.filter((p,i)=>!p.out&&i>actor).length;
-        const rolls=(rules.rounds-s.round)*(s.players.filter(p=>!p.out).length-1)+after;
-        openDialog(`<h2>Build or hold?</h2><p>${money(cash)} cash · up to ${rolls} opponent rolls left.</p><label class="field">Project<select id="project"></select></label><div id="projectCurve"></div><p class="buildNote">Construction has no resale value. Building locks this district against both sale and trade.</p><div id="builds"></div><button id="hold">Keep cash</button>`);
-        $('hold').onclick=()=>$('modal').close();
-        for(const q of s.builds){
-          const el=document.createElement('button');const t=rules.tiles[q.tile];
-          $('project').add(new Option(q.tiles.length>1?t.group:t.name,String(q.tile)));
-          const district=q.tiles.length>1;
-          const gains=q.tiles.map(k=>Math.round(rules.tiles[k].rent*rules.development.levels[s.levels[k]].rent_pct/100)-(s.rents[k]-(s.bonuses?.[k]??0)));
-          const lo=Math.min(...gains),hi=Math.max(...gains);
-          const visits=n=>n>0?Math.ceil(q.cost/n):Infinity;
-          const needed=visits(lo)===visits(hi)?visits(lo):`${visits(hi)}–${visits(lo)}`;
-          el.className='buildChoice';
-          el.innerHTML=`<strong>${district?t.group:t.name} · Level ${s.levels[q.tile]+1}</strong><b>Build ${money(q.cost)}</b><span>+${money(lo)}${lo===hi?'':`–${money(hi)}`} per paying visit · ${needed} to recover cost</span><span>${q.cost>cash?`${money(q.cost-cash)} short`:`Cash after: ${money(cash-q.cost)}`}</span>`;
-          el.disabled=q.cost>cash;el.onclick=()=>{$('modal').close();send('build',{tile:q.tile})};$('builds').append(el);
-        }
-        const preview=()=>{
-          const n=$('project').selectedIndex,q=s.builds[n];
-          $('projectCurve').innerHTML=curve(q.tile);
-          [...$('builds').children].forEach((el,i)=>el.hidden=i!==n);
-        };$('project').onchange=preview;preview();
-      });
+      if(s.sells?.length||s.builds.length){
+        const entry=button('Manage deeds',()=>openPlots());entry.id='manageDeeds';entry.setAttribute('aria-keyshortcuts','I S');
+        enablePlots(s,send,signal);
+      }
     }else if(s.phase==='offer'){
       const cost=rules.tiles[s.players[actor].pos].price;
       button(`Buy · ${money(cost)}`,()=>send('buy'),true,cash<cost);
@@ -1510,7 +1650,8 @@ const controllers = {
       }
       button('Withdraw',()=>send('withdraw'));
     }else if(s.phase==='works'){
-      button('Review refit',()=>worksSheet(s,send),true,!s.commissions.length);
+      button('Review refit',()=>openPlots('commission'),true,!s.commissions.length).id='manageDeeds';
+      if(s.commissions.length)enablePlots(s,send,signal);
       button('Pass on refit',()=>send('skip'));
     }else if(s.phase==='guild'){
       const tile=rules.tiles[s.players[actor].pos];
@@ -1603,9 +1744,11 @@ function render() {
       b.className='tile '+(tile.kind==='deed'?'deed':'special');
       b.dataset.kind=tile.kind;
       b.style.setProperty('--band',bands[tile.group] || '#718373');
-      b.onclick=()=>detail(i);
+      b.onclick=()=>{if(!pickPlot(i))detail(i)};
       b.onkeydown=e=>{
-        const dir={ArrowLeft:-1,ArrowRight:1}[e.key];if(!dir||!desktop.matches)return;
+        const dir={ArrowLeft:-1,ArrowRight:1}[e.key];if(!dir)return;
+        if(plotDesk){e.preventDefault();stepPlot(dir,true);return}
+        if(!desktop.matches)return;
         e.preventDefault();const next=(i+dir+rules.tiles.length)%rules.tiles.length;
         $(`tile-${next}`).focus();detail(next);
       };
@@ -1711,6 +1854,7 @@ function settings(){
     <label class="field">Human bid clock<select id="clock"><option value="5" selected>5 seconds</option><option value="0">Untimed</option><option value="15">15 seconds</option><option value="30">30 seconds</option></select></label>`;
 }
 function showView(name){
+  if(plotDesk&&name!=='board')closePlots();
   document.body.dataset.instrument=name;
   for(const tab of document.querySelectorAll('[data-view]')){
     const active=tab.dataset.view===name;tab.setAttribute('aria-pressed',String(active));
@@ -1723,9 +1867,14 @@ desktop.addEventListener('change',()=>showView(document.querySelector('[data-vie
 $('register').onclick=e=>{const b=e.target.closest('[data-deed]');if(b)detail(+b.dataset.deed)};
 document.querySelector('.switcher').onclick=e=>{if(e.target.dataset.view)showView(e.target.dataset.view)};
 document.addEventListener('keydown',e=>{
-  if(!desktop.matches||$('modal').open||e.repeat||e.isComposing||e.altKey||e.ctrlKey||e.metaKey||e.target.matches('input,textarea,select,[contenteditable=true]'))return;
+  if($('modal').open||e.repeat||e.isComposing||e.altKey||e.ctrlKey||e.metaKey||e.target.matches('input,textarea,select,[contenteditable=true]'))return;
+  if(plotDesk&&e.key==='Escape'){e.preventDefault();closePlots(true);return}
+  if(!desktop.matches)return;
   const key=e.key.toUpperCase(),view={B:'board',F:'players',L:'activity'}[key];
-  const control=view?document.querySelector(`[data-view="${view}"]`):key==='?'?$('rulesBtn'):/^[RTIS]$/.test(key)?document.querySelector(`#actions [data-key="${key}"]:enabled`):null;
+  if(plotAccess?.s.phase==='roll'&&['I','S'].includes(key)){
+    e.preventDefault();openPlots(key==='I'?'build':'sell');return;
+  }
+  const control=view?document.querySelector(`[data-view="${view}"]`):key==='?'?$('rulesBtn'):!plotDesk&&/^[RT]$/.test(key)?document.querySelector(`#actions [data-key="${key}"]:enabled`):null;
   if(control){e.preventDefault();control.click()}
 });
 function setup(){
@@ -1753,8 +1902,8 @@ try {
   initFeedback();
   $('rulesBtn').addEventListener('click',()=>{
     $('content').insertAdjacentHTML('afterbegin','<p class="keyGuide"><b>Desktop keys</b> &nbsp; R Roll · T Draft trade · I Improve · S Sell quote · B Space · F Players · L Activity · ← → browse focused spaces · Esc close sheet</p>');
-    $('content').insertAdjacentHTML('beforeend',`<h3>Sell to the bank</h3><p>Before rolling, choose Sell deed. ${bankTerms()} Player trades leave the original bank acquisition price unchanged. Confirm the cash quote to return the deed to market. Permanently developed districts cannot be sold.</p>${rules.tiles.some(t=>t.kind==='works')?'<h3>Public works</h3><p>Land at a works with an eligible deed to commission a one-use rent bonus. It pays only on the next rival rent. No full set is needed, and passing costs nothing.</p>':''}`);
-    $('content').insertAdjacentHTML('beforeend',`<h3>Improve full districts</h3><p>Before rolling, choose Improve. This table uses ${({even:'even building: improve a lowest-level deed',free:'unrestricted building: choose any deed',district:'whole-district building: improve every deed together'})[rules.development.policy]}. There are ${rules.development.levels.length} levels. Construction raises rent, locks the district against trades and has no end-game resale value.</p><a href="./development.html" target="_blank" rel="noopener">See costs and break-even analysis</a>`);
+    $('content').insertAdjacentHTML('beforeend',`<h3>Manage deeds on the board</h3><p>Before rolling, select a marked deed or choose Manage deeds. Switch between Improve and Sell to compare your options. Selecting a space only previews it; Confirm is a separate action. ${bankTerms()} Player trades leave the original bank acquisition price unchanged. Permanently developed districts cannot be sold.</p>${rules.tiles.some(t=>t.kind==='works')?'<h3>Public works</h3><p>Land at a works with an eligible deed to commission a one-use rent bonus. It pays only on the next rival rent. No full set is needed, and passing costs nothing.</p>':''}`);
+    $('content').insertAdjacentHTML('beforeend',`<h3>Improve full districts</h3><p>This table uses ${({even:'even building: improve a lowest-level deed',free:'unrestricted building: choose any deed',district:'whole-district building: improve every deed together'})[rules.development.policy]}. There are ${rules.development.levels.length} levels. Construction raises rent, locks the district against trades and has no end-game resale value.</p><a href="./development.html" target="_blank" rel="noopener">See costs and break-even analysis</a>`);
   });
   const bytes=Uint8Array.from(atob($('binary').textContent),c=>c.charCodeAt(0));
   engine=(await WebAssembly.instantiate(bytes)).instance.exports;

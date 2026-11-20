@@ -22,35 +22,9 @@ function command(input) {
 }
 
 const deeds = (s, who) => s.owners.flatMap((owner,i)=>owner===who?[i]:[]);
-function sellSheet(s,send){
-  const a=s.turn;
-  openDialog(`<small>BANK COUNTER · ${seat(a)}</small><h2>Sell a deed</h2><label class="field">Property<select id="saleDeed">${s.sells.map(q=>`<option value="${q.tile}">${rules.tiles[q.tile].name}</option>`).join('')}</select></label><div id="saleQuote"></div><button id="sellConfirm" class="primary"></button> <button id="keepDeed">Keep deed</button>`);
-  const selected=s.sells.find(q=>q.tile===inspected);
-  if(selected)$('saleDeed').value=String(selected.tile);
-  const preview=()=>{
-    const q=s.sells[$('saleDeed').selectedIndex],t=rules.tiles[q.tile];
-    const complete=rules.tiles.every((x,k)=>x.group!==t.group||s.owners[k]===a);
-    $('saleQuote').innerHTML=facts([['Bank pays',money(q.price)],['Cash after',money(s.players[a].cash+q.price)],['Next rent given up',money(s.rents[q.tile])]])+`<p>${bankTerms()} ${t.name} returns to market. ${complete?'Selling breaks your set and removes its rent bonus. ':''}${s.bonuses?.[q.tile]?'The unused refit is cancelled without reimbursement. ':''}You can still roll this turn.</p>`;
-    $('sellConfirm').textContent=`Sell for ${money(q.price)}`;
-    $('sellConfirm').onclick=()=>{$('modal').close();send('sell',{tile:q.tile})};
-  };
-  $('saleDeed').onchange=preview;$('keepDeed').onclick=()=>$('modal').close();preview();
-}
 function bankTerms(){
   const sale=rules.bank_sale??{rate_pct:50,basis:'list'};
   return `The bank pays ${sale.rate_pct}% of ${sale.basis==='list'?'the printed list price':'the price last paid to the bank'}.`;
-}
-function worksSheet(s,send){
-  const a=s.turn;
-  openDialog(`<small>PUBLIC WORKS · ${seat(a)}</small><h2>Refit a deed</h2><label class="field">Project<select id="worksDeed">${s.commissions.map(q=>`<option value="${q.tile}">${rules.tiles[q.tile].name}</option>`).join('')}</select></label><div id="commissionQuote"></div><button class="primary" id="commissionPay"></button> <button id="worksBack">Back</button>`);
-  const preview=()=>{
-    const q=s.commissions[$('worksDeed').selectedIndex];
-    $('commissionQuote').innerHTML=facts([['Pay now',money(q.cost)],['Next rent',money(s.rents[q.tile]+q.gain)],['Bonus once','+'+money(q.gain)]])+`<p>${money(q.gain-q.cost)} net gain if a rival pays the bonus in full; lose the ${money(q.cost)} fee if no rival visits. No permanent level or resale premium.</p><p>Cash after: ${q.cost>s.players[a].cash?'Not affordable':money(s.players[a].cash-q.cost)}</p>`;
-    $('commissionPay').textContent=`Commission · ${money(q.cost)}`;
-    $('commissionPay').disabled=q.cost>s.players[a].cash;
-    $('commissionPay').onclick=()=>{$('modal').close();send('commission',{tile:q.tile})};
-  };
-  $('worksDeed').onchange=preview;$('worksBack').onclick=()=>$('modal').close();preview();
 }
 function compose(s, send) {
   const deeds=(snapshot,who)=>snapshot.owners.flatMap((owner,i)=>owner===who&&!locked(snapshot,rules,i)?[i]:[]);
@@ -126,7 +100,7 @@ function bidClock(seconds,signal,onExpiry) {
 const controllers = {
   human: (s, signal) => new Promise(resolve => {
     const actor=actingSeat(s), cash=s.players[actor].cash;
-    const send=(action,extra={})=>resolve({action,actor,...extra});
+    const send=(action,extra={})=>{if(plotAccess?.s===s)releasePlots();resolve({action,actor,...extra})};
     signal.addEventListener('abort',()=>resolve(null),{once:true});
     function button(label,fn,primary=false,disabled=false) {
       const b = document.createElement('button');
@@ -142,30 +116,10 @@ const controllers = {
     if(s.phase==='roll'){
       button('Roll dice',()=>send('roll'),true);
       if(!s.traded && s.owners.some((o,i)=>o!==null&&!locked(s,rules,i))) button('Draft trade',()=>compose(s,send));
-      if(s.sells?.length)button('Sell deed',()=>sellSheet(s,send));
-      if(s.builds.length)button('Improve',()=>{
-        const after=s.players.filter((p,i)=>!p.out&&i>actor).length;
-        const rolls=(rules.rounds-s.round)*(s.players.filter(p=>!p.out).length-1)+after;
-        openDialog(`<h2>Build or hold?</h2><p>${money(cash)} cash · up to ${rolls} opponent rolls left.</p><label class="field">Project<select id="project"></select></label><div id="projectCurve"></div><p class="buildNote">Construction has no resale value. Building locks this district against both sale and trade.</p><div id="builds"></div><button id="hold">Keep cash</button>`);
-        $('hold').onclick=()=>$('modal').close();
-        for(const q of s.builds){
-          const el=document.createElement('button');const t=rules.tiles[q.tile];
-          $('project').add(new Option(q.tiles.length>1?t.group:t.name,String(q.tile)));
-          const district=q.tiles.length>1;
-          const gains=q.tiles.map(k=>Math.round(rules.tiles[k].rent*rules.development.levels[s.levels[k]].rent_pct/100)-(s.rents[k]-(s.bonuses?.[k]??0)));
-          const lo=Math.min(...gains),hi=Math.max(...gains);
-          const visits=n=>n>0?Math.ceil(q.cost/n):Infinity;
-          const needed=visits(lo)===visits(hi)?visits(lo):`${visits(hi)}–${visits(lo)}`;
-          el.className='buildChoice';
-          el.innerHTML=`<strong>${district?t.group:t.name} · Level ${s.levels[q.tile]+1}</strong><b>Build ${money(q.cost)}</b><span>+${money(lo)}${lo===hi?'':`–${money(hi)}`} per paying visit · ${needed} to recover cost</span><span>${q.cost>cash?`${money(q.cost-cash)} short`:`Cash after: ${money(cash-q.cost)}`}</span>`;
-          el.disabled=q.cost>cash;el.onclick=()=>{$('modal').close();send('build',{tile:q.tile})};$('builds').append(el);
-        }
-        const preview=()=>{
-          const n=$('project').selectedIndex,q=s.builds[n];
-          $('projectCurve').innerHTML=curve(q.tile);
-          [...$('builds').children].forEach((el,i)=>el.hidden=i!==n);
-        };$('project').onchange=preview;preview();
-      });
+      if(s.sells?.length||s.builds.length){
+        const entry=button('Manage deeds',()=>openPlots());entry.id='manageDeeds';entry.setAttribute('aria-keyshortcuts','I S');
+        enablePlots(s,send,signal);
+      }
     }else if(s.phase==='offer'){
       const cost=rules.tiles[s.players[actor].pos].price;
       button(`Buy · ${money(cost)}`,()=>send('buy'),true,cash<cost);
@@ -187,7 +141,8 @@ const controllers = {
       }
       button('Withdraw',()=>send('withdraw'));
     }else if(s.phase==='works'){
-      button('Review refit',()=>worksSheet(s,send),true,!s.commissions.length);
+      button('Review refit',()=>openPlots('commission'),true,!s.commissions.length).id='manageDeeds';
+      if(s.commissions.length)enablePlots(s,send,signal);
       button('Pass on refit',()=>send('skip'));
     }else if(s.phase==='guild'){
       const tile=rules.tiles[s.players[actor].pos];
@@ -280,9 +235,11 @@ function render() {
       b.className='tile '+(tile.kind==='deed'?'deed':'special');
       b.dataset.kind=tile.kind;
       b.style.setProperty('--band',bands[tile.group] || '#718373');
-      b.onclick=()=>detail(i);
+      b.onclick=()=>{if(!pickPlot(i))detail(i)};
       b.onkeydown=e=>{
-        const dir={ArrowLeft:-1,ArrowRight:1}[e.key];if(!dir||!desktop.matches)return;
+        const dir={ArrowLeft:-1,ArrowRight:1}[e.key];if(!dir)return;
+        if(plotDesk){e.preventDefault();stepPlot(dir,true);return}
+        if(!desktop.matches)return;
         e.preventDefault();const next=(i+dir+rules.tiles.length)%rules.tiles.length;
         $(`tile-${next}`).focus();detail(next);
       };
@@ -388,6 +345,7 @@ function settings(){
     <label class="field">Human bid clock<select id="clock"><option value="5" selected>5 seconds</option><option value="0">Untimed</option><option value="15">15 seconds</option><option value="30">30 seconds</option></select></label>`;
 }
 function showView(name){
+  if(plotDesk&&name!=='board')closePlots();
   document.body.dataset.instrument=name;
   for(const tab of document.querySelectorAll('[data-view]')){
     const active=tab.dataset.view===name;tab.setAttribute('aria-pressed',String(active));
@@ -400,9 +358,14 @@ desktop.addEventListener('change',()=>showView(document.querySelector('[data-vie
 $('register').onclick=e=>{const b=e.target.closest('[data-deed]');if(b)detail(+b.dataset.deed)};
 document.querySelector('.switcher').onclick=e=>{if(e.target.dataset.view)showView(e.target.dataset.view)};
 document.addEventListener('keydown',e=>{
-  if(!desktop.matches||$('modal').open||e.repeat||e.isComposing||e.altKey||e.ctrlKey||e.metaKey||e.target.matches('input,textarea,select,[contenteditable=true]'))return;
+  if($('modal').open||e.repeat||e.isComposing||e.altKey||e.ctrlKey||e.metaKey||e.target.matches('input,textarea,select,[contenteditable=true]'))return;
+  if(plotDesk&&e.key==='Escape'){e.preventDefault();closePlots(true);return}
+  if(!desktop.matches)return;
   const key=e.key.toUpperCase(),view={B:'board',F:'players',L:'activity'}[key];
-  const control=view?document.querySelector(`[data-view="${view}"]`):key==='?'?$('rulesBtn'):/^[RTIS]$/.test(key)?document.querySelector(`#actions [data-key="${key}"]:enabled`):null;
+  if(plotAccess?.s.phase==='roll'&&['I','S'].includes(key)){
+    e.preventDefault();openPlots(key==='I'?'build':'sell');return;
+  }
+  const control=view?document.querySelector(`[data-view="${view}"]`):key==='?'?$('rulesBtn'):!plotDesk&&/^[RT]$/.test(key)?document.querySelector(`#actions [data-key="${key}"]:enabled`):null;
   if(control){e.preventDefault();control.click()}
 });
 function setup(){
@@ -430,8 +393,8 @@ try {
   initFeedback();
   $('rulesBtn').addEventListener('click',()=>{
     $('content').insertAdjacentHTML('afterbegin','<p class="keyGuide"><b>Desktop keys</b> &nbsp; R Roll · T Draft trade · I Improve · S Sell quote · B Space · F Players · L Activity · ← → browse focused spaces · Esc close sheet</p>');
-    $('content').insertAdjacentHTML('beforeend',`<h3>Sell to the bank</h3><p>Before rolling, choose Sell deed. ${bankTerms()} Player trades leave the original bank acquisition price unchanged. Confirm the cash quote to return the deed to market. Permanently developed districts cannot be sold.</p>${rules.tiles.some(t=>t.kind==='works')?'<h3>Public works</h3><p>Land at a works with an eligible deed to commission a one-use rent bonus. It pays only on the next rival rent. No full set is needed, and passing costs nothing.</p>':''}`);
-    $('content').insertAdjacentHTML('beforeend',`<h3>Improve full districts</h3><p>Before rolling, choose Improve. This table uses ${({even:'even building: improve a lowest-level deed',free:'unrestricted building: choose any deed',district:'whole-district building: improve every deed together'})[rules.development.policy]}. There are ${rules.development.levels.length} levels. Construction raises rent, locks the district against trades and has no end-game resale value.</p><a href="./development.html" target="_blank" rel="noopener">See costs and break-even analysis</a>`);
+    $('content').insertAdjacentHTML('beforeend',`<h3>Manage deeds on the board</h3><p>Before rolling, select a marked deed or choose Manage deeds. Switch between Improve and Sell to compare your options. Selecting a space only previews it; Confirm is a separate action. ${bankTerms()} Player trades leave the original bank acquisition price unchanged. Permanently developed districts cannot be sold.</p>${rules.tiles.some(t=>t.kind==='works')?'<h3>Public works</h3><p>Land at a works with an eligible deed to commission a one-use rent bonus. It pays only on the next rival rent. No full set is needed, and passing costs nothing.</p>':''}`);
+    $('content').insertAdjacentHTML('beforeend',`<h3>Improve full districts</h3><p>This table uses ${({even:'even building: improve a lowest-level deed',free:'unrestricted building: choose any deed',district:'whole-district building: improve every deed together'})[rules.development.policy]}. There are ${rules.development.levels.length} levels. Construction raises rent, locks the district against trades and has no end-game resale value.</p><a href="./development.html" target="_blank" rel="noopener">See costs and break-even analysis</a>`);
   });
   const bytes=Uint8Array.from(atob($('binary').textContent),c=>c.charCodeAt(0));
   engine=(await WebAssembly.instantiate(bytes)).instance.exports;

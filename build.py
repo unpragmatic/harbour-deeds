@@ -27,7 +27,7 @@ for marker, value in {
     "__LEGACY__": (web/"edition-launch.json").read_text(),
     "__GRAND__": json.dumps(dict(expanded, **json.loads((web / "grand-harbor.json").read_text()))),
     "__WASM__": base64.b64encode(wasm.read_bytes()).decode(),
-    "/*APP*/": "const uxInventory="+(web/"interactions.json").read_text()+";\n"+"\n".join((web / name).read_text() for name in ["strategy.mjs","foley.js","feedback.js","room.js","app.js"]),
+    "/*APP*/": "const uxInventory="+(web/"interactions.json").read_text()+";\n"+"\n".join((web / name).read_text() for name in ["strategy.mjs","foley.js","feedback.js","room.js","property-desk.js","app.js"]),
 }.items():
     html = html.replace(marker, value)
 commands = re.search(r'enum Command \{(.*?)\n\}', (root/'src/lib.rs').read_text(), re.S)[1]
@@ -45,6 +45,9 @@ for key,_,_,steps,budget in survey['scenarios']:
     if key in seen or sum(costs[a] for a in steps.split())>budget:
         raise ValueError(f'Duplicate scenario or exceeded click budget: {key}')
     seen.add(key)
+for criterion in survey['criteria']:
+    if not criterion['rule'] or not set(criterion['interactions'])<=costs.keys() or not set(criterion['scenarios'])<=seen:
+        raise ValueError(f'Unmapped interaction or scenario in {criterion["id"]}')
 (root / "dist").mkdir(exist_ok=True)
 (root / "dist/index.html").write_text(html)
 peer = root / "node_modules/peerjs"

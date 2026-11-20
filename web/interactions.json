@@ -3,7 +3,8 @@
     ["1 · Destination", "Name stays legible at all times. A gold frame means inspected; the ship markers show actual occupants."],
     ["2 · Decision value", "Vacant deed: purchase price. Owned deed: current rent. Fee: amount owed. District color is a stripe, not another line of microtext."],
     ["3 · Ownership and presence", "Flag with seat number: owner. Numbered discs: visiting merchants. Use a separate line when both occur."],
-    ["4 · Detail on demand", "Inspector and accessible label carry district, level, precise amounts and full effects. Never rely on color or sound alone."]
+    ["4 · Detail on demand", "Inspector and accessible label carry district, level, precise amounts and full effects. Never rely on color or sound alone."],
+    ["Property map · eligibility and consequence", "A hollow diamond and signed quote mark each candidate; a check identifies the selected deed. Show affected district members separately from the clicked member. See the board-target-preview criterion in the interaction and scenario audit."]
   ],
   "commands": {
     "start":["Start or rematch","Fresh board; no startup fanfare","quiet"],
@@ -34,7 +35,8 @@
     ["Rent / fee / card","Confirm the amount and card name without obstructing the next action."],
     ["Guild / exchange / works","Distinguish the visiting ship from the deed under auction or receiving a project; make both sides of each offer explicit."],
     ["Local presentation","Open Display settings, choose the visual pace on this device only. Keep the operating system’s reduced-motion preference and bid clock independent of presentation."],
-    ["Trading / building","Review both legs or project economics. Cancel or hold without a success cue."],
+    ["Trading","Review both legs. Cancel without a success cue."],
+    ["Manage deeds / public works","Select the actual deed, not a menu entry. Compare Improve and Sell without leaving the map. Show all engine-quoted candidates, the selected deed, cash afterward and the effect of confirming. Selection, mode switching and cancellation must never issue a game command."],
     ["Audio / motion","Local foley starts after user interaction unless muted. Reduced motion keeps the settled dice, outcome and balance changes without a moving pawn, stamp or ripple. Review with review/motion.py."],
     ["Results / leave","Show winners and scores. Rematch locally or explicitly end the network table."]
   ]
