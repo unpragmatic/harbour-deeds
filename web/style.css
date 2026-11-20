@@ -29,3 +29,26 @@ legend{font-weight:bold;font-size:14px}#tradeError{color:#8e382c}.waiting{letter
 @media(max-width:800px){.layout aside{display:contents}.layout .desk{grid-row:1}.layout .boardbox{grid-row:2}.panel.desk{padding-block:10px}.desk .panelhead{margin-bottom:8px;padding-bottom:7px}.desk h2{font-size:24px}.desk p{margin:4px 0 9px}}
 .bidClock{flex:1 0 100%;font-size:13px;font-variant-numeric:tabular-nums;color:#624510}
 @media(max-width:600px){.board[data-map=outer]{aspect-ratio:.74}.board[data-map=outer] .tile strong{font-size:10px;overflow-wrap:anywhere}.board[data-map=outer] .cost{font-size:9px}}
+.switcher{display:flex;width:fit-content;background:#dce4dd;padding:4px;gap:3px;border-radius:12px;margin-bottom:14px}
+.switcher button{border:0;background:transparent;padding:0 18px;min-height:40px;border-radius:9px;font-size:14px}
+.switcher button[aria-pressed=true]{background:white;box-shadow:0 1px 4px #203d3524}
+.boardhead strong{font:650 16px system-ui}.ledger{display:flex;align-items:center;gap:8px;margin:9px 0}.ledger i{width:9px;height:9px;border-radius:50%}.ledger b{margin-left:auto;font-variant-numeric:tabular-nums}
+.workspace{grid-column:1;align-self:start}.workspace ol{max-height:none;list-style:none;padding:0}.workspace li{border-top:1px solid var(--line);padding:10px 0;font-size:14px}
+.layout aside{grid-column:2;grid-row:1}.layout .panel,.layout .boardbox{border-radius:14px}.desk .panelhead small{letter-spacing:.07em}
+header{border:0}.headright button,.modalhead button,summary,.field select{min-height:44px}.headright #rulesBtn{border-radius:50%;width:44px;padding:0;font-size:18px}
+.modalhead{float:right;margin:0 0 4px 8px}.modalhead button{width:44px;border-radius:50%;background:#eef1e8;border:0}dialog{border-radius:18px;max-height:88dvh;overflow:auto}dialog h2{padding-top:6px}dialog .primary{min-height:44px}.modeChoices{display:grid;grid-template-columns:1fr 1fr;gap:9px;clear:both}.modeChoices button{text-align:left;padding:13px;border-radius:10px}.modeChoices span{display:block;color:var(--mute);font-size:12px;font-weight:400}.invite{clear:both;background:#e6eee6;display:flex;align-items:center;justify-content:space-between;border-radius:10px;padding:10px}.invite strong{font:700 22px monospace;letter-spacing:.12em}summary{cursor:pointer;line-height:44px}details{margin-top:12px;border-top:1px solid var(--line)}.field input,.field select{max-width:65%;min-width:0}#actions .bidClock{font:600 13px system-ui;background:#f8edcd;border-radius:6px;padding:5px 8px}.desk #actions button{white-space:nowrap;border-radius:8px}
+body{background:#edf1eb}main{padding-top:16px}.chart h2{font-size:clamp(22px,4vw,48px)}
+@media(max-width:800px){
+  body{height:100dvh;display:flex;flex-direction:column}header{flex-shrink:0;padding:6px 12px}.mast,.headright{gap:7px}.mast .seal{display:none}.mast strong{font-size:19px}
+  main{flex:1;min-height:0;width:100%;padding:0;display:flex;flex-direction:column}.switcher{align-self:center;flex:none;margin:6px 0;padding:2px}.switcher button{min-height:38px}
+  .layout{display:grid;flex:1;min-height:0;grid-template: minmax(0,1fr) auto / minmax(0,1fr);gap:0;align-items:stretch}
+  .layout .workspace,.layout .boardbox{grid-area:1 / 1;overflow:auto;margin:0 8px 6px;min-height:0;align-self:stretch}
+  .layout .quick{display:none}.layout .desk{grid-area:2/1;border-radius:15px 15px 0 0;padding:10px 14px max(12px,env(safe-area-inset-bottom));max-height:56dvh;overflow:auto;box-shadow:0 -4px 14px #253c3012}
+  .desk .facts{margin:5px 0 9px;padding:5px 0}.desk .panelhead{margin-bottom:5px;padding-bottom:5px}.desk h2{font-size:22px}
+  dialog{width:100%;max-width:none;max-height:92dvh;margin:auto 0 0;border-radius:18px 18px 0 0;padding:16px 18px max(18px,env(safe-area-inset-bottom))}
+}
+@media(max-width:370px){.headright button{padding-inline:7px}.desk #actions{gap:4px}.desk #actions button{font-size:13px;padding:6px}.field select{font-size:14px}}
+@media(min-width:350px) and (max-width:520px) and (min-height:780px){
+  .layout .boardbox{display:flex;flex-direction:column}.layout .boardbox[hidden]{display:none}
+  .boardbox .board{flex:1;min-height:320px;max-height:calc(100vw * 1.18);aspect-ratio:auto}
+}

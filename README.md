@@ -21,7 +21,23 @@ node --test tests/engine.mjs
 
 Each seat selects a controller implementing `(snapshot, abortSignal) => Promise<command>`. The host routes the decision to the turn owner, current auction bidder, or trade recipient. All commands go to the same WASM handler.
 
-**Across devices:** Choose **New table → Play across devices → Host table**. Guests enter the six-character code under **Join table**. The host chooses the board, bid clock and owner of each seat (host, connected device, or bot). A single device may operate several seats. Keep the host tab active. Leaving or losing a connected device during a match ends the table; rejoining, persistence and host migration are not supported.
+**Across devices:** Choose **New table → Host online**. Copy the six-character code; guests enter it under **New table → Join online**. The host chooses the board, bid clock and owner of each seat (host, connected device, or bot). A single device may operate several seats. Keep the host tab active. Leaving or losing a connected device during a match ends the table; rejoining, persistence and host migration are not supported.
+
+## Interaction review
+
+The phone shell keeps the decision dock visible while the board, portfolios or activity scroll independently. Desktop uses the same decisions alongside the workspace. Native buttons, selects, numeric inputs and dismissible dialogs support touch and keyboard use. The review counts deliberate control activations from the indicated starting screen, not typing, elapsed time or human-study observations.
+
+| Interaction | Previous flow → revised flow |
+|---|---|
+| Launch and roll | A ready solo game remains the default. One press rolls; there is no welcome gate. |
+| Start two-player pass-and-play | From play: New table, change two seat selectors, Start → New table, Pass & play. Custom seat, board and clock controls remain under Custom local table. |
+| Host / join / assign | Host lobby entry: 3 presses → 2. Join opens directly on the code input. Copy replaces manual transcription; new devices still receive a seat automatically. |
+| Inspect / rules / back | One space opens its deed; the header help button opens rules. Dismiss with Close or Escape. Phone sheets open above the current view. |
+| Inspect standings / history | Scroll past the board → one view switch. Full history replaces the eight-entry window. The same turn action stays available in every view. |
+| Buy / decline / bid | Buy and Start auction stay explicit, one press each. Minimum bid stays one press; a larger preset now also takes one, without opening a keyboard. Custom bids keep exact price control. Withdraw stays explicit. |
+| Propose / respond | A blank four-field contract → an editable deed-for-cash draft. From the turn screen, the suggested deal takes two presses: Draft trade, Send proposal. Recipients still see both sides before Accept or Decline. |
+| Wait / timeout / settle | No acknowledgement clicks. Show whose decision is pending; the host clock continues during guest dialogs. Expiring custom bids close rather than leaving stale inputs. |
+| Results / rematch / leave | Local rematch reuses seats, board and clock in one press rather than reopening setup. An intentional network exit asks for confirmation because it ends everyone's match. |
 
 Public PeerJS signaling establishes WebRTC connections; it does not run the game. Connectivity depends on the signaling service, browser and network. The code is a temporary invitation, not an account or authentication credential. Hosts validate device ownership and decision sequence before sending a command to Rust. Peers start from the same seed and configuration and replay the ordered, accepted commands. `python3 tests/multiplayer.py` exercises three browsers over real WebRTC using a local test signaling server.
 

@@ -1,20 +1,20 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#193e36"><title>Harbor Deeds | The game table</title><style>/*STYLE*/</style></head>
 <body>
-<header><div class="mast"><span class="seal">⚓</span><strong>Harbor Deeds</strong></div><div class="headright"><span class="live">Local table</span><button id="rulesBtn">Rulebook</button></div></header>
-<main><div class="intro"><div><small>THE HARBOR SERIES &nbsp; / &nbsp; Nº 01</small><h1>The game table</h1></div><button id="setupBtn">＋ New table</button></div>
-<div class="layout"><section class="boardbox" aria-label="Game board"><div class="boardhead"><small>FIG. 01 &nbsp; / &nbsp; HARBOR DISTRICT</small><small id="round"></small></div><div class="board" id="board">
-<div class="ocean"><div class="chart"><small>◈ &nbsp; THE MERCHANT'S EDITION &nbsp; ◈</small>
+<header><div class="mast"><span class="seal" aria-hidden="true">⚓</span><strong>Harbor Deeds</strong></div><div class="headright"><span class="live">Local table</span><button id="rulesBtn" aria-label="Rulebook">?</button><button id="setupBtn">New table</button></div></header>
+<main><nav class="switcher" aria-label="Game views"><button data-view="board" aria-pressed="true">Board</button><button data-view="players" aria-pressed="false">Players</button><button data-view="activity" aria-pressed="false">Activity</button></nav>
+<div class="layout"><section class="boardbox" id="boardView" aria-label="Game board"><div class="boardhead"><strong id="mapTitle">Inner Harbor</strong><small id="round"></small></div><div class="board" id="board">
+<div class="ocean"><div class="chart">
 <svg viewBox="0 0 260 100" class="art" role="img" aria-label="An engraved lighthouse overlooking a sailing ship">
 <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 <path d="M12 79q29 1 43-8t37-3l11-6 28 3 19 9 23 4m-145 5 35-2 22-4 30 1m-56-3 19-4 15 1m5-4 18 2 12 4m-27-12 5-44h14l5 46m-19-42 14 3m-15 10 16 4m-17 6 18 5m-18 7 19 5M99 19h23v-3H99zm4-4V8h16v7m-17-7 9-7 9 7zm8 1v6m4-6v6m-2 47v-6h4v7"/>
 <path d="m161 72 44 1-9 7h-26zm20-3V27l-19 42zm3-1 16 2-16-30zm-3-39 9 2-9 3M5 89q14-3 28 0t28 0m18 4q16-3 29 0t29 0m2-7q13-3 25 0t25 0m16-3q13-3 25 0t24 0M37 33q4-3 8 1 3-5 8-4m136-14q4-3 7 1 3-5 8-4m8 25q4-3 7 1 3-5 8-4"/>
 </g></svg>
-<h2>Harbor Deeds</h2><p>A game of ports &amp; property</p><div id="chartStatus"></div></div></div></div>
-<div class="boardfoot"><span>↻ &nbsp; Clockwise circuit</span><span>Port Authority · Survey 01</span></div></section>
+<h2 id="boardName">Inner Harbor</h2><div id="chartStatus"></div></div></div></div>
+<div class="boardfoot"><span>↻ &nbsp; Clockwise</span><span>Tap a space for details</span></div></section>
+<section class="panel workspace" id="playersView" hidden><h2>Players</h2><p>Cash, deeds and district progress.</p><div id="register"></div></section>
+<section class="panel workspace" id="activityView" hidden><h2>Activity</h2><p>Latest first</p><ol id="log" aria-live="off"></ol></section>
 <aside><section class="panel desk"><div class="panelhead"><small id="phaseLabel">TURN DESK</small><span id="controlType"></span></div><div id="turn" aria-live="polite"></div><div id="actions"></div></section>
-<section class="panel"><div class="panelhead"><small>02 &nbsp; / &nbsp; PLAYER REGISTER</small></div><div id="register"></div></section>
-<section class="panel"><div class="panelhead"><small>03 &nbsp; / &nbsp; SHIP'S LOG</small></div><ol id="log" aria-live="polite"></ol></section></aside></div>
-<footer>HARBOR DEEDS &nbsp; / &nbsp; TABLETOP COLLECTION</footer></main>
-<dialog id="modal"><div class="modalhead"><small>PORT AUTHORITY</small><button aria-label="Close dialog" id="close">×</button></div><div id="content"></div></dialog>
+<section class="panel quick"><div class="panelhead"><small>AT THE TABLE</small></div><div id="balances"></div></section></aside></div></main>
+<dialog id="modal"><div class="modalhead"><button aria-label="Close dialog" id="close">×</button></div><div id="content"></div></dialog>
 <script id="config" type="application/json">__RULES__</script><script id="outer" type="application/json">__OUTER__</script><script id="binary" type="application/octet-stream">__WASM__</script><script type="module">/*APP*/</script></body></html>

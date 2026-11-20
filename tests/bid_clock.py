@@ -8,7 +8,8 @@ with sync_playwright() as pw:
     page.add_init_script('crypto.getRandomValues = a => { a[0]=1; return a };')
     page.goto((Path(__file__).resolve().parents[1] / 'dist/index.html').as_uri())
     button = lambda name: page.get_by_role('button', name=name, exact=True)
-    button('＋ New table').click()
+    button('New table').click()
+    page.locator('#advanced summary').click()
     page.select_option('#map', 'outer')
     page.select_option('#clock', '15')
     page.select_option('#seat-1', 'human')
@@ -21,7 +22,7 @@ with sync_playwright() as pw:
             break
         page.clock.run_for(1000)
     button('Start auction').click()
-    button('Place bid').click()
+    button('Bid $10').click()
     bidder = page.locator('#controlType').inner_text()
     page.clock.run_for(5000)
     button('Rulebook').click()

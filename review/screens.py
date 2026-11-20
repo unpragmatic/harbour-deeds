@@ -13,10 +13,9 @@ with sync_playwright() as pw:
     def button(name):return p.get_by_role('button',name=name,exact=True)
     def shot(name,selector=None):
         (p.locator(selector) if selector else p).screenshot(path=root/(name+'.png'))
-    button('＋ New table').click()
-    p.locator('#seat-1').select_option('human')
-    p.locator('#seat-2').select_option('off')
-    button('Start game').click()
+    button('New table').click()
+    shot('modes','dialog')
+    p.locator('#passPlay').click()
     shot('table')
     for _ in range(12):
         button('Roll dice').click()
@@ -24,6 +23,7 @@ with sync_playwright() as pw:
     shot('offer','.desk')
     button('Start auction').click()
     shot('auction','.desk')
+    button('Custom').click()
     p.locator('#amount').fill('70')
     button('Place bid').click()
     shot('bid','.desk')
@@ -44,6 +44,11 @@ with sync_playwright() as pw:
     assert 'accepted' in p.locator('#log').inner_text().lower()
     p.set_viewport_size({'width':390,'height':844})
     shot('phone')
+    button('Players').click()
+    assert p.locator('#playersView').is_visible() and button('Roll dice').is_visible()
+    button('Activity').click()
+    assert p.locator('#activityView').is_visible()
+    button('Board').click()
     assert p.evaluate('document.documentElement.scrollWidth <= innerWidth')
     for _ in range(12):
         button('Roll dice').click()

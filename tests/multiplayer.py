@@ -47,11 +47,11 @@ with contextlib.ExitStack() as stack:
         p.goto(f'http://127.0.0.1:{http.server_port}/')
         p.click('#setupBtn')
         assert p.locator('#clock').input_value() == '5'
-        p.click('#online')
     host.click('#host')
     code = host.locator('#tableCode').inner_text()
     assert len(code) == 6
     for i, p in enumerate([guest, other], start=1):
+        p.click('#join')
         p.fill('#code', code.lower())
         p.locator('#joinForm button').click()
         try:
@@ -76,11 +76,11 @@ with contextlib.ExitStack() as stack:
             break
         time.sleep(1.2)
     acting.get_by_role('button', name='Start auction').click()
-    acting.get_by_role('button', name='Place bid').click()
+    acting.get_by_role('button', name='Bid $10', exact=True).click()
     expect(guest.locator('#controlType')).to_contain_text('Seat 2')
     # Guest modal does not pause the host clock; bidding authority transfers to device 2.
     guest.click('#rulesBtn')
-    expect(other.get_by_role('button', name='Place bid')).to_be_visible(timeout=8000)
+    expect(other.get_by_role('button', name='Bid $20', exact=True)).to_be_visible(timeout=8000)
     other.get_by_role('button', name='Withdraw').click()
     guest.click('#close')
     expect(guest.get_by_role('button', name='Roll dice')).to_be_visible(timeout=15000)
@@ -88,5 +88,6 @@ with contextlib.ExitStack() as stack:
         assert p.locator('#register').inner_text() == host.locator('#register').inner_text()
         assert p.locator('#log').inner_text() == host.locator('#log').inner_text()
     other.click('#setupBtn')
+    other.once('dialog', lambda dialog: dialog.accept())
     other.click('#leave')
     expect(host.locator('#reason')).to_contain_text('disconnected')

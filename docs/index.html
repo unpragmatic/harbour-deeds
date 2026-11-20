@@ -30,24 +30,47 @@ legend{font-weight:bold;font-size:14px}#tradeError{color:#8e382c}.waiting{letter
 @media(max-width:800px){.layout aside{display:contents}.layout .desk{grid-row:1}.layout .boardbox{grid-row:2}.panel.desk{padding-block:10px}.desk .panelhead{margin-bottom:8px;padding-bottom:7px}.desk h2{font-size:24px}.desk p{margin:4px 0 9px}}
 .bidClock{flex:1 0 100%;font-size:13px;font-variant-numeric:tabular-nums;color:#624510}
 @media(max-width:600px){.board[data-map=outer]{aspect-ratio:.74}.board[data-map=outer] .tile strong{font-size:10px;overflow-wrap:anywhere}.board[data-map=outer] .cost{font-size:9px}}
+.switcher{display:flex;width:fit-content;background:#dce4dd;padding:4px;gap:3px;border-radius:12px;margin-bottom:14px}
+.switcher button{border:0;background:transparent;padding:0 18px;min-height:40px;border-radius:9px;font-size:14px}
+.switcher button[aria-pressed=true]{background:white;box-shadow:0 1px 4px #203d3524}
+.boardhead strong{font:650 16px system-ui}.ledger{display:flex;align-items:center;gap:8px;margin:9px 0}.ledger i{width:9px;height:9px;border-radius:50%}.ledger b{margin-left:auto;font-variant-numeric:tabular-nums}
+.workspace{grid-column:1;align-self:start}.workspace ol{max-height:none;list-style:none;padding:0}.workspace li{border-top:1px solid var(--line);padding:10px 0;font-size:14px}
+.layout aside{grid-column:2;grid-row:1}.layout .panel,.layout .boardbox{border-radius:14px}.desk .panelhead small{letter-spacing:.07em}
+header{border:0}.headright button,.modalhead button,summary,.field select{min-height:44px}.headright #rulesBtn{border-radius:50%;width:44px;padding:0;font-size:18px}
+.modalhead{float:right;margin:0 0 4px 8px}.modalhead button{width:44px;border-radius:50%;background:#eef1e8;border:0}dialog{border-radius:18px;max-height:88dvh;overflow:auto}dialog h2{padding-top:6px}dialog .primary{min-height:44px}.modeChoices{display:grid;grid-template-columns:1fr 1fr;gap:9px;clear:both}.modeChoices button{text-align:left;padding:13px;border-radius:10px}.modeChoices span{display:block;color:var(--mute);font-size:12px;font-weight:400}.invite{clear:both;background:#e6eee6;display:flex;align-items:center;justify-content:space-between;border-radius:10px;padding:10px}.invite strong{font:700 22px monospace;letter-spacing:.12em}summary{cursor:pointer;line-height:44px}details{margin-top:12px;border-top:1px solid var(--line)}.field input,.field select{max-width:65%;min-width:0}#actions .bidClock{font:600 13px system-ui;background:#f8edcd;border-radius:6px;padding:5px 8px}.desk #actions button{white-space:nowrap;border-radius:8px}
+body{background:#edf1eb}main{padding-top:16px}.chart h2{font-size:clamp(22px,4vw,48px)}
+@media(max-width:800px){
+  body{height:100dvh;display:flex;flex-direction:column}header{flex-shrink:0;padding:6px 12px}.mast,.headright{gap:7px}.mast .seal{display:none}.mast strong{font-size:19px}
+  main{flex:1;min-height:0;width:100%;padding:0;display:flex;flex-direction:column}.switcher{align-self:center;flex:none;margin:6px 0;padding:2px}.switcher button{min-height:38px}
+  .layout{display:grid;flex:1;min-height:0;grid-template: minmax(0,1fr) auto / minmax(0,1fr);gap:0;align-items:stretch}
+  .layout .workspace,.layout .boardbox{grid-area:1 / 1;overflow:auto;margin:0 8px 6px;min-height:0;align-self:stretch}
+  .layout .quick{display:none}.layout .desk{grid-area:2/1;border-radius:15px 15px 0 0;padding:10px 14px max(12px,env(safe-area-inset-bottom));max-height:56dvh;overflow:auto;box-shadow:0 -4px 14px #253c3012}
+  .desk .facts{margin:5px 0 9px;padding:5px 0}.desk .panelhead{margin-bottom:5px;padding-bottom:5px}.desk h2{font-size:22px}
+  dialog{width:100%;max-width:none;max-height:92dvh;margin:auto 0 0;border-radius:18px 18px 0 0;padding:16px 18px max(18px,env(safe-area-inset-bottom))}
+}
+@media(max-width:370px){.headright button{padding-inline:7px}.desk #actions{gap:4px}.desk #actions button{font-size:13px;padding:6px}.field select{font-size:14px}}
+@media(min-width:350px) and (max-width:520px) and (min-height:780px){
+  .layout .boardbox{display:flex;flex-direction:column}.layout .boardbox[hidden]{display:none}
+  .boardbox .board{flex:1;min-height:320px;max-height:calc(100vw * 1.18);aspect-ratio:auto}
+}
 </style></head>
 <body>
-<header><div class="mast"><span class="seal">⚓</span><strong>Harbor Deeds</strong></div><div class="headright"><span class="live">Local table</span><button id="rulesBtn">Rulebook</button></div></header>
-<main><div class="intro"><div><small>THE HARBOR SERIES &nbsp; / &nbsp; Nº 01</small><h1>The game table</h1></div><button id="setupBtn">＋ New table</button></div>
-<div class="layout"><section class="boardbox" aria-label="Game board"><div class="boardhead"><small>FIG. 01 &nbsp; / &nbsp; HARBOR DISTRICT</small><small id="round"></small></div><div class="board" id="board">
-<div class="ocean"><div class="chart"><small>◈ &nbsp; THE MERCHANT'S EDITION &nbsp; ◈</small>
+<header><div class="mast"><span class="seal" aria-hidden="true">⚓</span><strong>Harbor Deeds</strong></div><div class="headright"><span class="live">Local table</span><button id="rulesBtn" aria-label="Rulebook">?</button><button id="setupBtn">New table</button></div></header>
+<main><nav class="switcher" aria-label="Game views"><button data-view="board" aria-pressed="true">Board</button><button data-view="players" aria-pressed="false">Players</button><button data-view="activity" aria-pressed="false">Activity</button></nav>
+<div class="layout"><section class="boardbox" id="boardView" aria-label="Game board"><div class="boardhead"><strong id="mapTitle">Inner Harbor</strong><small id="round"></small></div><div class="board" id="board">
+<div class="ocean"><div class="chart">
 <svg viewBox="0 0 260 100" class="art" role="img" aria-label="An engraved lighthouse overlooking a sailing ship">
 <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 <path d="M12 79q29 1 43-8t37-3l11-6 28 3 19 9 23 4m-145 5 35-2 22-4 30 1m-56-3 19-4 15 1m5-4 18 2 12 4m-27-12 5-44h14l5 46m-19-42 14 3m-15 10 16 4m-17 6 18 5m-18 7 19 5M99 19h23v-3H99zm4-4V8h16v7m-17-7 9-7 9 7zm8 1v6m4-6v6m-2 47v-6h4v7"/>
 <path d="m161 72 44 1-9 7h-26zm20-3V27l-19 42zm3-1 16 2-16-30zm-3-39 9 2-9 3M5 89q14-3 28 0t28 0m18 4q16-3 29 0t29 0m2-7q13-3 25 0t25 0m16-3q13-3 25 0t24 0M37 33q4-3 8 1 3-5 8-4m136-14q4-3 7 1 3-5 8-4m8 25q4-3 7 1 3-5 8-4"/>
 </g></svg>
-<h2>Harbor Deeds</h2><p>A game of ports &amp; property</p><div id="chartStatus"></div></div></div></div>
-<div class="boardfoot"><span>↻ &nbsp; Clockwise circuit</span><span>Port Authority · Survey 01</span></div></section>
+<h2 id="boardName">Inner Harbor</h2><div id="chartStatus"></div></div></div></div>
+<div class="boardfoot"><span>↻ &nbsp; Clockwise</span><span>Tap a space for details</span></div></section>
+<section class="panel workspace" id="playersView" hidden><h2>Players</h2><p>Cash, deeds and district progress.</p><div id="register"></div></section>
+<section class="panel workspace" id="activityView" hidden><h2>Activity</h2><p>Latest first</p><ol id="log" aria-live="off"></ol></section>
 <aside><section class="panel desk"><div class="panelhead"><small id="phaseLabel">TURN DESK</small><span id="controlType"></span></div><div id="turn" aria-live="polite"></div><div id="actions"></div></section>
-<section class="panel"><div class="panelhead"><small>02 &nbsp; / &nbsp; PLAYER REGISTER</small></div><div id="register"></div></section>
-<section class="panel"><div class="panelhead"><small>03 &nbsp; / &nbsp; SHIP'S LOG</small></div><ol id="log" aria-live="polite"></ol></section></aside></div>
-<footer>HARBOR DEEDS &nbsp; / &nbsp; TABLETOP COLLECTION</footer></main>
-<dialog id="modal"><div class="modalhead"><small>PORT AUTHORITY</small><button aria-label="Close dialog" id="close">×</button></div><div id="content"></div></dialog>
+<section class="panel quick"><div class="panelhead"><small>AT THE TABLE</small></div><div id="balances"></div></section></aside></div></main>
+<dialog id="modal"><div class="modalhead"><button aria-label="Close dialog" id="close">×</button></div><div id="content"></div></dialog>
 <script id="config" type="application/json">{
   "cash": 750, "salary": 120, "auction_increment": 10, "rounds": 18, "notices": [90,-60,120,-80,50],
   "tiles": [
@@ -138,20 +161,21 @@ function loadPeer(){
   });
   return peerLoader;
 }
-function roomMenu(){
+function hostRoom(){connectRoom(true,Array.from(crypto.getRandomValues(new Uint8Array(6)),n=>alphabet[n%32]).join(''))}
+function roomMenu(joinOnly=false){
   if(room){
     if(room.host && room.ready && !room.started){hostLobby(room);return}
     openDialog('<h2>Network table</h2><p id="roomInfo"></p><button id="leave">Leave table</button>');
     $('roomInfo').textContent=room.started?`Table ${room.code}. Keep all devices connected.`:
       room.device?`Table ${room.code} · Device ${room.device}. Waiting for the host to start.`:'Connecting to the table…';
-    $('leave').onclick=()=>endRoom('You left the table.');
+    $('leave').onclick=()=>{if(!room.started||confirm('Leave and end this match for everyone?'))endRoom('You left the table.')};
     return;
   }
-  openDialog(`<h2>Play across devices</h2><p>The host sets the rules and assigns up to four seats. Each device can play more than one seat. Share the code only with your players.</p>
-    <button id="host" class="primary">Host table</button>
-    <hr><form id="joinForm"><label class="field">Table code<input id="code" maxlength="6" minlength="6" required autocapitalize="characters" autocomplete="off"></label><button>Join table</button></form>
-    <p>Uses public PeerJS signaling. Keep the host tab open. Connecting replaces your local game.</p>`);
-  $('host').onclick=()=>connectRoom(true,Array.from(crypto.getRandomValues(new Uint8Array(6)),n=>alphabet[n%32]).join(''));
+  openDialog(`<h2>Join a table</h2><p>Enter the six-character code from your host.</p>
+    <form id="joinForm"><label class="field">Table code<input id="code" maxlength="6" minlength="6" required autocapitalize="characters" autocomplete="off" spellcheck="false"></label><button class="primary">Join table</button></form>
+    ${joinOnly?'':'<hr><button id="host">Host instead</button>'}`);
+  if($('host'))$('host').onclick=hostRoom;
+  $('code').focus();
   $('joinForm').onsubmit=e=>{
     e.preventDefault();const code=$('code').value.trim().toUpperCase();
     if(!/^[A-HJ-NP-Z2-9]{6}$/.test(code)){
@@ -164,14 +188,15 @@ function endRoom(reason){
   const r=room;if(!r)return;
   room=null;r.step?.abort();clearTimeout(r.timeout);r.peer?.destroy();
   document.querySelector('.live').textContent='Local table';
-  $('setupBtn').textContent='＋ New table';
+  $('setupBtn').textContent='New table';
   play(['human','bot','bot']).catch(report);
   openDialog('<h2>Table closed</h2><p id="reason"></p><button id="retry">Multiplayer lobby</button>');
   $('reason').textContent=reason;$('retry').onclick=roomMenu;
 }
 function hostLobby(r){
-  openDialog(`<h2>Table <span id="tableCode"></span></h2><p>Share this code. Guests choose New table → Play across devices → Join table.</p>${settings()}<div id="assign"></div><p id="roster"></p><button id="launch" class="primary">Start network game</button> <button id="leave">Close table</button>`);
+  openDialog(`<h2>Invite players</h2><div class="invite"><strong id="tableCode"></strong><button id="copyCode">Copy code</button></div><p>Guests choose New table → Join online. Keep this tab open.</p>${settings()}<div id="assign"></div><p id="roster"></p><button id="launch" class="primary">Start network game</button> <button id="leave">Close table</button>`);
   $('tableCode').textContent=r.code;
+  $('copyCode').onclick=async e=>{const btn=e.currentTarget;try{await navigator.clipboard.writeText(r.code);btn.textContent='Copied'}catch{btn.textContent='Select code to copy';const range=document.createRange();range.selectNodeContents($('tableCode'));const sel=getSelection();sel.removeAllRanges();sel.addRange(range)}};
   $('map').value=r.map;$('clock').value=String(r.seconds);
   $('map').onchange=()=>r.map=$('map').value;$('clock').onchange=()=>r.seconds=Number($('clock').value);
   const ids=[...r.links.keys()];
@@ -331,7 +356,14 @@ function compose(s, send) {
     <form id="contract"><label class="field">Trade with<select id="partner">${peers.map(i=>`<option value="${i}">${seat(i)}</option>`)}</select></label>
     <div id="terms"></div><p id="tradeError" role="alert"></p><button class="primary">Send proposal</button></form>`);
   const leg=(who,key,title)=>`<fieldset><legend>${title} · ${seat(who)}</legend><label class="field">Deed<select id="${key}Deed"><option value="">No deed</option>${deeds(s,who).map(i=>`<option value="${i}">${rules.tiles[i].name} · ${money(rules.tiles[i].price)}</option>`)}</select></label><label class="field">Cash ($)<input type="number" step="1" min="0" max="${s.players[who].cash}" id="${key}Cash" value="0" required></label></fieldset>`;
-  const terms=()=>{$('terms').innerHTML=leg(a,'give','You offer')+leg(+$('partner').value,'take','You request');$('tradeError').textContent=''};
+  const terms=()=>{
+    const other=+$('partner').value;
+    $('terms').innerHTML=leg(a,'give','You offer')+leg(other,'take','You request');
+    const buy=deeds(s,other).length>0, i=deeds(s,buy?other:a)[0];
+    $(buy?'takeDeed':'giveDeed').value=String(i);
+    $(buy?'giveCash':'takeCash').value=Math.min(rules.tiles[i].price,s.players[buy?a:other].cash);
+    $('tradeError').textContent='';
+  };
   terms();$('partner').onchange=terms;
   $('contract').onsubmit=e=>{
     e.preventDefault();
@@ -385,6 +417,7 @@ const controllers = {
       b.className = primary ? 'primary' : '';
       b.addEventListener('click',fn,{signal});
       $('actions').append(b);
+      return b;
     }
     if(s.phase==='roll'){
       button('Roll dice',()=>send('roll'),true);
@@ -397,10 +430,16 @@ const controllers = {
       const min=s.auction.high_bid+rules.auction_increment;
       const inTime=clockSeconds&&!room?bidClock(clockSeconds,signal,()=>send('withdraw')):()=>true;
       if(cash>=min) {
-        const label=document.createElement('label');
-        label.className='bidField';label.innerHTML=`Your bid ($)<input id="amount" type="number" min="${min}" max="${cash}" step="1" required value="${min}">`;
-        $('actions').append(label);
-        button('Place bid',()=>{if(inTime()&&$('amount').reportValidity())send('bid',{amount:+$('amount').value})},true);
+        const bid=amount=>{if(inTime())send('bid',{amount})};
+        button(`Bid ${money(min)}`,()=>bid(min),true);
+        const jump=min+2*rules.auction_increment;
+        if(jump<=cash)button(`Bid ${money(jump)}`,()=>bid(jump));
+        button('Custom',()=>{
+          openDialog(`<h2>Custom bid</h2><p>${money(min)} minimum · ${money(cash)} available${room?' · Host clock continues':''}</p><form id="bidForm"><label class="field">Amount ($)<input id="amount" type="number" min="${min}" max="${cash}" step="1" required value="${min}"></label><button class="primary">Place bid</button></form>`);
+          $('amount').select();
+          $('bidForm').onsubmit=e=>{e.preventDefault();const n=+$('amount').value;$('modal').close();bid(n)};
+          signal.addEventListener('abort',()=>{if($('bidForm')&&$('modal').open)$('modal').close()},{once:true});
+        });
       }
       button('Withdraw',()=>send('withdraw'));
     }else if(s.phase==='trade'){
@@ -420,6 +459,8 @@ function boardPosition(i) {
 function openDialog(html) {
   $('content').innerHTML = html;
   if (!$('modal').open) $('modal').showModal();
+  const heading=$('content').querySelector('h2');if(heading){heading.id='sheetTitle';$('modal').setAttribute('aria-labelledby','sheetTitle')}
+  $('modal').scrollTop=0;
   $('modal').dispatchEvent(new Event('clockchange'));
 }
 function detail(i) {
@@ -468,16 +509,17 @@ function render() {
     }).join('');
     return `<div class="row"><span class="badge" style="background:${colors[i]}">${i+1}</span><div><strong>${seat(i)}</strong><div class="meta">${player.out?'Bankrupt':seats[i]==='bot'?'Bot':'Local player'} · ${owned.length} deeds</div><div class="holdings">${groups}</div></div><span class="money">${money(player.cash)}</span></div>`;
   }).join('');
-  $('log').innerHTML=s.events.slice(-8).reverse().map(e=>`<li>${e}</li>`).join('');
+  $('balances').innerHTML=s.players.map((v,i)=>`<div class="ledger"><i style="background:${colors[i]}"></i>${seat(i)}<b>${v.out?'Bankrupt':money(v.cash)}</b></div>`).join('');
+  $('log').innerHTML=[...s.events].reverse().map(e=>`<li>${e}</li>`).join('');
   $('actions').replaceChildren();
   if(s.phase==='over'){
     $('turn').innerHTML=`<h2>${s.winners.map(seat).join(' & ')} ${s.winners.length>1?'tie':'wins'}</h2><p>Cash plus the list value of all deeds.</p>${facts(s.players.map((player,i)=>[seat(i),player.out?'Bankrupt':money(player.cash+deeds(s,i).reduce((sum,k)=>sum+rules.tiles[k].price,0))]))}`;
-    const b=document.createElement('button'); b.className='primary';b.textContent=room?'Leave table':'Play again';b.onclick=room?()=>endRoom('You left the table.'):setup;$('actions').append(b);
+    const b=document.createElement('button'); b.className='primary';b.textContent=room?'Leave table':'Rematch';b.onclick=room?()=>endRoom('You left the table.'):()=>play([...seats],$('board').dataset.map,clockSeconds).catch(report);$('actions').append(b);
     return;
   }
   let title, text, stats=[];
   if(s.phase==='roll'){
-    title=`${seat(a)} to sail`;text=`Departing ${t.name}. ${!s.traded&&s.owners.some(o=>o!==null)?'Roll now, or negotiate before you move.':'Roll both dice to move clockwise.'}`;
+    title=`${seat(a)}’s turn`;text=`${t.name} · ${money(p.cash)} available`;
   }else if(s.phase==='offer'){
     title=t.name;text=`${t.group} · Buy at list price or open the deed to every bidder.`;
     stats=[['List price',money(t.price)],['Base rent',money(t.rent)],['After buying',p.cash>=t.price?money(p.cash-t.price):'Short of cash']];
@@ -501,6 +543,8 @@ function initialize(types,map,seconds,seed) {
   board.style.gridTemplate=`repeat(${side},minmax(0,1fr)) / repeat(${side},minmax(0,1fr))`;
   board.querySelector('.ocean').style.gridArea=`2 / 2 / ${side} / ${side}`;
   board.dataset.map=map;
+  $('mapTitle').textContent=$('boardName').textContent=map==='outer'?'Outer Harbor':'Inner Harbor';
+  showView('board');
   seats=types;
   state=command({action:'start',rules,seats:types.length,seed});
 }
@@ -527,12 +571,21 @@ function settings(){
     <label class="field">Board<select id="map"><option value="compact">Inner Harbor · 20 spaces</option><option value="outer">Outer Harbor · 28 spaces</option></select></label>
     <label class="field">Human bid clock<select id="clock"><option value="5" selected>5 seconds</option><option value="0">Untimed</option><option value="15">15 seconds</option><option value="30">30 seconds</option></select></label>`;
 }
+function showView(name){
+  for(const tab of document.querySelectorAll('[data-view]')){
+    const active=tab.dataset.view===name;tab.setAttribute('aria-pressed',String(active));$(tab.dataset.view+'View').hidden=!active;
+  }
+}
+document.querySelector('.switcher').onclick=e=>{if(e.target.dataset.view)showView(e.target.dataset.view)};
 function setup(){
   if(room){roomMenu();return}
   const fields=Array.from({length:4},(_,i)=>`<label class="field">${seat(i)}<select id="seat-${i}">${(i<2?['human','bot']:['off','human','bot']).map(v=>`<option value="${v}" ${v===(seats[i]??'off')?'selected':''}>${{human:'Local player',bot:'Bot',off:'Empty'}[v]}</option>`).join('')}</select></label>`).join('');
-  openDialog(`<h2>Open a new table</h2><p>Starting replaces the current game.</p>${settings()}
-    <p>Each human bidder gets a fresh clock. At zero they withdraw. Hidden tabs and open dialogs pause it in local play.</p>${fields}<button id="start" class="primary">Start game</button><hr><button id="online">Play across devices</button>`);
-  $('online').onclick=roomMenu;
+  openDialog(`<h2>New table</h2><p>Choose how to play. Starting replaces this match.</p>
+    <div class="modeChoices"><button id="solo"><b>Solo</b><span>You + two bots</span></button><button id="passPlay"><b>Pass &amp; play</b><span>Two on this device</span></button><button id="host"><b>Host online</b><span>Invite devices</span></button><button id="join"><b>Join online</b><span>Enter table code</span></button></div>
+    <details id="advanced"><summary>Custom local table</summary>${settings()}${fields}<button id="start" class="primary">Start game</button></details>`);
+  const quick=types=>{$('modal').close();play(types,$('board').dataset.map,clockSeconds).catch(report)};
+  $('solo').onclick=()=>quick(['human','bot','bot']);$('passPlay').onclick=()=>quick(['human','human']);
+  $('host').onclick=hostRoom;$('join').onclick=()=>roomMenu(true);
   $('map').value=$('board').dataset.map;$('clock').value=String(clockSeconds);
   $('start').onclick=()=>{
     const types=[0,1,2,3].map(i=>$(`seat-${i}`).value).filter(v=>v!=='off');

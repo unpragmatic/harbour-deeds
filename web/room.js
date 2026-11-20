@@ -12,20 +12,21 @@ function loadPeer(){
   });
   return peerLoader;
 }
-function roomMenu(){
+function hostRoom(){connectRoom(true,Array.from(crypto.getRandomValues(new Uint8Array(6)),n=>alphabet[n%32]).join(''))}
+function roomMenu(joinOnly=false){
   if(room){
     if(room.host && room.ready && !room.started){hostLobby(room);return}
     openDialog('<h2>Network table</h2><p id="roomInfo"></p><button id="leave">Leave table</button>');
     $('roomInfo').textContent=room.started?`Table ${room.code}. Keep all devices connected.`:
       room.device?`Table ${room.code} · Device ${room.device}. Waiting for the host to start.`:'Connecting to the table…';
-    $('leave').onclick=()=>endRoom('You left the table.');
+    $('leave').onclick=()=>{if(!room.started||confirm('Leave and end this match for everyone?'))endRoom('You left the table.')};
     return;
   }
-  openDialog(`<h2>Play across devices</h2><p>The host sets the rules and assigns up to four seats. Each device can play more than one seat. Share the code only with your players.</p>
-    <button id="host" class="primary">Host table</button>
-    <hr><form id="joinForm"><label class="field">Table code<input id="code" maxlength="6" minlength="6" required autocapitalize="characters" autocomplete="off"></label><button>Join table</button></form>
-    <p>Uses public PeerJS signaling. Keep the host tab open. Connecting replaces your local game.</p>`);
-  $('host').onclick=()=>connectRoom(true,Array.from(crypto.getRandomValues(new Uint8Array(6)),n=>alphabet[n%32]).join(''));
+  openDialog(`<h2>Join a table</h2><p>Enter the six-character code from your host.</p>
+    <form id="joinForm"><label class="field">Table code<input id="code" maxlength="6" minlength="6" required autocapitalize="characters" autocomplete="off" spellcheck="false"></label><button class="primary">Join table</button></form>
+    ${joinOnly?'':'<hr><button id="host">Host instead</button>'}`);
+  if($('host'))$('host').onclick=hostRoom;
+  $('code').focus();
   $('joinForm').onsubmit=e=>{
     e.preventDefault();const code=$('code').value.trim().toUpperCase();
     if(!/^[A-HJ-NP-Z2-9]{6}$/.test(code)){
@@ -38,14 +39,15 @@ function endRoom(reason){
   const r=room;if(!r)return;
   room=null;r.step?.abort();clearTimeout(r.timeout);r.peer?.destroy();
   document.querySelector('.live').textContent='Local table';
-  $('setupBtn').textContent='＋ New table';
+  $('setupBtn').textContent='New table';
   play(['human','bot','bot']).catch(report);
   openDialog('<h2>Table closed</h2><p id="reason"></p><button id="retry">Multiplayer lobby</button>');
   $('reason').textContent=reason;$('retry').onclick=roomMenu;
 }
 function hostLobby(r){
-  openDialog(`<h2>Table <span id="tableCode"></span></h2><p>Share this code. Guests choose New table → Play across devices → Join table.</p>${settings()}<div id="assign"></div><p id="roster"></p><button id="launch" class="primary">Start network game</button> <button id="leave">Close table</button>`);
+  openDialog(`<h2>Invite players</h2><div class="invite"><strong id="tableCode"></strong><button id="copyCode">Copy code</button></div><p>Guests choose New table → Join online. Keep this tab open.</p>${settings()}<div id="assign"></div><p id="roster"></p><button id="launch" class="primary">Start network game</button> <button id="leave">Close table</button>`);
   $('tableCode').textContent=r.code;
+  $('copyCode').onclick=async e=>{const btn=e.currentTarget;try{await navigator.clipboard.writeText(r.code);btn.textContent='Copied'}catch{btn.textContent='Select code to copy';const range=document.createRange();range.selectNodeContents($('tableCode'));const sel=getSelection();sel.removeAllRanges();sel.addRange(range)}};
   $('map').value=r.map;$('clock').value=String(r.seconds);
   $('map').onchange=()=>r.map=$('map').value;$('clock').onchange=()=>r.seconds=Number($('clock').value);
   const ids=[...r.links.keys()];
