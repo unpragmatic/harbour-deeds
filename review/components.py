@@ -1,6 +1,7 @@
 """Generate the one-page illustrated review from the local and multiplayer UI walkthroughs."""
 from base64 import b64encode
 from html import escape
+import json
 from io import BytesIO
 from pathlib import Path
 from PIL import Image
@@ -16,6 +17,7 @@ sections = {
         ('recovery', 'Interrupted table', 'Distinguish a paused network table from a completed match. A returning device needs a recovery action, not a fresh local game.'),
     ],
     'Navigate and inspect': [
+        ('crowded-space', 'Four visitors on an improved deed', 'Density fixture: the name and current rent remain visible above the owner flag and four seat discs. The inspector carries the development ladder instead of squeezing it onto the tile.'),
         ('grand-harbor', 'Grand Harbor circuit', 'The 40-space circuit distinguishes guilds, dispatches, exchanges, fees and deed districts. Inspect a space to read its effect.'),
         ('grand-chart', 'Pocket chart', 'On small devices the larger circuit becomes a scrollable route in movement order, instead of squeezing eleven columns into a phone screen.'),
         ('workbench', 'Purchase decision on desktop', 'The landed deed opens beside the board. See every tier’s construction cost, total rent and incremental payoff before buying or opening an auction.'),
@@ -55,6 +57,17 @@ details[open] summary{cursor:zoom-out}details[open] img{height:auto}summary:focu
 for i, section in enumerate(sections):
     out.append(f'<a href="#group{i}">{escape(section)}</a>')
 out.append('</nav>')
+inventory=json.loads((root.parent/'web/interactions.json').read_text())
+out.append('<section id="inventory"><h2>Interaction review checklist</h2><details><summary>Visual priorities, commands and non-game interactions</summary><h3>Space identifiers</h3><dl>')
+for name, note in inventory['identifiers']:
+    out.append(f'<dt><b>{escape(name)}</b></dt><dd>{escape(note)}</dd>')
+out.append('</dl><h3>Accepted commands</h3><ul>')
+for name, note, cue in inventory['commands'].values():
+    out.append(f'<li><b>{escape(name)}</b>: {escape(note)} · sound: {escape(cue)}</li>')
+out.append('</ul><h3>Other interactions</h3><ul>')
+for name, note in inventory['surfaces']:
+    out.append(f'<li><b>{escape(name)}</b>: {escape(note)}</li>')
+out.append('</ul></details></section>')
 for i, (section, rows) in enumerate(sections.items()):
     out.append(f'<section id="group{i}"><h2>{escape(section)}</h2><div class="grid">')
     for file, title, finding in rows:

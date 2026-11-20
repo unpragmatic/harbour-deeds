@@ -204,7 +204,8 @@ function detailHtml(i) {
   const have=group.filter(k=>state.owners[k]===owner).length;
   const status=owner===null?'Complete the district to build.':have<group.length?`${seat(owner)} has ${have}/${group.length} deeds. A complete district unlocks building.`:
     level===max?'Fully improved.':rules.development.policy==='even'&&group.some(k=>state.levels[k]<level)?'Improve the lower-level deeds first.':'The owner can improve before rolling.';
-  return `<small class="plate">SPACE ${String(i).padStart(2,'0')} / ${t.kind==='deed'?t.group:'Port services'}</small><h2>${t.name}</h2>${t.kind==='deed'?`<p>${owner===null?'On the market':`Owned by ${seat(owner)}`} · Level ${level}/${max}</p>${facts([['List price',money(t.price)],['Current rent',money(state.rents[i])]])}${curve(i)}<p>${status}${locked(state,rules,i)?' This district cannot be traded.':''}</p>`:`<p>${info[t.kind]}</p>`}`;
+  const visitors=state.players.flatMap((p,j)=>!p.out&&p.pos===i?[seat(j)]:[]);
+  return `<small class="plate">SPACE ${String(i).padStart(2,'0')} / ${t.kind==='deed'?t.group:'Port services'}</small><h2>${t.name}</h2>${t.kind==='deed'?`<p>${owner===null?'On the market':`Owned by ${seat(owner)}`} · Level ${level}/${max}</p>${facts([['List price',money(t.price)],['Current rent',money(state.rents[i])]])}${curve(i)}<p>${status}${locked(state,rules,i)?' This district cannot be traded.':''}</p>`:`<p>${info[t.kind]}</p>`}${visitors.length?`<p>Visiting: ${visitors.join(', ')}</p>`:''}`;
 }
 function selectSpace(i){
   inspected=i;$('inspector').innerHTML=detailHtml(i);
@@ -244,16 +245,11 @@ function render() {
     }
     b.classList.toggle('landing',s.phase!=='over'&&i===s.players[s.turn].pos);
     const here=s.players.flatMap((player,j)=>player.pos===i&&!player.out?[j]:[]);
-    b.innerHTML=`${tile.kind==='deed'?`<span class="num">Nº ${String(i).padStart(2,'0')}</span>`:`<span class="mark">${tile.mark}</span>`}<strong>${tile.name}</strong>${tile.price?`<span class="cost">${money(tile.price)}</span>`:''}${s.owners[i]!==null?`<span class="owned">●${s.owners[i]+1}</span>`:''}<span class="tokens">${here.map(j=>`<span class="token" style="background:${colors[j]}">${j+1}</span>`).join('')}</span>`;
-    b.setAttribute('aria-label',`${tile.name}${here.length?', occupied by '+here.map(seat).join(', '):''}. Inspect space`);
-    if(rules.cards){
-      const stamp=b.querySelector('.num');
-      if(stamp)stamp.textContent=tile.group;
-    }
-    if(s.levels[i]){
-      b.querySelector('.owned').textContent=`${s.owners[i]+1}·L${s.levels[i]}`;
-      b.setAttribute('aria-label',`${b.getAttribute('aria-label')}. Level ${s.levels[i]}, rent ${money(s.rents[i])}`);
-    }
+    const owner=s.owners[i],value=owner!==null?`Rent ${money(s.rents[i])}`:tile.price?money(tile.price):'';
+    const flag=owner!==null?`<span class="flag" style="color:${colors[owner]}">⚑${owner+1}</span>`:'';
+    const markers=here.map(j=>`<span class="token" style="background:${colors[j]}">${j+1}</span>`).join('')+(here.length>1?`<span class="crew">●×${here.length}</span>`:'');
+    b.innerHTML=`<strong>${tile.name}</strong><span class="tileValue">${tile.mark?`<span aria-hidden="true">${tile.mark}</span> `:''}${value}</span>${flag||markers?`<span class="berth">${flag}${markers}</span>`:''}`;
+    b.setAttribute('aria-label',[tile.name,tile.group||tile.kind,value,owner===null?'':`Owned by ${seat(owner)}, level ${s.levels[i]}`,here.length?'Occupied by '+here.map(seat).join(', '):'','Inspect space'].filter(Boolean).join('. '));
   }
   $('register').innerHTML=s.players.map((player,i)=>{
     const owned=deeds(s,i), groups=Object.keys(bands).map(g=>{
@@ -300,6 +296,7 @@ function render() {
 }
 function initialize(types,map,seconds,seed,policy=maps[map].development.policy) {
   rules={...maps[map],development:{...maps[map].development,policy}};clockSeconds=seconds;
+  clearTimeout(cueTimer);$('receipt').hidden=true;
   focusKey='';inspected=0;
   const side=rules.tiles.length/4+1;
   const board=$('board');
@@ -327,7 +324,7 @@ async function play(types,map='grand',seconds=DEFAULT_CLOCK,policy=rules.develop
       : await controllers[seats[actingSeat(state)]](state,step.signal);
     signal.removeEventListener('abort',cancel); step.abort();
     if(signal.aborted) return;
-    state=command(action);
+    const before=state;state=command(action);liveFeedback(action,before,state);
   }
 }
 function report(err){$('actions').replaceChildren();$('turn').textContent=`Game unavailable: ${err.message}`;console.error(err)}
@@ -364,6 +361,7 @@ $('close').onclick=()=>$('modal').close();
 $('modal').setAttribute('aria-label','Table information');
 $('rulesBtn').onclick=()=>openDialog(`<h2>The rulebook</h2><p>Start with ${money(rules.cash)}. Roll two dice to move clockwise. Passing Port Office pays ${money(rules.salary)}.</p><h3>Buy or auction</h3><p>Buy a vacant deed at list price or send it to auction. Everyone, including the landing player, may bid. Raise by at least ${money(rules.auction_increment)} or withdraw. The last bidder pays their bid. Without a bid, the deed stays vacant.</p><h3>Negotiate before rolling</h3><p>Once per turn, propose a deed sale or swap. Either side may add cash; the other merchant can accept or decline. Owning a full district doubles its rent.</p><h3>Settle accounts</h3><p>If you cannot pay rent or a bill, your remaining cash is paid and your deeds return to market. Be the last solvent merchant, or finish round ${rules.rounds} with the greatest cash plus deed value. Ties share the win.</p>`);
 try {
+  initFeedback();
   $('rulesBtn').addEventListener('click',()=>{
     $('content').insertAdjacentHTML('beforeend',`<h3>Improve full districts</h3><p>Before rolling, choose Improve. This table uses ${({even:'even building: improve a lowest-level deed',free:'unrestricted building: choose any deed',district:'whole-district building: improve every deed together'})[rules.development.policy]}. There are ${rules.development.levels.length} levels. Construction raises rent, locks the district against trades and has no end-game resale value.</p><a href="./development.html" target="_blank" rel="noopener">See costs and break-even analysis</a>`);
   });

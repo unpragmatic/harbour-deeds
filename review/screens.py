@@ -14,6 +14,11 @@ with sync_playwright() as pw:
     def shot(name,selector=None):
         (p.locator(selector) if selector else p).screenshot(path=root/(name+'.png'))
     assert p.locator('.tile').count()==40
+    sound=p.get_by_role('button',name='Sound effects')
+    sound.click()
+    p.reload()
+    assert sound.get_attribute('aria-pressed')=='true'
+    sound.click()
     shot('grand-harbor')
     p.set_viewport_size({'width':390,'height':844})
     assert p.evaluate('document.documentElement.scrollWidth <= innerWidth')
@@ -45,11 +50,13 @@ with sync_playwright() as pw:
     assert p.locator('#inspector tbody tr').count()==5
     shot('workbench')
     button('Start auction').click()
+    assert p.locator('#receipt').inner_text()=='Open bidding'
     shot('auction','.desk')
     button('Custom').click()
     p.locator('#amount').fill('70')
     shot('custom-bid','dialog')
     button('Place bid').click()
+    assert p.locator('#receipt').inner_text()=='Bid placed · $70'
     shot('bid','.desk')
     button('Withdraw').click()
     shot('settled','.desk')

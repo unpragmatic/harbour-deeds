@@ -217,7 +217,7 @@ async function connectRoom(host,code,resume=false){
           }else if(msg.kind==='status'&&r.started&&msg.seq===r.seq&&Array.isArray(msg.missing)&&Number.isFinite(msg.remaining)){
             r.missing=msg.missing;r.remaining=msg.remaining;r.deadline=0;networkStep(r);
           }else if(msg.kind==='commit'&&r.started&&msg.seq===r.seq+1){
-            replay(r,msg.move);r.remaining=r.seconds*1000;r.deadline=0;networkStep(r);
+            const before=state;replay(r,msg.move);r.remaining=r.seconds*1000;r.deadline=0;networkStep(r);liveFeedback(msg.move,before,state);
           }else if(msg.kind==='reject'&&msg.seq===r.seq){r.remaining=remaining(r);networkStep(r)}
           else throw Error('Out-of-order or incompatible host message');
         }catch(e){fail(`Could not synchronize: ${e.message}`)}
@@ -279,18 +279,19 @@ function replay(r,move){
   state=command(move);r.seq++;
 }
 function commit(r,move){
-  state=command(move);
+  const before=state;state=command(move);
   r.save.journal.push(move);r.save.remaining=r.remaining=r.seconds*1000;r.deadline=0;
   // A move becomes visible to players only after the atomic storage write succeeds.
   try{persist(r)}catch{finishRoom(r,'Move not recorded. Free browser storage and rehost the last saved turn.');return}
   r.seq++;
   broadcast(r,{kind:'commit',seq:r.seq,move});
   networkStep(r);
+  liveFeedback(move,before,state);
 }
 function acceptMove(r,device,move){
   const actor=actingSeat(state);
   if(r.missing.length||!playable.has(move?.action)||move.actor!==actor||r.owners[actor]!==device||state.phase==='over'||state.phase==='end')return;
-  const fields=move.action==='propose'?['to','give_deed','take_deed','give_cash','take_cash']:move.action==='bid'?['amount']:[];
+  const fields=move.action==='propose'?['to','give_deed','take_deed','give_cash','take_cash']:move.action==='bid'?['amount']:move.action==='build'?['tile']:[];
   if(fields.some(k=>!Number.isSafeInteger(move[k])&&!(k.endsWith('_deed')&&move[k]===null))){
     r.links.get(device)?.send({kind:'reject',seq:r.seq});return;
   }

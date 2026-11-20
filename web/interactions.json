@@ -1,0 +1,36 @@
+{
+  "identifiers": [
+    ["1 · Destination", "Name stays legible at all times. A gold frame means inspected; the ship markers show actual occupants."],
+    ["2 · Decision value", "Vacant deed: purchase price. Owned deed: current rent. Fee: amount owed. District color is a stripe, not another line of microtext."],
+    ["3 · Ownership and presence", "Flag with seat number: owner. Numbered discs: visiting merchants. Use a separate line when both occur."],
+    ["4 · Detail on demand", "Inspector and accessible label carry district, level, precise amounts and full effects. Never rely on color or sound alone."]
+  ],
+  "commands": {
+    "start":["Start or rematch","Fresh board; no startup fanfare","quiet"],
+    "roll":["Roll and land","Dice total and landing accent","dice"],
+    "buy":["Purchase a deed","Stamp the purchased space","coin"],
+    "pass":["Open bidding","Announce the auction","gavel"],
+    "bid":["Raise bid","Confirm the accepted amount","bid"],
+    "withdraw":["Withdraw or expire","Identify withdrawn seat or sale","down"],
+    "build":["Develop property","Stamp the improved space","build"],
+    "propose":["Send proposal","Hand off to recipient","paper"],
+    "accept":["Accept contract","Confirm the exchange","coin"],
+    "reject":["Decline contract","Return to proposer","down"],
+    "grant":["Take guild grant","Confirm cash payment","coin"],
+    "insure":["Choose rent cover","Confirm cover","bell"],
+    "end":["Advance turn","Ordinary transitions are quiet; final scores get a cadence","quiet"]
+  },
+  "surfaces": [
+    ["Inspect / browse","Select a tile with pointer or keyboard; check focus vs landing, name, cost and owner."],
+    ["Players / activity / rules","Switch views and dismiss sheets without losing the current decision."],
+    ["Local setup","Check solo, pass-and-play, custom seats, map, policy and clock before replacing a game."],
+    ["Online setup","Host, join by code, copy invite, assign seats and launch. Guests cannot change the rules."],
+    ["Network recovery","Pause on disconnect. Rehost, rejoin, cancel or forget; historical commands must remain silent."],
+    ["Bidding","Check presets, exact entry, insufficient cash, timer pause/expiry and final sale."],
+    ["Rent / fee / card","Confirm the amount and card name without obstructing the next action."],
+    ["Guild / exchange","Distinguish token location from the deed under auction; identify both guild choices."],
+    ["Trading / building","Review both legs or project economics. Cancel or hold without a success cue."],
+    ["Audio / motion","Sound is opt-in per browser. Muted, reduced-motion and audio-unavailable play retain text feedback."],
+    ["Results / leave","Show winners and scores. Rematch locally or explicitly end the network table."]
+  ]
+}

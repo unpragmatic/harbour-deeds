@@ -85,9 +85,11 @@ with contextlib.ExitStack() as stack:
     for p in pages:
         expect(p.locator('.tile')).to_have_count(28)
     expect(host.get_by_role('button', name='Roll dice')).to_have_count(0)
+    expect(guest.get_by_role('button', name='Roll dice')).to_be_visible()
     for n in range(16):
         acting = next(p for p in pages if p.locator('#actions').get_by_role('button', name='Roll dice').count())
         acting.get_by_role('button', name='Roll dice').click()
+        expect(acting.locator('body')).not_to_have_attribute('data-phase','roll')
         if acting.locator('body').get_attribute('data-phase') == 'offer':
             break
         time.sleep(1.2)
@@ -112,6 +114,7 @@ with contextlib.ExitStack() as stack:
     # Rejoin a running host mid-auction. Then take the host offline as well.
     other.click('#resumeTable')
     expect(guest.get_by_role('button', name='Withdraw')).to_be_visible()
+    expect(other.locator('#receipt')).to_be_hidden()
     host.reload()
     expect(host.locator('#resumeTable')).to_have_text(f'Rehost table {code}')
     capture(host.locator('#modal'), 'recovery.png')
@@ -126,6 +129,7 @@ with contextlib.ExitStack() as stack:
         expect(p.locator('.tile')).to_have_count(28)
     expect(guest.get_by_role('button', name='Withdraw')).to_be_visible()
     expect(other.get_by_role('button', name='Withdraw')).to_have_count(0)
+    expect(host.locator('#receipt')).to_be_hidden()
     # Guest modal does not pause the host clock; bidding authority transfers to device 2.
     guest.click('#rulesBtn')
     expect(other.get_by_role('button', name='Bid $20', exact=True)).to_be_visible(timeout=8000)
