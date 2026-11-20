@@ -1,5 +1,13 @@
 {
   "cash": 750, "salary": 120, "auction_increment": 10, "rounds": 18, "notices": [90,-60,120,-80,50],
+  "development": {
+    "policy": "even", "set_rent_pct": 200,
+    "levels": [
+      {"cost_pct": 10, "rent_pct": 300},
+      {"cost_pct": 15, "rent_pct": 380},
+      {"cost_pct": 20, "rent_pct": 440}
+    ]
+  },
   "tiles": [
     {"name":"Port Office","kind":"start","mark":"⚓"},
     {"name":"Rope Walk","kind":"deed","group":"Old Town","price":80,"rent":20},

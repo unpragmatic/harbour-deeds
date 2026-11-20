@@ -47,6 +47,8 @@ Public PeerJS signaling establishes WebRTC connections; it does not run the game
 
 ## Decisions and transitions
 
+Owning every deed in a district unlocks pre-roll improvements. Choose even building (default), unrestricted per-deed building, or whole-district purchases in custom local or host settings. [Development economics](https://unpragmatic.github.io/harbour-deeds/development.html) gives the rules, proof of diminishing marginal return, and matched-seed evaluation. Run `node tests/development.mjs` after building to reproduce it.
+
 | State | Decision | Next state |
 |---|---|---|
 | Before rolling | Roll, or draft one proposal with a solvent merchant | Landing or trade review |

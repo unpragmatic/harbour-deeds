@@ -1,6 +1,28 @@
 export function actingSeat(s) {
   return s.phase === 'auction' ? s.auction.actor : s.phase === 'trade' ? s.trade.to : s.turn;
 }
+export function locked(s,rules,i){
+  return s.levels?.some((l,k)=>l>0 && rules.tiles[k].group===rules.tiles[i].group);
+}
+const visitCache=new Map();
+function visits(n,turns){
+  const key=`${n}:${turns}`;if(visitCache.has(key))return visitCache.get(key);
+  let dist=Array(n).fill(0);dist[0]=1;const totals=Array(n).fill(0);
+  for(let roll=0;roll<turns;roll++){
+    const next=Array(n).fill(0);
+    for(let i=0;i<n;i++)for(let d=2;d<=12;d++)next[(i+d)%n]+=dist[i]*(6-Math.abs(7-d))/36;
+    next.forEach((v,i)=>totals[i]+=v);dist=next;
+  }
+  visitCache.set(key,totals);return totals;
+}
+function projectedGain(q,s,rules){
+  const n=rules.tiles.length;
+  return q.tiles.reduce((sum,k)=>{
+    const level=rules.development.levels[s.levels[k]];
+    const gain=Math.round(rules.tiles[k].rent*level.rent_pct/100)-s.rents[k];
+    return sum+gain*s.players.reduce((hits,p,i)=>i===s.turn||p.out?hits:hits+visits(n,rules.rounds-s.round+(i>s.turn?1:0))[(k-p.pos+n)%n],0);
+  },0);
+}
 
 function value(s, rules, i, who) {
   const t = rules.tiles[i];
@@ -36,7 +58,7 @@ export function botMove(s, rules) {
   if (s.phase === 'roll' && !s.traded) {
     // Seek mutually valuable acquisitions rather than sending speculative offers every turn.
     const deals = s.owners.flatMap((to, i) => {
-      if (to === null || to === actor) return [];
+      if (to === null || to === actor || locked(s,rules,i)) return [];
       const max = value(s,rules,i,actor), min = value(s,rules,i,to);
       const give_cash = Math.ceil((max+min)/2);
       return max-min >= step && give_cash <= cash-reserve ? [{to,i,give_cash,margin:max-min}] : [];
@@ -44,6 +66,10 @@ export function botMove(s, rules) {
     if(deals.length) {
       const {to,i,give_cash}=deals[0];
       return send('propose',{to,take_deed:i,give_deed:null,take_cash:0,give_cash});
+    }
+    if(s.phase==='roll'){
+      const options=(s.builds||[]).filter(q=>q.cost<=cash-reserve).map(q=>({q,net:projectedGain(q,s,rules)-q.cost})).sort((a,b)=>b.net-a.net);
+      if(options[0]?.net>0)return send('build',{tile:options[0].q.tile});
     }
   }
   return send(s.phase);

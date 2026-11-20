@@ -87,6 +87,27 @@ function tradeTable(){
   }
 }
 const swap={to:1,give_deed:2,take_deed:7,give_cash:5,take_cash:0};
+test('full-set gate, selectable policies, charges, rent and level cap',()=>{
+  for(const policy of ['even','free','district']){
+    const tiles=board.tiles.map((_,k)=>[2,7].includes(k)?{kind:'deed',group:'pair',price:100,rent:25}:{kind:'rest'});
+    start(2,{...board,cash:1000,tiles,development:{...rules.development,policy}});
+    for(const actor of [0,1]){act('roll',actor);act('buy',actor);act('end',actor)}
+    illegal('build',0,{tile:2});
+    act('propose',0,{to:1,give_cash:100,take_cash:0,give_deed:null,take_deed:7});
+    let s=act('accept',1);
+    assert.equal(s.rents[2],50);
+    illegal('build',1,{tile:2});
+    s=act('build',0,{tile:2});
+    assert.equal(s.players[0].cash,800-(policy==='district'?20:10));
+    assert.equal(s.rents[2],75);
+    if(policy==='even')illegal('build',0,{tile:2});
+    else if(policy==='free')assert.ok(s.builds.some(q=>q.tile===2));
+    else assert.equal(s.rents[7],75);
+    while(s.builds.length)s=act('build',0,{tile:s.builds[0].tile});
+    assert.equal(s.levels[7],3);assert.equal(s.rents[2],110);
+    illegal('build',0,{tile:2});
+  }
+});
 test('only valid funded proposals lock the roll; only recipient can settle',()=>{
   tradeTable();
   illegal('accept',1);

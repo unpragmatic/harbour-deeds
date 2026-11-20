@@ -3,12 +3,41 @@ use std::cell::RefCell;
 
 #[derive(Deserialize)]
 struct Rules {
+    development: Development,
     cash: i32,
     salary: i32,
     auction_increment: i32,
     rounds: usize,
     tiles: Vec<Tile>,
     notices: Vec<i32>,
+}
+#[derive(Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+enum Policy {
+    Even,
+    Free,
+    District,
+}
+#[derive(Deserialize)]
+struct Development {
+    policy: Policy,
+    set_rent_pct: i32,
+    levels: Vec<Level>,
+}
+#[derive(Deserialize)]
+struct Level {
+    cost_pct: i32,
+    rent_pct: i32,
+}
+#[derive(Serialize)]
+struct Quote {
+    tile: usize,
+    cost: i32,
+    tiles: Vec<usize>,
+    gain: i32,
+}
+fn percent(n: i32, pct: i32) -> i64 {
+    (i64::from(n) * i64::from(pct) + 50) / 100
 }
 #[derive(Deserialize)]
 struct Tile {
@@ -66,6 +95,9 @@ struct Trade {
 }
 #[derive(Serialize)]
 struct Game {
+    levels: Vec<usize>,
+    rents: Vec<i32>,
+    builds: Vec<Quote>,
     #[serde(skip)]
     rules: Rules,
     #[serde(skip)]
@@ -85,6 +117,10 @@ struct Game {
 #[derive(Deserialize)]
 #[serde(tag = "action", rename_all = "lowercase")]
 enum Command {
+    Build {
+        actor: usize,
+        tile: usize,
+    },
     Start {
         rules: Rules,
         seats: usize,
@@ -131,7 +167,42 @@ impl Game {
         {
             return Err("Invalid game configuration");
         }
-        Ok(Self {
+        let d = &rules.development;
+        if d.set_rent_pct < 100
+            || d.levels.iter().enumerate().any(|(i, l)| {
+                l.cost_pct <= 0
+                    || l.rent_pct
+                        <= if i == 0 {
+                            d.set_rent_pct
+                        } else {
+                            d.levels[i - 1].rent_pct
+                        }
+            })
+        {
+            return Err("Invalid improvement curve");
+        }
+        let mut max_cost = 0i64;
+        for t in rules.tiles.iter().filter(|t| t.kind == Kind::Deed) {
+            let mut largest = 0;
+            for l in &d.levels {
+                let c = percent(t.price, l.cost_pct);
+                if c == 0 || percent(t.rent, l.rent_pct) > i32::MAX as i64 {
+                    return Err("Invalid deed development values");
+                }
+                largest = largest.max(c);
+            }
+            if percent(t.rent, d.set_rent_pct) > i32::MAX as i64 {
+                return Err("Invalid set rent");
+            }
+            max_cost += largest;
+            if max_cost > i32::MAX as i64 {
+                return Err("Improvement costs too large");
+            }
+        }
+        let mut game = Self {
+            levels: vec![0; rules.tiles.len()],
+            rents: vec![],
+            builds: vec![],
             players: (0..seats)
                 .map(|_| Player {
                     cash: rules.cash,
@@ -150,7 +221,78 @@ impl Game {
             traded: false,
             events: vec!["The table is open. All players begin at Port Office.".into()],
             winners: vec![],
-        })
+        };
+        game.refresh();
+        Ok(game)
+    }
+    fn district(&self, i: usize) -> Vec<usize> {
+        self.rules
+            .tiles
+            .iter()
+            .enumerate()
+            .filter(|(_, t)| t.kind == Kind::Deed && t.group == self.rules.tiles[i].group)
+            .map(|(k, _)| k)
+            .collect()
+    }
+    fn developed(&self, i: usize) -> bool {
+        self.district(i).iter().any(|&k| self.levels[k] > 0)
+    }
+    fn refresh(&mut self) {
+        let d = &self.rules.development;
+        self.builds.clear();
+        self.rents = vec![0; self.owners.len()];
+        for (i, t) in self
+            .rules
+            .tiles
+            .iter()
+            .enumerate()
+            .filter(|(_, t)| t.kind == Kind::Deed)
+        {
+            self.rents[i] = t.rent;
+            let Some(owner) = self.owners[i] else {
+                continue;
+            };
+            let group = self.district(i);
+            if !group.iter().all(|&k| self.owners[k] == Some(owner)) {
+                continue;
+            }
+            let lv = self.levels[i];
+            self.rents[i] = percent(
+                t.rent,
+                if lv == 0 {
+                    d.set_rent_pct
+                } else {
+                    d.levels[lv - 1].rent_pct
+                },
+            ) as i32;
+            if owner != self.turn || self.phase != Phase::Roll || lv >= d.levels.len() {
+                continue;
+            }
+            let tiles = match d.policy {
+                Policy::District if i == group[0] => group,
+                Policy::District => continue,
+                Policy::Even if group.iter().any(|&k| self.levels[k] < lv) => continue,
+                _ => vec![i],
+            };
+            let mut cost = 0;
+            let mut gain = 0i64;
+            for &k in &tiles {
+                let x = &self.rules.tiles[k];
+                cost += percent(x.price, d.levels[lv].cost_pct) as i32;
+                let prior = if lv == 0 {
+                    d.set_rent_pct
+                } else {
+                    d.levels[lv - 1].rent_pct
+                };
+                gain += percent(x.rent, d.levels[lv].rent_pct) - percent(x.rent, prior);
+            }
+            self.builds.push(Quote {
+                tile: i,
+                cost,
+                tiles,
+                gain: gain.min(i32::MAX as i64) as i32,
+            });
+        }
     }
     fn random(&mut self, n: usize) -> usize {
         let mut x = self.seed;
@@ -169,8 +311,9 @@ impl Game {
         }
         if paid < amount {
             self.players[a].out = true;
-            for o in &mut self.owners {
+            for (i, o) in self.owners.iter_mut().enumerate() {
                 if *o == Some(a) {
+                    self.levels[i] = 0;
                     *o = None
                 }
             }
@@ -274,7 +417,7 @@ impl Game {
             (t.to, t.take_deed, t.take_cash, t.give_cash),
         ] {
             let cash = self.players[seat].cash;
-            if deed.is_some_and(|i| self.owners.get(i) != Some(&Some(seat)))
+            if deed.is_some_and(|i| self.owners.get(i) != Some(&Some(seat)) || self.developed(i))
                 || cash < pay
                 || (cash - pay).checked_add(receive).is_none()
             {
@@ -288,6 +431,27 @@ impl Game {
         let a = self.turn;
         let i = self.players[a].pos;
         match cmd {
+            Command::Build { actor, tile } if actor == a && self.phase == Phase::Roll => {
+                let q = self
+                    .builds
+                    .iter()
+                    .find(|q| q.tile == tile)
+                    .ok_or("This improvement is not available")?;
+                if self.players[a].cash < q.cost {
+                    return Err("Not enough cash to improve");
+                }
+                self.players[a].cash -= q.cost;
+                for &k in &q.tiles {
+                    self.levels[k] += 1
+                }
+                self.events.push(format!(
+                    "Seat {} improved {} to level {} for ${}.",
+                    a + 1,
+                    self.rules.tiles[tile].group,
+                    self.levels[tile],
+                    q.cost
+                ));
+            }
             Command::Roll { actor } if actor == a && self.phase == Phase::Roll => {
                 self.dice = [1 + self.random(6), 1 + self.random(6)];
                 let path = i + self.dice.iter().sum::<usize>();
@@ -313,14 +477,7 @@ impl Game {
                     Kind::Deed => match self.owners[j] {
                         None => self.phase = Phase::Offer,
                         Some(b) if b != a => {
-                            let set = self
-                                .rules
-                                .tiles
-                                .iter()
-                                .enumerate()
-                                .filter(|(_, t)| t.kind == Kind::Deed && t.group == tile.group)
-                                .all(|(k, _)| self.owners[k] == Some(b));
-                            let rent = tile.rent * if set { 2 } else { 1 };
+                            let rent = self.rents[j];
                             self.events
                                 .push(format!("Rent due to seat {}: ${rent}.", b + 1));
                             self.charge(rent, Some(b));
@@ -416,6 +573,7 @@ impl Game {
                     if self.turn == 0 {
                         if self.round == self.rules.rounds {
                             self.finish();
+                            self.refresh();
                             return Ok(());
                         }
                         self.round += 1
@@ -428,6 +586,7 @@ impl Game {
             }
             _ => return Err("Action is not legal for this seat and phase"),
         }
+        self.refresh();
         Ok(())
     }
 }

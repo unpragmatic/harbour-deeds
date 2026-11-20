@@ -15,6 +15,10 @@ adds = {row["after"]: row["tiles"] for row in outer["inserts"]}
 expanded = dict(base, salary=outer["salary"], tiles=[
     space for t in base["tiles"] for space in [t, *adds.get(t["name"], [])]
 ])
+expanded["development"] = dict(base["development"], levels=[
+    dict(level, cost_pct=cost) for level, cost in
+    zip(base["development"]["levels"], outer["development_cost_pct"], strict=True)
+])
 for marker, value in {
     "/*STYLE*/": (web / "style.css").read_text(),
     "__RULES__": (web / "rules.json").read_text(),

@@ -2,7 +2,7 @@
 // guests replay accepted commands against their own copy of the seeded Rust engine.
 const protocol='harbor-deeds-v2-', alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const saveKey='harbor-deeds.table.v2', codePattern=/^[A-HJ-NP-Z2-9]{6}$/;
-const playable=new Set(['roll','buy','pass','bid','withdraw','propose','accept','reject']);
+const playable=new Set(['roll','buy','pass','bid','withdraw','propose','accept','reject','build']);
 let room=null,peerLoader=null;
 function readTable(){
   const raw=localStorage.getItem(saveKey);if(raw===null)return null;
@@ -111,6 +111,7 @@ function hostLobby(r){
   $('tableCode').textContent=r.code;
   $('copyCode').onclick=async e=>{const btn=e.currentTarget;try{await navigator.clipboard.writeText(r.code);btn.textContent='Copied'}catch{btn.textContent='Select code to copy';const range=document.createRange();range.selectNodeContents($('tableCode'));const sel=getSelection();sel.removeAllRanges();sel.addRange(range)}};
   $('map').value=r.map;$('clock').value=String(r.seconds);
+  $('policy').value=r.policy??rules.development.policy;$('policy').onchange=()=>r.policy=$('policy').value;
   $('map').onchange=()=>r.map=$('map').value;$('clock').onchange=()=>r.seconds=Number($('clock').value);
   const ids=[...r.links.keys()];
   $('assign').innerHTML=r.slots.map((v,i)=>`<label class="field">${seat(i)}<select id="owner${i}">${[...(i<2?[]:[-2]),0,...ids,-1].map(n=>`<option value="${n}" ${v===n?'selected':''}>${n===-2?'Empty':n===-1?'Bot':n===0?'Host device':'Device '+n}</option>`).join('')}</select></label>`).join('');
@@ -121,7 +122,7 @@ function hostLobby(r){
   $('launch').onclick=()=>{
     const owners=r.slots.filter(v=>v!==-2);
     if(ids.some(id=>!owners.includes(id))){$('roster').textContent='Assign at least one seat to every connected guest.';return}
-    const config={owners,map:r.map,seconds:r.seconds,seed:crypto.getRandomValues(new Uint32Array(1))[0]};
+    const config={owners,map:r.map,seconds:r.seconds,policy:$('policy').value,seed:crypto.getRandomValues(new Uint32Array(1))[0]};
     try{
       r.save={role:'host',code:r.code,config,keys:r.keys,journal:[],remaining:config.seconds*1000};
       persist(r);startNetwork(r,config);for(const link of r.links.values())sendReplay(r,link);
@@ -265,12 +266,12 @@ async function connectRoom(host,code,resume=false){
 }
 function broadcast(r,msg){for(const link of r.links.values())link.send(msg)}
 function startNetwork(r,c){
-  if(!c||!['compact','outer'].includes(c.map)||![0,5,15,30].includes(c.seconds)||
+  if(!c||!['compact','outer'].includes(c.map)||!(c.policy===undefined||['even','district','free'].includes(c.policy))||![0,5,15,30].includes(c.seconds)||
      !Number.isInteger(c.seed)||c.seed<0||c.seed>0xffffffff||!Array.isArray(c.owners)||
      c.owners.length<2||c.owners.length>4||!c.owners.every(n=>[-1,0,1,2,3].includes(n))||
      (!r.host&&!c.owners.includes(r.device)))throw Error('Invalid host settings');
   r.started=true;r.owners=c.owners;r.seconds=c.seconds;r.remaining=c.seconds*1000;
-  initialize(c.owners.map(n=>n<0?'bot':'human'),c.map,c.seconds,c.seed);
+  initialize(c.owners.map(n=>n<0?'bot':'human'),c.map,c.seconds,c.seed,c.policy);
   $('modal').close();
 }
 function replay(r,move){

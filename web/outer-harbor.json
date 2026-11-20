@@ -1,5 +1,6 @@
 {
   "salary": 168,
+  "development_cost_pct": [7,11,14],
   "inserts": [
     {"after":"Salt Row","tiles":[
       {"name":"Slipway","kind":"deed","group":"Shipyards","price":150,"rent":38},
