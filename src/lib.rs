@@ -8,6 +8,8 @@ struct Rules {
     #[serde(default)]
     cards: Vec<Card>,
     development: Development,
+    // Frozen tables without a bank-sale rule keep their original economy.
+    bank_sale: Option<BankSale>,
     cash: i32,
     salary: i32,
     auction_increment: i32,
@@ -57,11 +59,33 @@ struct Level {
     cost_pct: i32,
     rent_pct: i32,
 }
+#[derive(Deserialize)]
+struct BankSale {
+    rate_pct: i32,
+    basis: Basis,
+}
+#[derive(Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum Basis {
+    List,
+    Acquisition,
+}
 #[derive(Serialize)]
 struct Quote {
     tile: usize,
     cost: i32,
     tiles: Vec<usize>,
+    gain: i64,
+}
+#[derive(Serialize)]
+struct Sale {
+    tile: usize,
+    price: i32,
+}
+#[derive(Serialize)]
+struct Commission {
+    tile: usize,
+    cost: i32,
     gain: i32,
 }
 fn percent(n: i32, pct: i32) -> i64 {
@@ -69,6 +93,10 @@ fn percent(n: i32, pct: i32) -> i64 {
 }
 #[derive(Deserialize)]
 struct Tile {
+    #[serde(default)]
+    cost_pct: i32,
+    #[serde(default)]
+    bonus_pct: i32,
     #[serde(default)]
     cash_offer: i32,
     #[serde(default)]
@@ -84,6 +112,7 @@ struct Tile {
 #[derive(Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 enum Kind {
+    Works,
     Guild,
     Exchange,
     Start,
@@ -102,6 +131,7 @@ struct Player {
 #[derive(Serialize, PartialEq, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
 enum Phase {
+    Works,
     Guild,
     Roll,
     Offer,
@@ -132,6 +162,11 @@ struct Trade {
 #[derive(Serialize)]
 struct Game {
     levels: Vec<usize>,
+    bonuses: Vec<i32>,
+    locked: Vec<bool>,
+    acquisition: Vec<Option<i32>>,
+    sells: Vec<Sale>,
+    commissions: Vec<Commission>,
     rents: Vec<i32>,
     builds: Vec<Quote>,
     #[serde(skip)]
@@ -156,6 +191,17 @@ struct Game {
 #[derive(Deserialize)]
 #[serde(tag = "action", rename_all = "lowercase")]
 enum Command {
+    Sell {
+        actor: usize,
+        tile: usize,
+    },
+    Commission {
+        actor: usize,
+        tile: usize,
+    },
+    Skip {
+        actor: usize,
+    },
     Grant {
         actor: usize,
     },
@@ -219,6 +265,10 @@ impl Game {
             || rules.cash <= 0
             || rules.salary < 0
             || rules.auction_increment <= 0
+            || rules
+                .bank_sale
+                .as_ref()
+                .is_some_and(|s| !(0..=100).contains(&s.rate_pct))
             || rules.tiles.iter().any(|t| t.price < 0 || t.rent < 0)
         {
             return Err("Invalid game configuration");
@@ -237,6 +287,15 @@ impl Game {
         {
             return Err("Invalid improvement curve");
         }
+        let mut max_fee = 0;
+        let mut max_bonus = 0;
+        for w in rules.tiles.iter().filter(|t| t.kind == Kind::Works) {
+            if w.cost_pct <= 0 || w.bonus_pct <= 0 {
+                return Err("Invalid works terms");
+            }
+            max_fee = max_fee.max(w.cost_pct);
+            max_bonus = max_bonus.max(w.bonus_pct);
+        }
         let mut max_cost = 0i64;
         for t in rules.tiles.iter().filter(|t| t.kind == Kind::Deed) {
             let mut largest = 0;
@@ -247,8 +306,11 @@ impl Game {
                 }
                 largest = largest.max(c);
             }
-            if percent(t.rent, d.set_rent_pct) > i32::MAX as i64 {
-                return Err("Invalid set rent");
+            let peak_rent = d.levels.last().map_or(d.set_rent_pct, |l| l.rent_pct);
+            if percent(t.rent, peak_rent) + percent(t.rent, max_bonus) > i32::MAX as i64
+                || percent(t.rent, max_fee) > i32::MAX as i64
+            {
+                return Err("Rent or refit quote too large");
             }
             max_cost += largest;
             if max_cost > i32::MAX as i64 {
@@ -257,6 +319,11 @@ impl Game {
         }
         let mut game = Self {
             levels: vec![0; rules.tiles.len()],
+            bonuses: vec![0; rules.tiles.len()],
+            locked: vec![false; rules.tiles.len()],
+            acquisition: vec![None; rules.tiles.len()],
+            sells: vec![],
+            commissions: vec![],
             rents: vec![],
             builds: vec![],
             players: (0..seats)
@@ -292,12 +359,18 @@ impl Game {
             .map(|(k, _)| k)
             .collect()
     }
-    fn developed(&self, i: usize) -> bool {
-        self.district(i).iter().any(|&k| self.levels[k] > 0)
+    fn return_to_bank(&mut self, i: usize) {
+        self.owners[i] = None;
+        self.acquisition[i] = None;
+        self.levels[i] = 0;
+        self.bonuses[i] = 0;
     }
     fn refresh(&mut self) {
         let d = &self.rules.development;
         self.builds.clear();
+        self.commissions.clear();
+        self.sells.clear();
+        self.locked.fill(false);
         self.rents = vec![0; self.owners.len()];
         for (i, t) in self
             .rules
@@ -311,6 +384,37 @@ impl Game {
                 continue;
             };
             let group = self.district(i);
+            self.locked[i] = group.iter().any(|&k| self.levels[k] > 0);
+            self.rents[i] += self.bonuses[i];
+            if owner == self.turn {
+                let player = &self.players[owner];
+                if self.phase == Phase::Roll && !self.locked[i] {
+                    if let Some(sale) = &self.rules.bank_sale {
+                        let basis = match sale.basis {
+                            Basis::List => t.price,
+                            Basis::Acquisition => {
+                                self.acquisition[i].expect("bank receipt for owned deed")
+                            }
+                        };
+                        let price = percent(basis, sale.rate_pct) as i32;
+                        if player.cash.checked_add(price).is_some() {
+                            self.sells.push(Sale { tile: i, price });
+                        }
+                    }
+                }
+                if self.phase == Phase::Works && self.bonuses[i] == 0 {
+                    let works = &self.rules.tiles[player.pos];
+                    let cost = percent(t.rent, works.cost_pct) as i32;
+                    let gain = percent(t.rent, works.bonus_pct) as i32;
+                    if cost > 0 && gain > 0 && cost <= player.cash {
+                        self.commissions.push(Commission {
+                            tile: i,
+                            cost,
+                            gain,
+                        });
+                    }
+                }
+            }
             if !group.iter().all(|&k| self.owners[k] == Some(owner)) {
                 continue;
             }
@@ -322,7 +426,8 @@ impl Game {
                 } else {
                     d.levels[lv - 1].rent_pct
                 },
-            ) as i32;
+            ) as i32
+                + self.bonuses[i];
             if owner != self.turn || self.phase != Phase::Roll || lv >= d.levels.len() {
                 continue;
             }
@@ -348,7 +453,7 @@ impl Game {
                 tile: i,
                 cost,
                 tiles,
-                gain: gain.min(i32::MAX as i64) as i32,
+                gain,
             });
         }
     }
@@ -369,10 +474,9 @@ impl Game {
         }
         if paid < amount {
             self.players[a].out = true;
-            for (i, o) in self.owners.iter_mut().enumerate() {
-                if *o == Some(a) {
-                    self.levels[i] = 0;
-                    *o = None
+            for i in 0..self.owners.len() {
+                if self.owners[i] == Some(a) {
+                    self.return_to_bank(i);
                 }
             }
             self.events.push(format!(
@@ -442,6 +546,7 @@ impl Game {
             if let Some(winner) = auction.leader {
                 self.players[winner].cash -= auction.high_bid;
                 self.owners[auction.tile] = Some(winner);
+                self.acquisition[auction.tile] = Some(auction.high_bid);
                 self.events.push(format!(
                     "Seat {} won deed {:02} for ${}.",
                     winner + 1,
@@ -475,7 +580,7 @@ impl Game {
             (t.to, t.take_deed, t.take_cash, t.give_cash),
         ] {
             let cash = self.players[seat].cash;
-            if deed.is_some_and(|i| self.owners.get(i) != Some(&Some(seat)) || self.developed(i))
+            if deed.is_some_and(|i| self.owners.get(i) != Some(&Some(seat)) || self.locked[i])
                 || cash < pay
                 || (cash - pay).checked_add(receive).is_none()
             {
@@ -489,6 +594,41 @@ impl Game {
         let a = self.turn;
         let i = self.players[a].pos;
         match cmd {
+            Command::Sell { actor, tile } if actor == a && self.phase == Phase::Roll => {
+                let price = self
+                    .sells
+                    .iter()
+                    .find(|q| q.tile == tile)
+                    .ok_or("This deed cannot be sold to the bank")?
+                    .price;
+                self.players[a].cash += price;
+                self.return_to_bank(tile);
+                self.events.push(format!(
+                    "Seat {} sold deed {tile:02} to the bank for ${price}.",
+                    a + 1
+                ));
+            }
+            Command::Commission { actor, tile } if actor == a && self.phase == Phase::Works => {
+                let q = self
+                    .commissions
+                    .iter()
+                    .find(|q| q.tile == tile)
+                    .ok_or("This refit is not available")?;
+                self.players[a].cash -= q.cost;
+                self.bonuses[tile] = q.gain;
+                self.events.push(format!(
+                    "Seat {} paid ${} to refit deed {tile:02}: +${} on its next rent.",
+                    a + 1,
+                    q.cost,
+                    q.gain
+                ));
+                self.phase = Phase::End;
+            }
+            Command::Skip { actor } if actor == a && self.phase == Phase::Works => {
+                self.events
+                    .push(format!("Seat {} passed on a refit.", a + 1));
+                self.phase = Phase::End;
+            }
             Command::Build { actor, tile } if actor == a && self.phase == Phase::Roll => {
                 let q = self
                     .builds
@@ -566,6 +706,13 @@ impl Game {
                             let rent = self.rents[j];
                             self.events
                                 .push(format!("Rent due to seat {}: ${rent}.", b + 1));
+                            if self.bonuses[j] > 0 {
+                                self.events.push(format!(
+                                    "Refit on deed {j:02} used (+${}).",
+                                    self.bonuses[j]
+                                ));
+                                self.bonuses[j] = 0;
+                            }
                             let covered = rent.min(self.players[a].cover);
                             if covered > 0 {
                                 self.players[a].cover = 0;
@@ -583,6 +730,7 @@ impl Game {
                         self.charge(fee, None)
                     }
                     Kind::Guild => self.phase = Phase::Guild,
+                    Kind::Works => self.phase = Phase::Works,
                     Kind::Exchange => {
                         if let Some(tile) = (1..n).map(|k| (j + k) % n).find(|&k| {
                             self.rules.tiles[k].kind == Kind::Deed && self.owners[k].is_none()
@@ -663,6 +811,7 @@ impl Game {
                 }
                 self.players[a].cash -= price;
                 self.owners[i] = Some(a);
+                self.acquisition[i] = Some(price);
                 self.phase = Phase::End;
                 self.events.push(format!(
                     "Seat {} purchased deed {:02} for ${price}.",
@@ -701,9 +850,11 @@ impl Game {
                     self.players[t.to].cash += t.give_cash - t.take_cash;
                     if let Some(i) = t.give_deed {
                         self.owners[i] = Some(t.to);
+                        self.bonuses[i] = 0;
                     }
                     if let Some(i) = t.take_deed {
                         self.owners[i] = Some(t.from);
+                        self.bonuses[i] = 0;
                     }
                     self.events.push(format!(
                         "Seat {} accepted seat {}'s trade.",
@@ -772,10 +923,63 @@ pub extern "C" fn dispatch() -> *const u8 {
             Command::Start { rules, seats, seed } => *slot = Some(Game::new(rules, seats, seed)?),
             c => slot.as_mut().ok_or("Start a game first")?.apply(c)?,
         }
+
         serde_json::to_vec(slot).map_err(|e| e.to_string())
     });
     OUTPUT.with_borrow_mut(|b| {
         *b = result.unwrap_or_else(|e| serde_json::json!({"error":e}).to_string().into_bytes());
         b.as_ptr()
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn config() -> serde_json::Value {
+        serde_json::from_str(include_str!("../web/rules.json")).unwrap()
+    }
+
+    #[test]
+    fn reject_invalid_designer_terms_before_play() {
+        for rate in [-1, 101] {
+            let mut r = config();
+            r["bank_sale"]["rate_pct"] = rate.into();
+            assert!(Game::new(serde_json::from_value(r).unwrap(), 2, 1).is_err());
+        }
+        for (fee, bonus) in [(0, 100), (50, -1), (50, i32::MAX)] {
+            let mut r = config();
+            r["tiles"][0] = serde_json::json!({"kind":"works","cost_pct":fee,"bonus_pct":bonus});
+            r["tiles"][1]["rent"] = 200.into();
+            assert!(Game::new(serde_json::from_value(r).unwrap(), 2, 1).is_err());
+        }
+    }
+
+    #[test]
+    fn affordable_refit_and_receipt_clear_on_default() {
+        let mut r = config();
+        r["tiles"][0] = serde_json::json!({"kind":"works","cost_pct":50,"bonus_pct":100});
+        let mut g = Game::new(serde_json::from_value(r).unwrap(), 3, 10).unwrap();
+        // Isolate a visit where the visitor owns a $20-base-rent deed and
+        // cannot afford its $10 refit; then exercise the exact-cash boundary.
+        g.owners[1] = Some(0);
+        g.acquisition[1] = Some(30);
+        g.phase = Phase::Works;
+        g.players[0].cash = 9;
+        g.refresh();
+        assert!(g.commissions.is_empty());
+        assert!(g.apply(Command::Commission { actor: 0, tile: 1 }).is_err());
+        g.players[0].cash = 10;
+        g.refresh();
+        g.apply(Command::Commission { actor: 0, tile: 1 }).unwrap();
+        assert_eq!((g.players[0].cash, g.rents[1]), (0, 40));
+        g.charge(1, None);
+        g.refresh();
+        assert!(g.players[0].out);
+        assert_eq!(
+            (g.acquisition[1], g.owners[1], g.bonuses[1]),
+            (None, None, 0)
+        );
+        assert_eq!(g.rents[1], 20);
+    }
 }

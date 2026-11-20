@@ -70,3 +70,40 @@ dialog[open]{display:flex;flex-direction:column}#content{overflow:auto;min-heigh
   .layout .desk{grid-area:3/1}
   #content{padding:13px 15px}
 }
+
+/* The helm is for committing the next move; the chart is for following the last one. */
+.board .tile[data-kind=works],.board[data-map=grand] .tile[data-kind=works]{color:#173e4b;background:repeating-linear-gradient(135deg,#d5ebee 0 7px,#e6f4f3 7px 10px)}
+#saleQuote .facts{display:flex;gap:12px}
+#commissionQuote .facts{display:flex;gap:10px}
+#saleQuote+.primary,#commissionQuote+.primary{margin-right:5px}
+@media(min-width:801px){
+  .layout{grid-template: auto minmax(0,1fr) / minmax(0,1fr) clamp(315px,30vw,440px)}
+  .layout .boardbox{grid-area:1/1/3/2}
+  .layout .desk{grid-area:1/2;display:block;padding:13px 17px 15px;border:0;border-left:2px solid #647683;border-top:3px solid var(--gold);background:#101c2b}
+  .layout .desk .panelhead{justify-content:space-between;margin-bottom:6px;gap:8px}
+  .desk #phaseLabel{font:780 12px/1.3 system-ui;letter-spacing:.1em}
+  .desk #controlType{font:750 14px/1.2 system-ui}
+  .desk #turn h2{font:bold clamp(23px,2.4vw,36px)/1.08 Georgia,serif;letter-spacing:-.03em}
+  .desk #turn p{font-size:14px;margin:4px 0}.desk .facts{margin:8px 0 6px}
+  .layout .desk #actions{margin-top:9px;min-height:44px;align-items:stretch}
+  .instruments{grid-area:2/2;min-height:0}
+  .instruments #inspector{padding-top:12px}
+  .instruments #inspector h2{font-size:clamp(23px,2.2vw,31px);margin:3px 0}
+  .instruments #inspector .facts{padding:6px 0;margin:6px 0}
+  .instruments #inspector .curve{margin:7px 0}
+  .instruments #inspector .curve caption{margin-bottom:3px}
+  .instruments #inspector .curve td,.instruments #inspector .curve th{padding:4px 2px}
+  #actions button{min-width:0}
+}
+@media(min-width:1200px) and (min-height:720px){
+  .layout .boardbox:has(.board:not(.route)){display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;padding:7px 10px}
+  .layout .boardbox .board:not(.route){width:100%;height:100%;min-height:0;max-height:none;aspect-ratio:auto}
+  .board:not(.route) .tile{padding:6px 2px 2px;gap:1px}
+  .board:not(.route) .tile strong{font-size:clamp(12px,.99vw,16px);line-height:1.04}
+  .board:not(.route) .tile:has(.berth){padding-top:5px;gap:0}
+  .board:not(.route) .tile .tileValue{font-size:12px}
+  .ocean>.chart>.art{width:38%;right:3%;bottom:3%;opacity:.48}
+}
+@media(max-width:540px){
+  #prefsBtn span{display:none}.headright #prefsBtn{padding-inline:6px;font-size:16px}
+}

@@ -1,5 +1,13 @@
-const routeScreen=matchMedia('(max-width:1199px), (max-height:940px)');
+const routeScreen=matchMedia('(max-width:1199px), (max-height:719px)');
 const still=matchMedia('(prefers-reduced-motion: reduce)');
+const prefsKey='harbor-presentation-v1';
+const paceChoices=[
+  ['standard','Standard','Read the dice, follow the ship, then watch it dock.'],
+  ['fast','Fast','A quick cast with the ship already underway.'],
+  ['reduced','Reduced motion','Show the settled dice and result without animation.']
+];
+let pace='standard',accents=true,storageAvailable=true;
+const effectivePace=()=>still.matches?'reduced':pace;
 const signed=n=>`${n<0?'−':'+'}${money(Math.abs(n))}`;
 const pips=[[],[4],[0,8],[0,4,8],[0,2,6,8],[0,2,4,6,8],[0,2,3,5,6,8]];
 const artwork={
@@ -15,23 +23,72 @@ const artwork={
 };
 const icon=name=>`<svg viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">${artwork[name]}</svg>`;
 function diceProp(values){
-  return `<span class="diceSet">${values.map(v=>`<span class="die">${pips[v]?pips[v].map(i=>`<i style="grid-area:${1+Math.floor(i/3)} / ${1+i%3}"></i>`).join(''):v}</span>`).join('')}</span>`;
+  const face=v=>pips[v]?pips[v].map(i=>`<i style="grid-area:${1+Math.floor(i/3)} / ${1+i%3}"></i>`).join(''):v;
+  return `<span class="diceSet">${values.map(v=>{
+    const side=({1:[2,3],2:[6,3],3:[2,6],4:[2,1],5:[1,3],6:[5,3]})[v];
+    const faces=side&&(rules.dice?.sides??6)===6&&effectivePace()!=='reduced'?[v,7-v,...side,7-side[0],7-side[1]]:[v];
+    return `<span class="die" data-value="${v}"><span class="dieCube">${faces.map((n,i)=>`<span class="pipFace face${i}">${face(n)}</span>`).join('')}</span></span>`;
+  }).join('')}</span>`;
 }
 function placeStage(){
   const stage=$('stage'),board=$('board'),route=routeScreen.matches;
   board.classList.toggle('route',route);stage.classList.toggle('strip',route);
   if(route)board.before(stage);else board.querySelector('.ocean').append(stage);
 }
-let animations=[], lastDeltas=[];
+const animations=new Set(), effectTimers=new Set();
+let lastDeltas=[], readThrough=0,voyager=null;
+function maskVoyager(){
+  if(!voyager)return;
+  const berth=$(`tile-${voyager.tile}`);
+  voyager.token=Array.from(berth.querySelectorAll('.token')).find(el=>+el.textContent===voyager.actor+1);
+  voyager.token?.classList.add('atSea');
+}
+function releaseBerth(){voyager?.token?.classList.remove('atSea');voyager=null}
+// This is an optional presentation budget for local automated turns, never an input or clock gate.
+function presentationWait(ms){return Math.max(ms,Math.ceil(readThrough-performance.now()))}
+function later(ms,fn){
+  const id=setTimeout(()=>{effectTimers.delete(id);fn()},ms);effectTimers.add(id);
+}
 function clearMotion(){
-  animations.forEach(a=>a.cancel());animations=[];$('wake').replaceChildren();$('board').classList.remove('inTransit');
+  readThrough=0;
+  effectTimers.forEach(clearTimeout);effectTimers.clear();
+  animations.forEach(a=>a.cancel());animations.clear();
+  $('wake').replaceChildren();releaseBerth();stopFoley();
 }
 function resetStage(){
-  clearMotion();lastDeltas=[];delete $('stage').dataset.live;
+  clearMotion();lastDeltas=[];delete $('stage').dataset.live;delete $('stage').dataset.set;
+}
+function syncPrefs(){
+  const effective=effectivePace();
+  document.documentElement.dataset.motion=effective;
+  const note=$('motionStatus'),accent=$('showAccents');
+  if(note)note.textContent=(still.matches?'Your system requests reduced motion. Animations are off regardless of your selection.':
+    `${paceChoices.find(row=>row[0]===effective)[1]} is active.`)+(storageAvailable?'':' Storage is unavailable; this choice lasts for this visit.');
+  if(accent)accent.disabled=effective==='reduced';
+}
+function openPrefs(){
+  openDialog(`<h2>Table presentation</h2><p>These preferences stay in this browser. They do not change another player’s view or the bidding clock.</p>
+    <fieldset id="motionChoices"><legend>Animation pace</legend>${paceChoices.map(([v,name,help])=>
+    `<label><input type="radio" name="motionPace" value="${v}" ${pace===v?'checked':''}><span><b>${name}</b><small>${help}</small></span></label>`).join('')}</fieldset>
+    <label class="fxOption"><input type="checkbox" id="showAccents" ${accents?'checked':''}> Show wakes, stamps and district seals</label>
+    <p id="motionStatus" role="status"></p>`);
+  const change=()=>{
+    pace=$('motionChoices').querySelector(':checked').value;accents=$('showAccents').checked;
+    try{localStorage.setItem(prefsKey,JSON.stringify({pace,accents}));storageAvailable=true}catch{storageAvailable=false}
+    clearMotion();syncPrefs();
+  };
+  $('motionChoices').onchange=change;$('showAccents').onchange=change;syncPrefs();
 }
 function initFeedback(){
+  let saved;
+  try{saved=JSON.parse(localStorage.getItem(prefsKey))}catch(e){if(e.name!=='SyntaxError')storageAvailable=false}
+  if(paceChoices.some(([v])=>v===saved?.pace))pace=saved.pace;
+  accents=saved?.accents!==false;syncPrefs();
+  if($('prefsBtn'))$('prefsBtn').onclick=openPrefs;
   initSound();routeScreen.addEventListener('change',()=>{clearMotion();placeStage()});
-  still.addEventListener('change',clearMotion);
+  still.addEventListener('change',()=>{clearMotion();syncPrefs()});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)clearMotion()});
+  window.addEventListener('resize',()=>{if(voyager)clearMotion()});
 }
 function plate(tag,title,detail,prop,kind){
   $('stage').dataset.kind=kind;$('stageTag').textContent=tag;$('stageTitle').textContent=title;
@@ -46,10 +103,10 @@ function ledger(s){
   $('stageLedger').innerHTML=rows;$('sheetLedger').innerHTML=rows;
 }
 function syncStage(s){
-  ledger(s);
+  ledger(s);maskVoyager();
   if($('stage').dataset.live)return;
   const tile=s.auction?.tile??s.players[s.turn].pos;
-  const context={roll:'Ready to sail',offer:'Deed for sale',guild:'Guild charter',auction:'At auction',trade:'Contract offered',end:'Settlement',over:'Final accounts'};
+  const context={roll:'Ready to sail',offer:'Deed for sale',guild:'Guild charter',works:'Harbor works',auction:'At auction',trade:'Contract offered',end:'Settlement',over:'Final accounts'};
   plate(context[s.phase],s.phase==='over'?s.winners.map(seat).join(' & '):rules.tiles[tile].name,
     s.phase==='roll'?`${seat(s.turn)} to roll · ${rules.dice?.count??2} dice`:s.events.at(-1)||context[s.phase],
     icon(s.phase==='auction'?'gavel':s.phase==='over'?'final':'ship'),'ready');
@@ -59,13 +116,14 @@ function outcome(m,b,s){
   const delta=s.players[a].cash-b.players[a].cash, lot=b.auction?.tile??m.tile??pos;
   const tile=rules.tiles[lot],who=seat(a),action=m.action;
   let tag=who,title='',detail='',prop='ship',cue=uxInventory.commands[action][2],kind=action,targets=[lot];
+  let sets=[];
   if(s.phase==='over'){
     tag='Final accounts';title=`${s.winners.map(seat).join(' & ')} ${s.winners.length>1?'tie':'wins'}`;
     detail='Cash and deed values settled';prop='final';cue='final';kind='final';targets=[];
   }else if(action==='roll'){
     tag=`${who} rolled ${dieTotal}`;title=tile.name;prop='dice';
     if(tile.kind==='deed')detail=s.owners[pos]===null?`For sale · ${money(tile.price)}`:s.owners[pos]===a?'Your own deed':`Rent to ${seat(s.owners[pos])} · ${money(b.rents[pos])}`;
-    else detail=({guild:'Guild charter · cash or cover',fee:`Harbor dues · ${money(tile.price??0)}`,start:'Port salary',rest:'Safe harbor',notice:'Port notice',
+    else detail=({guild:'Guild charter · cash or cover',works:s.commissions?.length?'Public works · commission a deed or skip':'Public works · no eligible project',fee:`Harbor dues · ${money(tile.price??0)}`,start:'Port salary',rest:'Safe harbor',notice:'Port notice',
       exchange:s.auction?`Auction: ${rules.tiles[s.auction.tile].name}`:'All deeds owned'})[tile.kind];
     if(s.last_card!=null){title=rules.cards[s.last_card].title;detail=`Dispatch at ${tile.name}`;kind='dispatch'}
     if(delta)detail+=` · Net ${signed(delta)}`;
@@ -73,13 +131,23 @@ function outcome(m,b,s){
     if(s.players[a].out)detail+=' · Bankrupt';
   }else if(b.auction&&!s.auction){
     const winner=s.owners[lot];tag='Auction closed';title=winner==null?'No sale':`Sold · ${money(action==='bid'?m.amount:b.auction.high_bid)}`;
-    detail=`${tile.name} · ${winner==null?'Still on the market':seat(winner)+' takes the deed'}`;kind='sold';prop='gavel';cue='gavel';
+    detail=`${tile.name} · ${winner==null?'Still on the market':seat(winner)+' takes the deed'}`;kind='sold';prop='gavel';cue=winner==null?'noSale':'sold';
   }else if(action==='pass'||action==='bid'||action==='withdraw'){
     tag=action==='pass'?'Auction opened':action==='bid'?'High bid':'Bidder out';
     title=action==='pass'?tile.name:action==='bid'?money(m.amount):`${who} withdrew`;
     detail=action==='pass'?`Bidding starts at ${money(rules.auction_increment)}`:`${tile.name} · ${action==='bid'?who+' leads':seat(s.auction.actor)+' to bid'}`;prop='gavel';
   }else if(action==='buy'){
-    tag='Deed recorded';title=tile.name;detail=`${who} paid ${money(-delta)} · Rent ${money(s.rents[lot])}`;prop='deed';
+    tag='Deed recorded';title=tile.name;detail=`${who} paid ${money(-delta)} · Rent ${money(s.rents[lot])}`;prop='deed';cue='file';
+  }else if(action==='sell'){
+    const quote=b.sells.find(q=>q.tile===lot);
+    tag='Sold to the bank';title=tile.name;
+    detail=`Bank paid ${money(quote.price)} · ${who}: ${money(b.players[a].cash)} → ${money(s.players[a].cash)} · Back on the market`;prop='deed';cue='sale';
+  }else if(action==='commission'){
+    const quote=b.commissions.find(q=>q.tile===lot);
+    tag='Works commissioned';title=tile.name;
+    detail=`Cost ${money(quote.cost)} · Rent ${money(b.rents[lot])} → ${money(s.rents[lot])}`;prop='build';cue='build';
+  }else if(action==='skip'){
+    tag='Works passed';title=tile.name;detail=`${who} kept ${money(s.players[a].cash)} · No project commissioned`;prop='build';cue='quiet';targets=[];
   }else if(action==='build'){
     targets=b.builds.find(q=>q.tile===lot).tiles;
     tag=`${who} built level ${s.levels[lot]}`;title=targets.length>1?tile.group:tile.name;
@@ -92,23 +160,45 @@ function outcome(m,b,s){
     const grant=action==='grant';tag=grant?'Guild grant':'Rent cover';title=grant?signed(delta):money(s.players[a].cover);
     detail=`${who} · ${grant?'Paid by the guild':'Protected on next rent bill'}`;prop=grant?'coin':'cover';
   }
-  return {tag,title,detail,kind,cue,targets,prop:prop==='dice'?diceProp(s.dice):icon(prop)};
+  if(['buy','sold','accept'].includes(kind)){
+    const acquired=targets.filter(i=>s.owners[i]!=null&&s.owners[i]!==b.owners[i]);
+    for(const group of new Set(acquired.map(i=>rules.tiles[i].group))){
+      const tiles=rules.tiles.flatMap((t,i)=>t.kind==='deed'&&t.group===group?[i]:[]);
+      const owner=s.owners[tiles[0]];
+      if(owner!=null&&tiles.every(i=>s.owners[i]===owner)){
+        sets.push(tiles);detail+=` · ${seat(owner)} completed ${group}`;
+      }
+    }
+  }
+  return {tag,title,detail,kind,cue,targets,sets,prop:prop==='dice'?diceProp(s.dice):icon(prop)};
 }
 function animate(el,frames,timing){
   if(!el?.animate)return;
-  const anim=el.animate(frames,timing);animations.push(anim);return anim;
+  const anim=el.animate(frames,timing);animations.add(anim);
+  anim.addEventListener('finish',()=>animations.delete(anim),{once:true});return anim;
 }
-function impact(el,delay=0,ink=''){
-  const center=el.getBoundingClientRect(),base=$('wake').getBoundingClientRect();
-  const ring=document.createElement('i');ring.className='waveRing';
-  ring.style.left=`${center.left-base.left+center.width/2}px`;ring.style.top=`${center.top-base.top+center.height/2}px`;$('wake').append(ring);
-  animate(ring,[{transform:'translate(-50%,-50%) scale(.3)',opacity:0},{opacity:1,offset:.12},{transform:'translate(-50%,-50%) scale(2.4)',opacity:0}],{delay,duration:430});
-  animate(el,[{boxShadow:'inset 0 0 0 4px #f6a92d',backgroundColor:'#ffdf89'},{boxShadow:'inset 0 0 0 1px transparent'}],{delay,duration:620});
-  if(ink){
-    const stamp=document.createElement('b');stamp.className='inkStamp';stamp.textContent=ink;
-    stamp.style.left=ring.style.left;stamp.style.top=ring.style.top;$('wake').append(stamp);
-    animate(stamp,[{opacity:0,transform:'translate(-50%,-90%) scale(1.7) rotate(-18deg)'},{opacity:1,transform:'translate(-50%,-50%) scale(.94) rotate(-8deg)',offset:.18},{opacity:1,offset:.74},{opacity:0,transform:'translate(-50%,-66%) rotate(-8deg)'}],{duration:880,delay});
-  }
+function tilePoint(el,base){
+  const r=el.getBoundingClientRect();
+  return {x:r.left-base.left+r.width/2,y:r.top-base.top+r.height/2,w:r.width,h:r.height};
+}
+function spray(className,point,txt,frames,timing){
+  const mark=document.createElement('span');mark.className=className;
+  mark.style.left=`${point.x}px`;mark.style.top=`${point.y}px`;mark.textContent=txt;
+  $('wake').append(mark);animate(mark,frames,timing)?.addEventListener('finish',()=>mark.remove(),{once:true});
+}
+function impact(el,delay,ink='',kind=''){
+  const color=kind==='dock'?'#327c87':kind==='set'?'#a56d18':kind==='sell'?'#66748f':'#a1572c';
+  animate(el,[{boxShadow:`inset 0 0 0 4px ${color}`,backgroundColor:'#ffe5a6'},{}],{delay,duration:540});
+  if(!accents)return;
+  const p=tilePoint(el,$('wake').getBoundingClientRect());
+  const rings=kind==='dock'?[0,125]:[0];
+  rings.forEach(extra=>spray(`waveRing ${kind}`,p,'',[
+    {transform:'translate(-50%,-50%) scale(.36)',opacity:0},{opacity:.9,offset:.15},
+    {transform:'translate(-50%,-50%) scale(1.85)',opacity:0}],{delay:delay+extra,duration:470}));
+  if(ink)spray(`inkStamp ${kind}`,p,ink,[
+    {opacity:0,transform:'translate(-50%,-95%) scale(1.45) rotate(-16deg)'},
+    {opacity:1,transform:'translate(-50%,-50%) scale(.93) rotate(-6deg)',offset:.17},
+    {opacity:1,offset:.72},{opacity:0,transform:'translate(-50%,-66%) rotate(-6deg)'}],{duration:840,delay});
 }
 function followTile(i){
   if($('boardView').hidden||$('modal').open)return;
@@ -116,47 +206,99 @@ function followTile(i){
   const top=v.top+(routeScreen.matches?$('stage').offsetHeight:0);
   if(r.top<top||r.bottom>v.bottom)view.scrollTop+=r.top-(top+v.bottom-r.height)/2;
 }
-function sail(move,b,s){
-  const board=$('board'),wake=$('wake'),base=wake.getBoundingClientRect(),total=s.dice.reduce((x,y)=>x+y,0);
-  const start=b.players[move.actor].pos,n=rules.tiles.length;
-  const frames=[],steps=Math.min(total,n); // Limit work for designer dice that circle the board several times.
-  for(let k=0;k<=steps;k++){
-    const at=(start+Math.round(k*total/steps))%n,el=$(`tile-${at}`),r=el.getBoundingClientRect();
-    const x=r.left-base.left+r.width/2,y=r.top-base.top+r.height/2;
-    frames.push({transform:`translate(${x}px,${y}px)`,offset:k/steps});
-    if(k>0&&k<steps)animate(el,[{backgroundColor:'#ffcf69'},{backgroundColor:getComputedStyle(el).backgroundColor}],{delay:85+490*k/steps,duration:300});
+function cast(fast){
+  $('stageProp').querySelectorAll('.die').forEach((die,i)=>{
+    const dir=i%2?1:-1,duration=fast?420+i*12:780+(i%3)*36;
+    animate(die,[
+      {transform:`translate(${dir*18}px,-14px) rotate(${dir*48}deg) scale(.8)`},
+      {transform:`translate(${-dir*5}px,1px) rotate(${-dir*10}deg)`,offset:.40},
+      {transform:`translate(0,-8px) rotate(${dir*9}deg)`,offset:.59},
+      {transform:'translateY(1px)',offset:.79},{}],{duration});
+    const cube=die.firstElementChild,rotate=(x,y)=>`translateZ(calc(-1 * var(--half))) rotateX(${x}deg) rotateY(${dir*y}deg)`;
+    if(cube.children.length>1)animate(cube,[{transform:rotate(-205,255)},
+      {transform:rotate(28,-66),offset:.42},{transform:rotate(-18,20),offset:.66},
+      {transform:rotate(5,-3),offset:.85},{transform:rotate(0,0)}],{duration});
+  });
+}
+function sail(move,b,s,fast){
+  const start=b.players[move.actor].pos,end=s.players[move.actor].pos;
+  const total=s.dice.reduce((x,y)=>x+y,0),delay=fast?85:1000,travel=fast?490:Math.min(1530,550+95*total);
+  const dockAt=delay+travel,settle=fast?145:325;
+  followTile(fast?end:start);
+  const wake=$('wake'),base=wake.getBoundingClientRect(),view=$('boardView'),initialScroll=view.scrollTop;
+  const frames=[],seen=new Map(),sample=Math.ceil(total/16);
+  const timeAt=k=>fast||!k||k===total?k/total:(k+.4)/(total+1.1);
+  let prev;
+  // Engine dice are bounded (8d32). Keep every visited berth, even on multi-lap rolls;
+  // measure each tile only once and leave at most sixteen wakes per journey.
+  for(let k=0;k<=total;k++){
+    const at=(start+k)%rules.tiles.length,el=$(`tile-${at}`);
+    if(!seen.has(at))seen.set(at,tilePoint(el,base));
+    const p=seen.get(at),offset=timeAt(k),transform=`translate(${p.x}px,${p.y}px)`;
+    const jump=prev&&(Math.abs(p.x-prev.x)>p.w*1.65||Math.abs(p.y-prev.y)>p.h*1.65);
+    if(jump){ // Across a folded chart's line break, do not cut through unrelated berths.
+      const last=frames.at(-1),span=offset-last.offset;
+      frames.push({...last,offset:last.offset+span*.43,opacity:0},{transform,offset:offset-span*.43,opacity:0});
+    }
+    frames.push({transform,offset,opacity:1});
+    if(k>0&&k<total&&k%sample===0&&accents){
+      const arrival=delay+travel*offset;
+      animate(el,[{boxShadow:'inset 0 -4px 0 #117686',backgroundColor:'#fff1bc'},{}],{delay:arrival,duration:300});
+      if(!jump){
+        const angle=Math.atan2(p.y-prev.y,p.x-prev.x)*180/Math.PI;
+        const trail=`translate(-50%,-50%) rotate(${angle}deg)`;
+        spray('wakeFeather',p,'',[
+          {opacity:0,transform:`${trail} scale(.42)`},{opacity:.95,offset:.12},
+          {opacity:0,transform:`${trail} translateX(-8px) scale(1.25)`}],{delay:arrival,duration:390});
+      }
+    }
+    prev=p;
   }
   const pawn=document.createElement('div');pawn.className='sailing';
   pawn.style.setProperty('--seat',colors[move.actor]);pawn.innerHTML=`${icon('ship')}<b>${move.actor+1}</b>`;
-  wake.append(pawn);board.classList.add('inTransit');
-  const trip=animate(pawn,frames,{delay:85,duration:490,fill:'both'});
-  const dock=()=>{pawn.remove();board.classList.remove('inTransit')};
-  if(trip)trip.onfinish=dock;else dock();
-  impact($(`tile-${s.players[move.actor].pos}`),550);
+  pawn.style.transform=frames.at(-1).transform;
+  wake.append(pawn);voyager={actor:move.actor,tile:end};maskVoyager();
+  animate(pawn,frames,{delay,duration:travel,fill:'backwards'});
+  animate(pawn.firstElementChild,[{transform:'rotate(-7deg)'},{transform:'rotate(6deg)'},{transform:'rotate(-7deg)'}],
+    {delay,duration:travel/3,iterations:3});
+  animate(pawn.firstElementChild,[{transform:'translateY(0)'},{transform:'translateY(2px) rotate(6deg)',offset:.3},{transform:'none'}],{delay:dockAt,duration:settle});
+  animate(pawn,[{opacity:1},{opacity:1,offset:.45},{opacity:0}],{delay:dockAt,duration:settle});
+  later(dockAt,()=>{if(view.scrollTop===initialScroll)followTile(end)});
+  later(dockAt+settle,()=>{pawn.remove();releaseBerth()});
+  impact($(`tile-${end}`),dockAt,'','dock');
+  readThrough=performance.now()+dockAt+settle+30;
+  foley(fast?'dice':'cast');foley('depart',delay);foley('dock',dockAt);
 }
 function liveFeedback(move,before,after){
+  // A quiet network handoff may arrive before the dock; the next meaningful action supersedes it.
   if(move.action==='end'&&after.phase!=='over')return;
+  clearMotion();
   const event=outcome(move,before,after);
-  clearMotion();lastDeltas=after.players.map((p,i)=>p.cash-before.players[i].cash);
+  lastDeltas=after.players.map((p,i)=>p.cash-before.players[i].cash);
+  $('stage').toggleAttribute('data-set',!!event.sets.length);
   $('stage').dataset.live=move.action;plate(event.tag,event.title,event.detail,event.prop,event.kind);ledger(after);
-  foley(event.cue);
-  if(move.action==='roll'&&!document.hidden)followTile(after.players[move.actor].pos);
-  if(still.matches||document.hidden||$('boardView').hidden)return;
+  if(document.hidden||$('modal').open)return;
+  const rolling=move.action==='roll'&&event.kind!=='final';
+  if(effectivePace()==='reduced'||$('boardView').hidden||!$('stage').animate){
+    if(rolling)followTile(after.players[move.actor].pos);
+    foley(rolling?'dock':event.cue);if(event.sets.length)foley('district',300);return;
+  }
   const prop=$('stageProp');
-  if(prop.querySelector('.die')){
-    [...prop.querySelectorAll('.die')].forEach((die,i)=>animate(die,[
-      {transform:`translate(${i%2?25:-25}px,-20px) rotate(${i%2?75:-85}deg) scale(.8)`},
-      {transform:'translateY(2px) rotate(-12deg)',offset:.42},
-      {transform:'translateY(-9px) rotate(7deg)',offset:.66},{transform:'none'}],{duration:420+i*18}));
-    sail(move,before,after);
+  if(rolling){
+    const fast=effectivePace()==='fast';cast(fast);sail(move,before,after,fast);
   }else{
+    foley(event.cue);
     const hammer=prop.querySelector('svg');
-    const frames=event.kind==='build'||event.kind==='sold'||event.kind==='bid'?
+    const frames=['build','sold','bid','commission'].includes(event.kind)?
       [{transform:'rotate(-35deg) translateY(-14px)'},{transform:'rotate(9deg)',offset:.62},{transform:'none'}]:
       [{transform:'scale(1.48) rotate(-14deg)',opacity:.3},{transform:'scale(.90) rotate(3deg)',offset:.65},{transform:'none'}];
     animate(hammer,frames,{duration:360,easing:'ease-out'});
-    const ink={buy:'DEED FILED',sold:after.owners[event.targets[0]]==null?'NO SALE':'SOLD',build:`LEVEL ${after.levels[move.tile]}`,accept:'SIGNED',insure:'COVERED'}[event.kind];
-    event.targets.forEach(i=>impact($(`tile-${i}`),110,ink));
+    const ink={buy:'FILED',sell:'RELEASED',sold:event.cue==='noSale'?'NO SALE':'SOLD',commission:'FITTED',build:`LEVEL ${after.levels[move.tile]}`,accept:'SIGNED',insure:'COVERED'}[event.kind];
+    event.targets.slice(0,16).forEach(i=>impact($(`tile-${i}`),110,ink,event.kind));
+    if(event.sets.length){
+      foley('district',410);
+      event.sets.forEach(tiles=>tiles.slice(0,12).forEach((id,j)=>impact($(`tile-${id}`),430+j*55,j?'':'CHARTERED','set')));
+    }
   }
   animate(document.querySelector('.stageCopy'),[{transform:event.kind==='dispatch'?'rotateX(-65deg)':'translateY(8px)',opacity:.5},{transform:'none',opacity:1}],{duration:220});
   $('stageLedger').querySelectorAll('em').forEach(el=>animate(el,[{transform:'translateY(9px) scale(.85)'},{transform:'translateY(-3px) scale(1.15)',offset:.6},{transform:'none'}],{duration:380}));

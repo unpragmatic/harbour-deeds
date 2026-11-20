@@ -1,8 +1,8 @@
 // PeerJS only handles discovery and WebRTC transport. The host serializes all moves;
 // guests replay accepted commands against their own copy of the seeded Rust engine.
-const protocol='harbor-deeds-v2-', alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const protocol='harbor-deeds-v3-', alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const saveKey='harbor-deeds.table.v2', codePattern=/^[A-HJ-NP-Z2-9]{6}$/;
-const playable=new Set(['roll','buy','pass','bid','withdraw','propose','accept','reject','build','grant','insure']);
+const playable=new Set(['roll','buy','pass','bid','withdraw','propose','accept','reject','build','grant','insure','sell','commission','skip']);
 let room=null,peerLoader=null;
 function readTable(){
   const raw=localStorage.getItem(saveKey);if(raw===null)return null;
@@ -122,7 +122,7 @@ function hostLobby(r){
   $('launch').onclick=()=>{
     const owners=r.slots.filter(v=>v!==-2);
     if(ids.some(id=>!owners.includes(id))){$('roster').textContent='Assign at least one seat to every connected guest.';return}
-    const config={owners,map:r.map,seconds:r.seconds,policy:$('policy').value,seed:crypto.getRandomValues(new Uint32Array(1))[0]};
+    const config={owners,map:r.map,edition:currentEdition,seconds:r.seconds,policy:$('policy').value,seed:crypto.getRandomValues(new Uint32Array(1))[0]};
     try{
       r.save={role:'host',code:r.code,config,keys:r.keys,journal:[],remaining:config.seconds*1000};
       persist(r);startNetwork(r,config);for(const link of r.links.values())sendReplay(r,link);
@@ -266,12 +266,12 @@ async function connectRoom(host,code,resume=false){
 }
 function broadcast(r,msg){for(const link of r.links.values())link.send(msg)}
 function startNetwork(r,c){
-  if(!c||!Object.hasOwn(maps,c.map)||!(c.policy===undefined||['even','district','free'].includes(c.policy))||![0,5,15,30].includes(c.seconds)||
+  if(!c||!(c.edition===undefined||c.edition===currentEdition)||!Object.hasOwn(maps,c.map)||!(c.policy===undefined||['even','district','free'].includes(c.policy))||![0,5,15,30].includes(c.seconds)||
      !Number.isInteger(c.seed)||c.seed<0||c.seed>0xffffffff||!Array.isArray(c.owners)||
      c.owners.length<2||c.owners.length>4||!c.owners.every(n=>[-1,0,1,2,3].includes(n))||
      (!r.host&&!c.owners.includes(r.device)))throw Error('Invalid host settings');
   r.started=true;r.owners=c.owners;r.seconds=c.seconds;r.remaining=c.seconds*1000;
-  initialize(c.owners.map(n=>n<0?'bot':'human'),c.map,c.seconds,c.seed,c.policy);
+  initialize(c.owners.map(n=>n<0?'bot':'human'),c.map,c.seconds,c.seed,c.policy,c.edition??'launch');
   $('modal').close();
 }
 function replay(r,move){
@@ -291,7 +291,7 @@ function commit(r,move){
 function acceptMove(r,device,move){
   const actor=actingSeat(state);
   if(r.missing.length||!playable.has(move?.action)||move.actor!==actor||r.owners[actor]!==device||state.phase==='over'||state.phase==='end')return;
-  const fields=move.action==='propose'?['to','give_deed','take_deed','give_cash','take_cash']:move.action==='bid'?['amount']:move.action==='build'?['tile']:[];
+  const fields=move.action==='propose'?['to','give_deed','take_deed','give_cash','take_cash']:move.action==='bid'?['amount']:['build','sell','commission'].includes(move.action)?['tile']:[];
   if(fields.some(k=>!Number.isSafeInteger(move[k])&&!(k.endsWith('_deed')&&move[k]===null))){
     r.links.get(device)?.send({kind:'reject',seq:r.seq});return;
   }

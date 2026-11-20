@@ -78,3 +78,48 @@
 .strip .account{padding:4px 6px;font-size:13px;gap:4px}.strip .account em{font-size:12px}.strip .seatDisc{width:17px;height:17px;font-size:11px}
 @media(max-width:480px){.layout .boardbox .board.route{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 @media(prefers-reduced-motion:reduce){.desk #actions button:not(:disabled):active{transform:none}}
+
+/* The casting cup uses the confirmed face as its front; the other five turn out of sight. */
+.die,.strip .die,.diceSet:has(.die:nth-child(3)) .die,.strip .diceSet:has(.die:nth-child(3)) .die{
+  --half:23.5px;position:relative;display:block;padding:0;border:0;background:transparent;box-shadow:none;perspective:250px
+}
+.strip .die,.diceSet:has(.die:nth-child(3)) .die{--half:14.5px}
+.strip .diceSet:has(.die:nth-child(3)) .die{--half:9px}
+.dieCube,.pipFace{position:absolute;inset:0;border-radius:inherit}
+.dieCube{transform-style:preserve-3d;transform:translateZ(calc(-1 * var(--half)))}
+.pipFace{display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);place-items:center;padding:11%;border:1px solid #fff4d1;
+  backface-visibility:hidden;background:linear-gradient(135deg,#fff8df,#efd5a2);box-shadow:inset -1px -2px 0 #af8d56;transform:translateZ(var(--half))}
+.pipFace.face0{box-shadow:inset -1px -2px 0 #ae8b54,0 2px 0 #ab874c}
+.pipFace.face1{transform:rotateY(180deg) translateZ(var(--half))}
+.pipFace.face2{transform:rotateX(90deg) translateZ(var(--half))}
+.pipFace.face3{transform:rotateY(90deg) translateZ(var(--half))}
+.pipFace.face4{transform:rotateX(-90deg) translateZ(var(--half))}
+.pipFace.face5{transform:rotateY(-90deg) translateZ(var(--half))}
+.pipFace:not(.face0){background:#e8c998}
+.waveRing.dock{width:37px;height:24px;border:3px solid #218797;outline:2px solid #fffcda}
+.board .token.atSea{visibility:hidden}
+.wakeFeather{position:absolute;width:24px;height:22px;opacity:0}
+.wakeFeather:before,.wakeFeather:after{content:"";position:absolute;inset:4px 2px;border:solid #2f8994;border-width:2px 0;
+  border-radius:0 100% 100% 0;box-shadow:0 1px 1px #fffdeb}
+.wakeFeather:after{inset:0 8px 0 -3px}
+.inkStamp.sold{color:#5d300d;background:#ffdd8f;border:3px solid currentColor}
+.inkStamp.sell{color:#3c4664;background:#e3eaf0}
+.inkStamp.set{color:#412c12;background:#ffe4a1;border:3px double #6f501b;border-radius:20px}
+#stage[data-set]{box-shadow:inset 0 0 0 3px #d7ad60,0 0 0 2px #314639}
+#stage[data-kind=sell]{--panel:#3d4d65;--shadow:#263348}
+#stage[data-kind=commission]{--panel:#205367;--shadow:#193641}
+#motionChoices{padding:5px 12px 9px;margin:17px 0 9px}
+#motionChoices legend{font-weight:750}
+#motionChoices label,.fxOption{display:flex;align-items:center;gap:12px;padding:8px 5px;min-height:44px;cursor:pointer}
+#motionChoices label+label{border-top:1px solid #c0c5bf}
+#motionChoices input,.fxOption input{flex:none;width:18px;height:18px;accent-color:#175c60}
+#motionChoices small{display:block;color:#43505e;letter-spacing:normal;font:14px/1.35 system-ui}
+#motionStatus{min-height:1.4em;font:14px/1.4 system-ui;color:#43505e}
+html[data-motion=reduced] .desk #actions button:not(:disabled):active{transform:none}
+html[data-motion=reduced] .desk{transition:none}
+@media(max-width:800px){
+  /* The dock's Rent & build costs button opens the full ladder. Don't scroll a second
+     copy underneath the result strip, or leave a slit above it for moving tile text. */
+  .board.route .ocean:has(#mobileLadder:not(:empty)){display:none}
+  .layout .boardbox:has(.board.route){padding-block-start:0}
+}

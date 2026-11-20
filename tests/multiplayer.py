@@ -149,4 +149,37 @@ with contextlib.ExitStack() as stack:
         p.reload()
         p.click('#setupBtn')
         expect(p.locator('#savedTable')).to_have_count(0)
+    # One guest operates two seats. Both tile-bearing commands must survive the host intent filter.
+    host.evaluate("""()=>{const old=crypto.getRandomValues.bind(crypto);crypto.getRandomValues=a=>
+      a instanceof Uint32Array&&a.length===1?(a[0]=54,a):old(a)}""")
+    host.click('#host');code=host.locator('#tableCode').inner_text()
+    guest.click('#join');guest.fill('#code',code);guest.locator('#joinForm button').click()
+    expect(guest.locator('#roomInfo')).to_contain_text('Device 1')
+    host.select_option('#map','grand');host.select_option('#owner0','1');host.select_option('#owner1','1')
+    host.click('#launch')
+    for _ in range(2):
+        guest.get_by_role('button',name='Roll dice',exact=True).click()
+        expect(guest.locator('body')).to_have_attribute('data-phase','offer')
+        guest.locator('#actions .primary').click()
+        expect(guest.locator('body')).not_to_have_attribute('data-phase','offer')
+    guest.get_by_role('button',name='Roll dice',exact=True).click()
+    guest.get_by_role('button',name='Review refit').click();guest.click('#commissionPay')
+    expect(host.locator('#log')).to_contain_text('next rent')
+    guest.get_by_role('button',name='Sell deed').click();guest.click('#sellConfirm')
+    expect(host.locator('#stage[data-live=sell]')).to_have_count(1)
+    expect(guest.locator('#stage[data-live=sell]')).to_have_count(1)
+    assert host.locator('#stageLedger').inner_text()==guest.locator('#stageLedger').inner_text()
+    host.click('#setupBtn');host.once('dialog',lambda dialog:dialog.accept());host.click('#leave')
+    expect(guest.locator('#reason')).to_contain_text('ended')
+    # A host journal created before rules editions existed must use its original map and prices.
+    host.evaluate("""code=>localStorage.setItem('harbor-deeds.table.v2',JSON.stringify({
+      role:'host',code,config:{owners:[0,1],seconds:5,map:'grand',seed:1,policy:'even'},
+      keys:{1:'e'.repeat(64)},remaining:5000,journal:[{action:'roll',actor:0},{action:'buy',actor:0},{action:'end',actor:0}]
+    }))""",code)
+    host.reload();host.click('#resumeTable')
+    expect(host.locator('#actions')).to_contain_text('Waiting for Device 1 to rejoin')
+    expect(host.locator('#tile-20')).to_contain_text('Beacon Post')
+    expect(host.locator('#stageLedger .account b').first).to_have_text('$710')
+    host.click('#tile-6')
+    expect(host.locator('#inspector tbody tr').nth(2).locator('td').first).to_have_text('$10')
     assert not errors, errors

@@ -1,12 +1,13 @@
 {
   "dice":{"count":2,"sides":6},
   "cash": 750, "salary": 120, "auction_increment": 10, "rounds": 18, "notices": [90,-60,120,-80,50],
+  "bank_sale": {"rate_pct": 50, "basis": "list"},
   "development": {
     "policy": "even", "set_rent_pct": 200,
     "levels": [
-      {"cost_pct": 10, "rent_pct": 300},
-      {"cost_pct": 15, "rent_pct": 380},
-      {"cost_pct": 20, "rent_pct": 440}
+      {"cost_pct": 22, "rent_pct": 300},
+      {"cost_pct": 23, "rent_pct": 390},
+      {"cost_pct": 24, "rent_pct": 465}
     ]
   },
   "tiles": [

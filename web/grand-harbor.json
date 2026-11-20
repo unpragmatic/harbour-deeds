@@ -1,6 +1,11 @@
 {
   "dice": {"count":2,"sides":6},
   "salary":240, "cash":850, "rounds":26,
+  "development":{"policy":"even","set_rent_pct":200,"levels":[
+    {"cost_pct":20,"rent_pct":300},
+    {"cost_pct":21,"rent_pct":390},
+    {"cost_pct":22,"rent_pct":465}
+  ]},
   "cards":[
     {"title":"Mail boat arrives","kind":"cash","amount":70},
     {"title":"Salvage bounty","kind":"cash","amount":100},
@@ -32,7 +37,7 @@
     {"name":"Marsh Cut","kind":"deed","group":"Tidelands","price":180,"rent":45},
     {"name":"Pilots Guild","kind":"guild","mark":"✚","cash_offer":35,"cover_offer":100},
     {"name":"Reed Bank","kind":"deed","group":"Tidelands","price":200,"rent":50},
-    {"name":"Beacon Post","kind":"notice","mark":"✉"},
+    {"name":"Dock Works","kind":"works","mark":"⚒","cost_pct":50,"bonus_pct":100},
     {"name":"Market Hall","kind":"deed","group":"Market","price":200,"rent":50},
     {"name":"Silk Arcade","kind":"deed","group":"Market","price":220,"rent":55},
     {"name":"Canal Toll","kind":"fee","price":80,"mark":"§"},
@@ -47,7 +52,7 @@
     {"name":"Sail Quay","kind":"deed","group":"Marina","price":280,"rent":70},
     {"name":"Dock Levy","kind":"fee","price":100,"mark":"§"},
     {"name":"Crown Pier","kind":"deed","group":"Marina","price":300,"rent":75},
-    {"name":"Radio Room","kind":"notice","mark":"✉"},
+    {"name":"Rigging Works","kind":"works","mark":"⚒","cost_pct":50,"bonus_pct":100},
     {"name":"Glass Strand","kind":"deed","group":"Headlands","price":280,"rent":70},
     {"name":"Cliff House","kind":"deed","group":"Headlands","price":300,"rent":75},
     {"name":"Harbor Wire","kind":"notice","mark":"✉"},

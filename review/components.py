@@ -9,12 +9,14 @@ from PIL import Image
 root = Path(__file__).resolve().parent
 sections = {
     'Desktop playtest review': [
+        ('decision-flow-before','Before: one offer, three reading locations','The previous layout repeated the space name in the chart, inspector and footer. Buying meant leaving the economics at the upper right for a button at the opposite end of the screen. The folded chart was hard to follow as a circuit.'),
         ('desktop-before','Before: laptop table','The treasury was a child of the board. Opening Activity hid both the board and every balance. The small green-gray labels also gave little separation between status and controls.'),
-        ('desktop-offer','After: purchase on a laptop','All four balances sit above the work surface. At 1366 × 768 the numbered route, offered deed, full ladder and command buttons are visible together.'),
+        ('desktop-offer','After: chart → decision → details','At 1366 × 768 the ship travels a continuous perimeter. A single right rail asks “Buy or auction?”, puts both commitments immediately below their amounts, and keeps the selected deed’s ladder underneath. The treasury stays fixed.'),
         ('desktop-log','After: read the log','Activity changes only the right instrument. The board and current commands stay in place; reading the treasury costs zero clicks.'),
         ('desktop-auction','After: timed auction','Bidder, next commitment, time remaining and all cash balances remain visible. Inspecting the lot is not a bid.'),
     ],
     'Read the table in play': [
+        ('display-settings','Presentation, per device','Standard separates the cast, the journey and the landing. Fast shortens presentation; reduced motion uses the same final result. This is not a host rule and does not change the five-second clock.'),
         ('motion-roll','Roll and travel','The dice settle to the Rust result and the numbered ship moves clockwise. The arrival and price remain readable after motion stops.'),
         ('motion-sale','Hammer falls','The lot is stamped and the ledger debits the winner, not the player who withdrew. The next decision is available separately.'),
         ('motion-phone','Reduced-motion phone','Same seeded arrival, with stationary dice, a pinned result and a larger three-column route. Muting does not remove any information.'),
@@ -30,7 +32,7 @@ sections = {
     'Navigate and inspect': [
         ('crowded-space', 'Four visitors on an improved deed', 'Density fixture: the name and current rent remain visible above the owner flag and four seat discs. The inspector carries the development ladder instead of squeezing it onto the tile.'),
         ('grand-harbor', 'Grand Harbor circuit', 'The 40-space circuit distinguishes guilds, dispatches, exchanges, fees and deed districts. Inspect a space to read its effect.'),
-        ('grand-chart', 'Pocket chart', 'On small devices the larger circuit becomes a scrollable route in movement order, instead of squeezing eleven columns into a phone screen.'),
+        ('grand-chart', 'Pocket chart', 'On small devices the larger circuit becomes a scrollable route in movement order. The desktop perimeter is not shrunk to fit a phone.'),
         ('workbench', 'Purchase decision on desktop', 'The landed deed opens beside the board. See every tier’s construction cost, total rent and incremental payoff before buying or opening an auction.'),
         ('table', 'Board, turns and balances', 'Keep movement and cash visible together on desktop. The decision dock stays available when switching views on a phone.'),
         ('deed', 'Deed inspection', 'The owner or market status now comes first; price, base rent and full-district rent are aligned for comparison.'),
@@ -51,6 +53,8 @@ sections = {
         ('final', 'Final accounts', 'Show the winner and each seat’s net worth. Local rematch reuses settings instead of reopening setup.'),
     ],
     'Develop a district': [
+        ('bank-quote','Bank sale, not a trade','Shows the bank’s exact quote, cash after sale, and the next rent given up. Opening or dismissing it never changes ownership.'),
+        ('works-quote','One-use refit','Compare the fee now against a bonus on exactly one future rival rent. No visitor means no payoff, and no full set is required.'),
         ('build-even', 'Build or hold', 'Compare cash left after construction with the rent per visit. Keep cash dismisses the quote without spending or advancing the turn.'),
         ('build-district', 'Whole-district quote', 'Show the full purchase cost and the range earned from one paying visitor. A visitor lands on only one deed, not the whole district.'),
         ('built-deed', 'After construction', 'The deed shows its current rent, level cap and why its next level is blocked. District lock and investment are also visible in the portfolio.'),
@@ -64,7 +68,7 @@ nav{display:flex;flex-wrap:wrap;gap:12px}section{margin:28px 0}.grid{display:gri
 article{background:white;border:1px solid #cdd4c7;border-radius:12px;overflow:hidden;padding:15px}h3{margin:0}p{margin:.5em 0 1em}
 summary{cursor:zoom-in;color:#215849}summary img{display:block;width:100%;height:185px;object-fit:contain;object-position:center;background:#eff2e8;margin:8px 0}
 .scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font:15px/1.35 system-ui;color:#172634;background:#fff8e9}th,td{text-align:left;vertical-align:top;padding:7px 8px;border-bottom:1px solid #aeb8bf}thead{background:#152638;color:white}caption{text-align:left;font-size:18px;font-weight:700;padding:10px 0}code{font-size:.85em}#clicks details{margin:10px 0}#clicks summary{font-weight:700}
-details[open] summary{cursor:zoom-out}details[open] img{height:auto}summary:focus-visible,a:focus-visible{outline:3px solid #ad6d1b}small{color:#496354}</style>
+.grid article:has(details[open]){grid-column:1/-1}details[open] summary{cursor:zoom-out}details[open] img{height:auto;width:auto;max-width:100%;margin-inline:auto}summary:focus-visible,a:focus-visible{outline:3px solid #ad6d1b}small{color:#496354}</style>
 <main><a href="./">← Play Harbor Deeds</a><h1>Component overview</h1><p>A visual walkthrough of the decisions, handoffs and recovery screens. Select any capture to expand it.</p><nav>''']
 out.append('<a href="#clicks">Click inventories</a> <a href="#contrast">Contrast measurements</a> <a href="#motion">Recorded turn</a>')
 for i, section in enumerate(sections):
@@ -119,7 +123,7 @@ for i, (section, rows) in enumerate(sections.items()):
     out.append(f'<section id="group{i}"><h2>{escape(section)}</h2><div class="grid">')
     for file, title, finding in rows:
         image = Image.open(root/f'{file}.png').convert('RGB')
-        image.thumbnail((960, 1000))
+        image.thumbnail((1440, 1000))
         buf = BytesIO()
         image.save(buf, 'WEBP', quality=86, method=5)
         data = b64encode(buf.getvalue()).decode()

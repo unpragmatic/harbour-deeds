@@ -9,6 +9,7 @@
     "cash-sheet": 0,
     "open-book": 2,
     "mute": 1,
+    "pace-local": 3,
     "offered-curve": 0,
     "recover-lot": 1,
     "pass-play": 2,
@@ -20,7 +21,10 @@
     "bid-preset": 1,
     "settle-now": 1,
     "pass-to-sale": 3,
-    "bid-exact": 2
+    "bid-exact": 2,
+    "works-project": 2,
+    "cancel-sale": 2,
+    "liquidate": 2
   },
   "contrast": {
     "Cash on treasury": {

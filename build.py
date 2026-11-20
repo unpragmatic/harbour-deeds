@@ -24,6 +24,7 @@ for marker, value in {
     "/*STYLE*/": "\n".join((web / name).read_text() for name in ["style.css","table.css","workspace.css"]),
     "__RULES__": (web / "rules.json").read_text(),
     "__OUTER__": json.dumps(expanded),
+    "__LEGACY__": (web/"edition-launch.json").read_text(),
     "__GRAND__": json.dumps(dict(expanded, **json.loads((web / "grand-harbor.json").read_text()))),
     "__WASM__": base64.b64encode(wasm.read_bytes()).decode(),
     "/*APP*/": "const uxInventory="+(web/"interactions.json").read_text()+";\n"+"\n".join((web / name).read_text() for name in ["strategy.mjs","foley.js","feedback.js","room.js","app.js"]),

@@ -72,7 +72,7 @@ test('Grand Harbor games terminate and exercise all experimental spaces',()=>{
       s=send(botMove(s,grand));assert.ifError(s.error&&Error(s.error));
     }
   }
-  assert.ok(phases.has('guild')&&phases.has('auction'));assert.equal(cards.size,grand.cards.length);
+  assert.ok(['guild','auction','works'].every(p=>phases.has(p)));assert.equal(cards.size,grand.cards.length);
 });
 test('auction enforces turns, minimum raises, affordability and single settlement',()=>{
   start(3);
@@ -129,14 +129,17 @@ function tradeTable(){
   }
 }
 const swap={to:1,give_deed:2,take_deed:7,give_cash:5,take_cash:0};
-test('full-set gate, selectable policies, charges, rent and level cap',()=>{
+test('frozen rules without bank_sale replay original charges, rent and level cap',()=>{
+  const {bank_sale,...legacy}=board;
+  const levels=[10,15,20].map((c,i)=>({cost_pct:c,rent_pct:[300,380,440][i]}));
   for(const policy of ['even','free','district']){
     const tiles=board.tiles.map((_,k)=>[2,7].includes(k)?{kind:'deed',group:'pair',price:100,rent:25}:{kind:'rest'});
-    start(2,{...board,cash:1000,tiles,development:{...rules.development,policy}});
+    start(2,{...legacy,cash:1000,tiles,development:{...rules.development,policy,levels}});
     for(const actor of [0,1]){act('roll',actor);act('buy',actor);act('end',actor)}
     illegal('build',0,{tile:2});
     act('propose',0,{to:1,give_cash:100,take_cash:0,give_deed:null,take_deed:7});
     let s=act('accept',1);
+    assert.deepEqual(s.sells,[]);
     assert.equal(s.rents[2],50);
     illegal('build',1,{tile:2});
     s=act('build',0,{tile:2});
@@ -148,6 +151,82 @@ test('full-set gate, selectable policies, charges, rent and level cap',()=>{
     while(s.builds.length)s=act('build',0,{tile:s.builds[0].tile});
     assert.equal(s.levels[7],3);assert.equal(s.rents[2],110);
     illegal('build',0,{tile:2});
+  }
+});
+test('bank buys at the legal pre-roll quote; trades do not reset auction receipts',()=>{
+  const tiles=board.tiles.map((_,k)=>k===2?{kind:'deed',group:'A',price:200,rent:10}:k===7?{kind:'deed',group:'B',price:100,rent:25}:{kind:'rest'});
+  for(const [bank_sale,expected] of [[rules.bank_sale,100],[{basis:'acquisition',rate_pct:50},30],[{basis:'list',rate_pct:25},50]]){
+    start(2,{...board,cash:450,tiles,bank_sale});
+    act('roll',0);act('pass',0);act('bid',0,{amount:60});act('withdraw',1);
+    illegal('sell',0,{tile:2});act('end',0);act('roll',1);act('buy',1);
+    let s=act('end',1);assert.deepEqual(s.sells,[{tile:2,price:expected}]);
+    illegal('sell',1,{tile:7});illegal('sell',0,{tile:7});illegal('sell',0,{tile:99});
+    s=act('propose',0,{...swap,take_deed:null,take_cash:80,give_cash:0});
+    assert.deepEqual(s.sells,[]);illegal('sell',0,{tile:2});act('accept',1);
+    act('roll',0);s=act('end',0);
+    assert.equal(s.acquisition[2],60);
+    assert.deepEqual(s.sells.find(q=>q.tile===2),{tile:2,price:expected});
+    const before=s.players[1].cash;
+    s=act('sell',1,{tile:2});assert.equal(s.phase,'roll');assert.equal(s.players[1].cash,before+expected);
+    assert.equal(s.owners[2],null);assert.equal(s.acquisition[2],null);assert.equal(s.rents[2],10);
+    illegal('sell',1,{tile:2});
+    // Its next bank sale is a new transaction, not the previous receipt.
+    for(let i=0;i<30&&s.phase!=='offer';i++){
+      if(s.phase==='end')s=act('end',s.turn);
+      s=act('roll',s.turn);
+    }
+    assert.equal(s.players[s.turn].pos,2);s=act('buy',s.turn);assert.equal(s.acquisition[2],200);
+  }
+});
+test('developing locks even untouched siblings for both sale and trade',()=>{
+  const tiles=board.tiles.map((_,k)=>[2,7].includes(k)?{kind:'deed',group:'pair',price:100,rent:25}:{kind:'rest'});
+  start(2,{...board,cash:600,tiles});
+  act('roll',0);act('buy',0);act('end',0);act('roll',1);act('pass',1);
+  act('withdraw',1);act('bid',0,{amount:60});let s=act('end',1);
+  assert.deepEqual(s.sells,[{tile:2,price:50},{tile:7,price:50}]);assert.equal(s.rents[7],50);
+  s=act('build',0,{tile:2});assert.equal(s.levels[7],0);
+  assert.ok(s.locked[2]&&s.locked[7]);assert.deepEqual(s.sells,[]);
+  illegal('sell',0,{tile:7});
+  illegal('propose',0,{...swap,give_deed:7,take_deed:null,take_cash:5,give_cash:0});
+  act('roll',0);act('end',0);
+  illegal('propose',1,{to:0,give_cash:5,take_cash:0,take_deed:7,give_deed:null});
+});
+const works={kind:'works',cost_pct:50,bonus_pct:100};
+function firstWorks(){
+  const d={kind:'deed',group:'pair',price:100,rent:25};
+  const tiles=[{kind:'rest'},d,{kind:'guild',cash_offer:10,cover_offer:40},works,works,d,{kind:'rest'},{kind:'rest'}];
+  start(2,{...board,dice:{count:1,sides:2},cash:400,tiles});
+  act('roll',0);act('buy',0);act('end',0);act('roll',1);act('end',1);
+  return act('roll',0); // seat 0 lands on Works while owning only one of the two deeds.
+}
+test('Works offers an optional one-visit refit on a split set; no stacking or repeat payout',()=>{
+  let s=firstWorks();assert.equal(s.phase,'works');assert.deepEqual(s.commissions,[{tile:1,cost:13,gain:25}]);
+  const cash=s.players[0].cash;
+  illegal('commission',1,{tile:1});illegal('commission',0,{tile:5});illegal('skip',1);
+  s=act('commission',0,{tile:1});assert.equal(s.phase,'end');assert.equal(s.players[0].cash,cash-13);
+  assert.equal(s.bonuses[1],25);assert.equal(s.rents[1],50);assert.equal(s.levels[1],0);
+  act('end',0);act('roll',1);act('insure',1);s=act('end',1);
+  assert.equal(s.locked[1],false);assert.equal(s.sells[0].tile,1);
+  s=act('roll',0);assert.equal(s.phase,'works');assert.deepEqual(s.commissions,[]);illegal('commission',0,{tile:1});
+  const before=s.players[0].cash;s=act('skip',0);assert.equal(s.players[0].cash,before);
+  for(let turn=0;turn<20;turn++){
+    s=act('end',s.turn);const a=s.turn,prior=s;s=act('roll',a);
+    if(a===1&&s.players[1].pos===1){
+      assert.equal(s.bonuses[1],0);assert.equal(s.rents[1],25);
+      assert.equal(s.players[1].cover,0);assert.equal(prior.players[1].cash-s.players[1].cash,10);
+      assert.equal(s.players[0].cash-prior.players[0].cash,50);return;
+    }
+    if(s.phase==='works')s=act('skip',a);
+    if(s.phase==='guild')s=act('grant',a);
+  }assert.fail('renter never visited refitted deed');
+});
+test('temporary refits stay off the market: cancel on sale or transfer',()=>{
+  for(const trade of [true,false]){
+    firstWorks();act('commission',0,{tile:1});act('end',0);act('roll',1);act('grant',1);act('end',1);
+    let s;if(trade){act('propose',0,{...swap,give_deed:1,take_deed:null,give_cash:0,take_cash:10});s=act('accept',1)}
+    else s=act('sell',0,{tile:1});
+    assert.equal(s.bonuses[1],0);assert.equal(s.rents[1],25);
+    assert.equal(s.acquisition[1],trade?100:null);
   }
 });
 test('only valid funded proposals lock the roll; only recipient can settle',()=>{

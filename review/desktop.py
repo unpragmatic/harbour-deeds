@@ -26,7 +26,7 @@ with sync_playwright() as pw:
     def in_sight(selector):
         return p.locator(selector).evaluate_all("""nodes=>nodes.length>0&&nodes.every(n=>{
           const r=n.getBoundingClientRect();return r.width>0&&r.height>0&&r.top>=0&&r.left>=0&&r.right<=innerWidth+.5&&r.bottom<=innerHeight+.5&&
-            [r.top+2,r.bottom-2].every(y=>n.contains(document.elementFromPoint(r.left+r.width/2,y)))})""")
+            [r.top+2,r.bottom-2].every(y=>(n.closest('button.tile')||n).contains(document.elementFromPoint(r.left+r.width/2,y)))})""")
     def cash(sheet=False):
         sel=('#sheetLedger' if sheet else '#stageLedger')+' .account b'
         assert p.locator(sel).all_text_contents()==['$850']*4
@@ -81,6 +81,12 @@ with sync_playwright() as pw:
         expect(p.locator('body')).to_have_attribute('data-phase','roll')
         p.click('#close')
     with run('mute'):button('Sound effects').click()
+    with run('pace-local'):
+        button('Display settings').click()
+        p.locator('#content input[value=fast]').click()
+        expect(p.locator('#content input[value=fast]')).to_be_checked()
+        p.locator('dialog').screenshot(path=root/'display-settings.png')
+        p.click('#close')
     for w,h in [(1024,650),(390,844),(320,680)]:
         p.set_viewport_size({'width':w,'height':h});cash()
         button('Activity').click();cash()
@@ -91,8 +97,8 @@ with sync_playwright() as pw:
         expect(p.locator('#inspector h2')).to_have_text('Copper Yard')
         assert p.locator('#inspector tbody tr').count()==5
         assert in_sight('#inspector tbody tr td:last-child') and in_sight('#turn .facts dd')
-    assert in_sight('#tile-0 strong') and in_sight('#tile-39 strong')
     p.screenshot(path=root/'desktop-offer.png')
+    assert in_sight('#tile-0 strong') and in_sight('#tile-39 strong'),p.locator('#boardView,#tile-0 strong,#tile-39 strong').evaluate_all("ns=>ns.map(n=>[n.scrollTop,n.getBoundingClientRect().toJSON()])")
     button('Players').click()
     with run('recover-lot'):
         button('Rent & build costs').click()
@@ -129,5 +135,29 @@ with sync_playwright() as pw:
         button('Custom').click();p.keyboard.type('65');button('Place bid').click()
         expect(p.locator('#stageTitle')).to_have_text('$65')
     p.screenshot(path=root/'desktop-auction.png')
+    # A two-player seed: buy two different deeds, then Seat 1 lands on the works.
+    p.evaluate('() => {crypto.getRandomValues=a=>(a[0]=54,a)}')
+    button('New table').click();p.click('#passPlay')
+    for _ in range(2):
+        button('Roll dice').click();p.locator('#actions .primary').click()
+    button('Roll dice').click()
+    expect(p.locator('body')).to_have_attribute('data-phase','works')
+    with run('works-project'):
+        button('Review refit').click()
+        expect(p.locator('#commissionQuote')).to_contain_text('+$43')
+        p.locator('#modal').screenshot(path=root/'works-quote.png')
+        p.click('#commissionPay')
+        expect(p.locator('#log')).to_contain_text('next rent')
+    with run('cancel-sale'):
+        button('Sell deed').click()
+        expect(p.locator('#sellConfirm')).to_be_enabled()
+        p.click('#keepDeed')
+    with run('liquidate'):
+        button('Sell deed').click();p.locator('#modal').screenshot(path=root/'bank-quote.png')
+        before=p.locator('#stageLedger .account b').nth(1).text_content()
+        payout=int(p.locator('#sellConfirm').text_content().split('$')[1].replace(',',''))
+        p.click('#sellConfirm')
+        assert int(p.locator('#stageLedger .account b').nth(1).text_content().strip('$').replace(',',''))==int(before.strip('$').replace(',',''))+payout
+        expect(button('Roll dice')).to_be_visible()
     browser.close()
 (root/'desktop-results.json').write_text(json.dumps({'observed':observed,'contrast':ratios},indent=2)+'\n')

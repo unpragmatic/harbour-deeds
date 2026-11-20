@@ -2,27 +2,62 @@ export function actingSeat(s) {
   return s.phase === 'auction' ? s.auction.actor : s.phase === 'trade' ? s.trade.to : s.turn;
 }
 export function locked(s,rules,i){
-  return s.levels?.some((l,k)=>l>0 && rules.tiles[k].group===rules.tiles[i].group);
+  return s.locked?.[i] ?? s.levels?.some((l,k)=>l>0 && rules.tiles[k].group===rules.tiles[i].group);
 }
-const visitCache=new Map();
-function visits(n,turns,{count=2,sides=6}={}){
-  const key=`${n}:${turns}:${count}:${sides}`;if(visitCache.has(key))return visitCache.get(key);
+const visitCache=new Map(),oddsCache=new Map();
+function diceOdds({count=2,sides=6}={}){
+  const key=`${count}:${sides}`;if(oddsCache.has(key))return oddsCache.get(key);
   let odds=[1];for(let j=0;j<count;j++){const next=Array(odds.length+sides).fill(0);odds.forEach((v,i)=>{for(let k=1;k<=sides;k++)next[i+k]+=v/sides});odds=next}
-  let dist=Array(n).fill(0);dist[0]=1;const totals=Array(n).fill(0);
-  for(let roll=0;roll<turns;roll++){
-    const next=Array(n).fill(0);
-    for(let i=0;i<n;i++)for(let d=count;d<odds.length;d++)next[(i+d)%n]+=dist[i]*odds[d];
-    next.forEach((v,i)=>totals[i]+=v);dist=next;
+  oddsCache.set(key,odds);return odds;
+}
+function visits(n,turns,dice,once=false){
+  const odds=diceOdds(dice);
+  const key=`${n}:${dice?.count??2}:${dice?.sides??6}:${once}`;
+  if(!visitCache.has(key))visitCache.set(key,[Array(n).fill(0)]);
+  const byTurn=visitCache.get(key);
+  while(byTurn.length<=turns){
+    const later=byTurn.at(-1),result=Array(n).fill(0);
+    for(let i=0;i<n;i++)odds.forEach((p,d)=>{
+      const gap=(i+n-(d%n))%n,hit=Number(gap===0);
+      result[i]+=p*(hit+(once && hit?0:later[gap]));
+    });
+    byTurn.push(result);
   }
-  visitCache.set(key,totals);return totals;
+  return byTurn[turns];
+}
+function traffic(k,s,rules,once=false){
+  const n=rules.tiles.length;
+  let total=0,miss=1;
+  for(const [i,p] of s.players.entries()){
+    if(i===s.turn||p.out)continue;
+    const rolls=rules.rounds-s.round+Number(i>s.turn);
+    const h=visits(n,rolls,rules.dice,once)[(k-p.pos+n)%n];
+    total+=h;miss*=1-h;
+  }
+  return once?1-miss:total;
 }
 function projectedGain(q,s,rules){
-  const n=rules.tiles.length;
   return q.tiles.reduce((sum,k)=>{
     const level=rules.development.levels[s.levels[k]];
-    const gain=Math.round(rules.tiles[k].rent*level.rent_pct/100)-s.rents[k];
-    return sum+gain*s.players.reduce((hits,p,i)=>i===s.turn||p.out?hits:hits+visits(n,rules.rounds-s.round+(i>s.turn?1:0),rules.dice)[(k-p.pos+n)%n],0);
+    const gain=Math.round(rules.tiles[k].rent*level.rent_pct/100)-(s.rents[k]-(s.bonuses?.[k]??0));
+    return sum+gain*traffic(k,s,rules);
   },0);
+}
+// Liquidate only to materially reduce a known next-roll default risk, not to
+// turn cheap auction wins into cash at the expense of final list-value wealth.
+function rescueSale(s,rules){
+  if(!s.sells?.length)return;
+  const actor=s.turn,p=s.players[actor],n=rules.tiles.length;
+  const short=diceOdds(rules.dice).map((prob,d)=>{
+    const path=p.pos+d,k=path%n,t=rules.tiles[k];
+    const bill=t.kind==='fee'?t.price:s.owners[k]!=null && s.owners[k]!==actor?Math.max(0,s.rents[k]-p.cover):0;
+    return {prob,need:bill-p.cash-Math.floor(path/n)*rules.salary};
+  }).filter(x=>x.prob>0 && x.need>0);
+  if(short.reduce((sum,x)=>sum+x.prob,0)<0.10)return;
+  return s.sells.map(q=>{
+    const saved=short.reduce((sum,x)=>sum+(q.price>=x.need?x.prob:0),0);
+    return {tile:q.tile,saved,loss:value(s,rules,q.tile,actor)-q.price+(s.bonuses?.[q.tile]??0)};
+  }).filter(x=>x.saved>0).sort((a,b)=>b.saved-a.saved||a.loss-b.loss)[0];
 }
 
 function value(s, rules, i, who) {
@@ -37,7 +72,16 @@ export function botMove(s, rules) {
   const actor = actingSeat(s), cash = s.players[actor].cash;
   const reserve = Math.min(rules.salary, cash / 3);
   const step = rules.auction_increment;
+  // In a duel, a collected dollar can also cost the only rival a dollar.
+  // Credit that second dollar only for rent not already covered by their guild.
+  const duelRival=s.players.length===2?s.players[1-actor]:null;
+  const rentWeight=duelRival&&!duelRival.cover?2:1;
   const send = (action, extra = {}) => ({action, actor, ...extra});
+  if(s.phase==='works'){
+    const best=s.commissions.filter(q=>q.cost<=cash-reserve)
+      .map(q=>({q,net:rentWeight*traffic(q.tile,s,rules,true)*q.gain-q.cost})).sort((a,b)=>b.net-a.net)[0];
+    return best?.net>0?send('commission',{tile:best.q.tile}):send('skip');
+  }
   if(s.phase==='guild'){
     const p=s.players[actor],t=rules.tiles[p.pos],turns=rules.rounds-s.round;
     const exposed=s.rents.filter((_,k)=>s.owners[k]!==null&&s.owners[k]!==actor);
@@ -62,6 +106,10 @@ export function botMove(s, rules) {
     const cost = t.take_cash + (t.take_deed === null ? 0 : value(s,rules,t.take_deed,actor));
     return send(benefit >= cost && cash - t.take_cash >= reserve ? 'accept' : 'reject');
   }
+  if(s.phase==='roll'){
+    const q=rescueSale(s,rules);
+    if(q)return send('sell',{tile:q.tile});
+  }
   if (s.phase === 'roll' && !s.traded) {
     // Seek mutually valuable acquisitions rather than sending speculative offers every turn.
     const deals = s.owners.flatMap((to, i) => {
@@ -75,7 +123,7 @@ export function botMove(s, rules) {
       return send('propose',{to,take_deed:i,give_deed:null,take_cash:0,give_cash});
     }
     if(s.phase==='roll'){
-      const options=(s.builds||[]).filter(q=>q.cost<=cash-reserve).map(q=>({q,net:projectedGain(q,s,rules)-q.cost})).sort((a,b)=>b.net-a.net);
+      const options=(s.builds||[]).filter(q=>q.cost<=cash-reserve).map(q=>({q,net:rentWeight*projectedGain(q,s,rules)-q.cost})).sort((a,b)=>b.net-a.net);
       if(options[0]?.net>0)return send('build',{tile:options[0].q.tile});
     }
   }

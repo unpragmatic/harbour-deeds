@@ -31,7 +31,7 @@ Maintain `web/interactions.json` with changes to controls, cues and board identi
 
 The [click audit](https://unpragmatic.github.io/harbour-deeds/components.html#clicks) and [contrast measurements](https://unpragmatic.github.io/harbour-deeds/components.html#contrast) are generated from `review/clicks.json` and `review/desktop-results.json`. Add actions with a starting state and mouse cost; compose scenario paths from their IDs and set a ceiling. Budget checks run in `build.py`. After building, run `python review/desktop.py` to record observed clicks and rendered contrast pairs, then `python review/components.py` to republish alongside the other walkthroughs. Rows without a measured path are labeled as control traces.
 
-The board shows the last accepted action; the dock shows whose decision is **next**. Cash stays in a separate treasury, including inside game sheets. On desktop, Space, Players and Activity share a side pane without replacing the board. **R** rolls, **T** drafts a trade, **I** previews a build; shortcuts do not commit spending and are suspended in sheets. Dice, the moving ship and physical sounds use only committed values. **♪ On / Off** controls sound per browser; reduced motion retains the final faces, amounts and labels. `review/motion.py` captures a real turn and its audio for the overview.
+The chart shows the last accepted action. The helm on the right asks for the **next** decision; costs, commands and the deed inspector share one column. At laptop size Grand Harbor is a 13 × 9 perimeter, not a row-major list. Smaller screens keep the folded route and the reachable bottom dock. Cash stays visible across board instruments and game sheets. **R** rolls, **T** drafts a trade, **S** quotes a bank sale and **I** previews a build; shortcuts do not commit spending and are suspended in sheets. **Display** sets the local pace; normal play gives the dice and ship time to settle, Fast uses the shorter timings, and reduced motion keeps the same results. None changes the Rust simulation or the host’s bid deadline.
 
 [Open the illustrated component overview](https://unpragmatic.github.io/harbour-deeds/components.html) for the controls, decision screens and recovery flow in one place. Expand a capture to inspect it. Each card explains a change or an improvement opportunity.
 
@@ -53,11 +53,13 @@ Public PeerJS signaling establishes WebRTC connections; it does not run the game
 
 ## Decisions and transitions
 
-Owning every deed in a district unlocks pre-roll improvements. Choose even building (default), unrestricted per-deed building, or whole-district purchases in custom local or host settings. [Development economics](https://unpragmatic.github.io/harbour-deeds/development.html) gives the rules, proof of diminishing marginal return, and matched-seed evaluation. Run `node tests/development.mjs` after building to reproduce it.
+Owning every deed in a district unlocks pre-roll improvements. Choose even building (default), unrestricted per-deed building, or whole-district purchases in custom local or host settings. [Development economics](https://unpragmatic.github.io/harbour-deeds/development.html) gives the rules, proof of diminishing marginal return, and matched-seed evaluation. After building, `node tests/development.mjs` reproduces the per-tier and game totals; `node tests/build-or-hold.mjs` compares buying and holding at the same decision states.
 
 | State | Decision | Next state |
 |---|---|---|
 | Before rolling | Roll, or draft one proposal with a solvent merchant | Landing or trade review |
+| Before rolling, eligible deed | Review the bank quote and sell, or keep it | Same seat still has its roll |
+| Public works, eligible deed | Pay for a single-use refit or skip it | Settlement; next rival rent can collect the bonus |
 | Trade review | Recipient accepts both legs or declines; the engine transfers assets together | Original seat resumes before rolling |
 | Unowned deed | Buy at list price or start an auction | Settlement or auction |
 | Auction | Current bidder raises by at least the increment or withdraws | Next bidder, sale to high bidder, or unsold |
@@ -65,9 +67,13 @@ Owning every deed in a district unlocks pre-roll improvements. Choose even build
 
 Complete districts double base rent and unlock improvements. Cash also matters: winning a bid can leave too little to pay the next bill. The boards have fixed round limits.
 
+`bank_sale.rate_pct` and `bank_sale.basis` are designer rules, not local display settings. Shipped sales pay **50% of printed list**: paying $60 at auction for a $200 deed and selling it back for $100 is intentional. The alternative basis tracks the original price paid to the bank across player trades. Permanent development locks a district against both sale and trade. Dock Works and Rigging Works instead offer a one-use bonus on the next rival rent: no complete district required, no permanent rent increase, no recovery if no rival visits. See the [economics report](https://unpragmatic.github.io/harbour-deeds/development.html) for the assumptions behind the permanent curve.
+
+Network saves now carry a rules edition. Journals that predate editions replay against `web/edition-launch.json`, frozen from the deployed build, rather than silently repricing past purchases or changing an old landing. All devices at a table must load the same compatible release.
+
 ## Gameplay and visual review
 
-Means across 100 three-bot matches, seeds 1–100, using the shipped policy for each edition. Reproduce the current sample with `node tests/pace.mjs` after building.
+Historical means across 100 three-bot matches, seeds 1–100, using the policy for each edition. These figures predate bank sales and public works; `node tests/pace.mjs` runs the same survey with the current policy.
 
 | Per match | Original | Market edition |
 |---|---:|---:|
@@ -89,6 +95,6 @@ Guilds offer an immediate grant or a policy covering up to a stated amount of th
 
 The clock defaults to **five seconds per human bidding decision**. Hosts can choose 15 seconds, 30 seconds or untimed. Local-only games pause for dialogs and hidden tabs; a network table uses the host's deadline regardless of guest UI state. Expiry submits `withdraw`; winning, payment and ownership remain Rust decisions. Neither bots nor headless simulations consult a clock.
 
-In 100 matched three-bot seeds under each map, mean turns barely changed (52.43 vs 52.70). Market commands rose from 30.68 to 54.85, auctions from 1.59 to 4.88, and bids from 6.39 to 18.17. Completed sets rose only from 2.79 to 2.94 despite two extra districts. Expansion adds competition and cash pressure, but many extra inputs are bids, not new kinds of decision. Reproduce with `node tests/pace.mjs` and `node tests/pace.mjs dist/index.html outer`.
+In the original Inner-to-Outer expansion survey, 100 matched three-bot seeds averaged 52.43 vs 52.70 turns. Market commands rose from 30.68 to 54.85, auctions from 1.59 to 4.88, and bids from 6.39 to 18.17. Completed sets rose only from 2.79 to 2.94 despite two extra districts. Many extra inputs were bids, not new kinds of decision.
 
-**Depth priorities:** First, vary bot valuations: charge more to complete a rival's district and compare deal acceptance and winner concentration. The current bots accepted every bot-generated proposal on both boards. Second, prototype one optional upgrade on a completed district: spend a cash reserve now for higher future rent. Measure whether upgrades pay back at different stages and whether they amplify early leads. Avoid adding more spaces or mandatory prompts until human playtests measure auction time and perceived control.
+**Current balance finding:** In 200 three-seat Grand Harbor seeds, the first affordable permanent level was bought in one branch and deferred in the other. The builder finished richer in 46, poorer in 75 and tied in 79. This is a fixed bot policy at one decision per seed, not proof that holding is generally best. The next useful human playtest is whether buyers can explain when they'd rather keep a cash reserve, sell a deed, or risk a one-use refit.
