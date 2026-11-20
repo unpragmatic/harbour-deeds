@@ -169,7 +169,7 @@ dialog .facts{display:flex;flex-wrap:wrap;gap:12px;padding:12px 0;margin:0;borde
   #inspectQuote{display:inline-block;margin-left:8px;min-height:32px;padding:2px 3px;border:0;text-decoration:underline;text-underline-offset:2px;font:650 13px/1.15 system-ui}
 }
 .desk #actions button:not(:disabled):active{transform:translateY(2px);box-shadow:inset 0 2px 3px #0004}
-@media(min-width:1200px) and (min-height:821px){
+@media(min-width:1200px) and (min-height:941px){
   .layout .boardbox:has(.board[data-map=grand]){grid-template-rows:auto minmax(720px,1fr) auto}
   .board[data-map=grand]{width:100%;min-height:720px}
   .board[data-map=grand] .tile:has(.berth){gap:0;padding:5px 2px 2px}
@@ -191,10 +191,83 @@ dialog .facts{display:flex;flex-wrap:wrap;gap:12px;padding:12px 0;margin:0;borde
 .strip .account{padding:4px 6px;font-size:13px;gap:4px}.strip .account em{font-size:12px}.strip .seatDisc{width:17px;height:17px;font-size:11px}
 @media(max-width:480px){.layout .boardbox .board.route{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 @media(prefers-reduced-motion:reduce){.desk #actions button:not(:disabled):active{transform:none}}
+
+/* Persistent table instruments, independent of the selected space, panel or scroll position. */
+:root{--navy:#101c2b;--steel:#213447;--chalk:#fff8e9;--gold:#ffcc61;--ink:#172634;--paper:#fff8e9;--mute:#43505e;--line:#abb3b4}
+header{background:var(--navy);color:var(--chalk)}
+.headright button,.headright #rulesBtn{color:#fff8e9;border-color:#8795a0}
+.treasury{background:#152638;color:white;display:flex;align-items:stretch;min-width:0;border-bottom:2px solid #637984}
+.treasury>strong{display:flex;align-items:center;padding:0 18px;font:750 12px/1.1 system-ui;letter-spacing:.1em;text-transform:uppercase;color:#cedbea}
+#stageLedger,#sheetLedger{background:#152638;border:0;display:flex;min-width:0;flex:1}
+.account{position:relative;align-content:center;flex-wrap:nowrap;gap:8px;padding:5px 12px;color:#fff8e9;background:#152638;border-inline-start:1px solid #687c8b;border-right:0}
+.account.acting{background:#253e54;box-shadow:inset 0 -3px 0 var(--gold)}
+.account.acting .seatName::after{content:" ◂";color:var(--gold)}
+.seatName{font:650 13px/1.1 system-ui}.account b{font:750 19px/1.15 system-ui;font-variant-numeric:tabular-nums}
+.account em{color:#ffdc91}.account em.credit{color:#a7f1bc}
+.sheetbar{display:flex;align-items:center;justify-content:space-between;background:#101c2b;color:white;padding:2px 6px 2px 14px;font:700 13px system-ui;letter-spacing:.06em}
+.sheetbar button{width:37px;height:36px;padding:0;border:1px solid #738492;background:#24394b;color:white;font:22px/1 system-ui}
+dialog#modal{padding:0;border:2px solid #5a6b75;color:var(--ink);background:var(--paper);overflow:hidden}
+dialog[open]{display:flex;flex-direction:column}#content{overflow:auto;min-height:0;padding:16px 20px}
+#sheetLedger{flex:none}.sheetbar,#sheetLedger{flex-shrink:0}#sheetLedger .seatName{display:none}
+#sheetLedger .account{padding:5px;flex-wrap:wrap;gap:3px}#sheetLedger .account b{font-size:15px}
+#sheetLedger .account em{display:none}.keyGuide{font:14px/1.4 system-ui}
+.holding{margin:3px 3px 0 0;padding:4px 6px;text-align:left;background:#fff;border:1px solid #71818b;color:#113c64;font-size:13px;border-radius:2px}
+.row{align-items:flex-start}.row>div{min-width:0}.row .meta,.workspace p,.workspace li{color:#40505d}.station,kbd{display:none}
+:is(button,summary,select,input,a):focus-visible{outline:3px solid #0871b4;outline-offset:1px}
+.board .tile:focus-visible{outline:3px solid #0064a0;outline-offset:-3px}
+.board .tile{color:#122531;background:#fff8e7}.board .tile .tileValue{color:#293849}
+.board .tile.landing{background:#ffdf89}.board .tile.selected{outline-color:#773e00}
+.board .tile[data-kind=notice]{background:#daeaf7;color:#193857}.board .tile[data-kind=fee]{background:#f8dfcf;color:#612900}
+#stage{--panel:#1a4354;--shadow:#132b3a}
+#stageTag{color:#ffda8b}#stageDetail{color:#fff8ed}
+#actions .bidClock{color:#392500;background:#ffedc5}
+.bidClock progress{background:#baa575}.bidClock.urgent span{color:#7a2212}
+.instruments [hidden]{display:none!important}
+@media(min-width:801px){
+  body{background:#132231;grid-template-rows:42px minmax(0,1fr)}
+  main{grid-template-rows:46px minmax(0,1fr)}
+  .layout{grid-template-columns:minmax(0,1fr) clamp(284px,26vw,412px)}
+  .instruments{grid-area:1/2;display:grid;grid-template-rows:auto minmax(0,1fr);min-height:0;min-width:0;background:#f8f2e5;border-left:2px solid #647683}
+  .instruments .switcher{width:100%;margin:0;padding:0;display:flex;align-self:stretch;background:var(--navy);border-bottom:1px solid #415969}
+  .instruments .switcher button{flex:1;padding:2px 6px;color:#ecf2f7;border-radius:0}
+  .instruments .switcher button[aria-pressed=true]{color:#ffdf94;background:#2d4154;border-bottom:3px solid var(--gold)}
+  .instruments #inspector,.instruments .workspace{grid-area:2/1;min-width:0;min-height:0;overflow:auto;align-self:stretch;margin:0;padding:16px 18px;background:#fff8e9;border:0;color:#172634}
+  .instruments #inspector p,.instruments #inspector dt{color:#43505e}.instruments #inspector .plate{font:750 12px/1.3 system-ui;letter-spacing:.08em}
+  .instruments #inspector h2{color:#142531;font-size:clamp(25px,2.2vw,34px)}
+  .instruments #inspector .curve th,.instruments #inspector .curve td{padding:5px 3px;border-color:#a6acad}
+  .instruments #inspector .curve .currentTier{background:#d4e4ec}
+  body:not([data-instrument=board]) .desk #inspectQuote{display:inline-block;background:#263e51;color:white;border:1px solid #9db1c3;font:650 13px/1.2 system-ui}
+  .layout .boardbox{background:#1b3040;padding:6px 10px}.boardhead,.boardfoot{color:#eaf1f3}
+  .layout .desk{border-top:2px solid var(--gold);background:var(--navy);color:#fff8e9;padding:9px 16px}
+  .desk #phaseLabel{color:#ffda8b}.desk #controlType,.desk p,.desk .facts dt,.desk .waiting{color:#d7e4f0}
+  .desk #actions button{background:#263e51;color:white;border:1px solid #9db1c3}.desk #actions button.primary{background:#ffcc61;color:#172130;border-color:#ffdc93}
+  .desk #actions kbd{display:inline-block;margin-left:9px;padding:1px 5px;border:1px solid currentColor;border-radius:2px;font:750 11px/1.3 ui-monospace,monospace}
+  .boardfoot{font:650 11px/1.2 system-ui}
+  dialog#modal{width:min(510px,90vw);border-radius:1px;box-shadow:0 12px 50px #08121ccc}
+}
+@media(min-width:1120px){
+  .layout .boardbox:has(.board.route){display:flex;flex-direction:column}
+  .layout .boardbox .board.route{flex:1;min-height:230px;grid-template:auto-flow minmax(47px,1fr) / repeat(8,minmax(0,1fr))!important}
+  .board.route .tile,.board.route[data-map=grand] .tile{grid-row:var(--fold-row)!important;grid-column:var(--fold-col)!important;min-height:0;padding:7px 2px 2px}
+  .board.route .station{display:block;position:absolute;left:3px;top:6px;font:650 10px/1 ui-monospace,monospace;color:#344756}
+  .board.route .tile strong{padding-inline:7px}
+  .boardbox:has(.board.route) .boardfoot span:first-child{font-size:0}
+  .boardbox:has(.board.route) .boardfoot span:first-child::after{content:"Follow the numbered route  →  then  ←";font:650 11px/1.2 system-ui}
+  .boardbox #stage.strip{flex-shrink:0;position:relative}.strip .stageFace{min-height:54px;padding:4px 10px}
+}
+@media(max-width:800px){
+  .treasury{flex:none;min-height:32px}.treasury>strong,.treasury .seatName{display:none}
+  .account{padding:4px 3px;gap:3px;flex-wrap:wrap}.account b{font-size:15px}.account em{display:none}
+  .instruments{display:contents}.layout{grid-template-rows:auto minmax(0,1fr) auto}
+  .layout .switcher{grid-area:1/1;justify-self:center}
+  .layout .boardbox,.layout .workspace{grid-area:2/1}
+  .layout .desk{grid-area:3/1}
+  #content{padding:13px 15px}
+}
 </style></head>
 <body>
 <header><div class="mast"><span class="seal" aria-hidden="true">⚓</span><strong>Harbor Deeds</strong></div><div class="headright"><span class="live">Local table</span><button id="soundBtn" aria-label="Sound effects" aria-pressed="false">♪ Off</button><button id="rulesBtn" aria-label="Rulebook">?</button><button id="setupBtn">New table</button></div></header>
-<main><nav class="switcher" aria-label="Game views"><button data-view="board" aria-pressed="true">Board</button><button data-view="players" aria-pressed="false">Players</button><button data-view="activity" aria-pressed="false">Activity</button></nav>
+<main><section class="treasury" aria-label="All player balances"><strong>Table funds</strong><div id="stageLedger"></div></section>
 <div class="layout"><section class="boardbox" id="boardView" aria-label="Game board"><div class="boardhead"><strong id="mapTitle">Inner Harbor</strong><small id="round"></small></div><div class="board" id="board">
 <div class="ocean"><div class="chart"><small class="atlasMark">PORT AUTHORITY · HYDROGRAPHIC SURVEY</small>
 <svg viewBox="0 0 260 100" class="art" role="img" aria-label="An engraved lighthouse overlooking a sailing ship">
@@ -205,14 +278,17 @@ dialog .facts{display:flex;flex-wrap:wrap;gap:12px;padding:12px 0;margin:0;borde
 <h2 id="boardName">Inner Harbor</h2><div id="chartStatus"></div></div>
 <section id="stage" aria-label="Table action"><div class="stageFace">
 <div class="stageCopy" role="status" aria-atomic="true"><div id="stageTag"></div><div id="stageTitle"></div><div id="stageDetail"></div></div>
-<div id="stageProp" aria-hidden="true"></div></div><div id="stageLedger" aria-label="Merchant balances"></div></section>
+<div id="stageProp" aria-hidden="true"></div></div></section>
 <div id="mobileLadder"></div></div><div id="wake" aria-hidden="true"></div></div>
 <div class="boardfoot"><span>↻ &nbsp; Clockwise</span><span>⚑ Owner · ● Visitor</span></div></section>
-<section class="panel workspace" id="playersView" hidden><h2>Players</h2><p>Cash, deeds and district progress.</p><div id="register"></div></section>
-<section class="panel workspace" id="activityView" hidden><h2>Activity</h2><p>Latest first</p><ol id="log" aria-live="off"></ol></section>
+<section class="instruments" aria-label="Table inspector">
+<nav class="switcher" aria-label="Game views"><button data-view="board" aria-keyshortcuts="B" title="Inspect a space (B)" aria-pressed="true">Board</button><button data-view="players" aria-keyshortcuts="F" title="Player holdings (F)" aria-pressed="false">Players</button><button data-view="activity" aria-keyshortcuts="L" title="Ship’s log (L)" aria-pressed="false">Activity</button></nav>
+<section id="inspector" aria-label="Selected board space"></section>
+<section class="panel workspace" id="playersView" hidden><h2>Players</h2><p>District holdings · select a deed to inspect</p><div id="register"></div></section>
+<section class="panel workspace" id="activityView" hidden><h2>Ship’s log</h2><p>Latest entry first</p><ol id="log" aria-live="off"></ol></section></section>
 <aside><section class="panel desk"><div class="panelhead"><small id="phaseLabel">TURN DESK</small><span id="controlType"></span></div><div id="turn" aria-live="polite"></div><div id="actions"></div></section>
-<section class="panel quick"><div class="panelhead"><small>MERCHANT REGISTER</small></div><div id="balances"></div></section><section id="inspector" aria-label="Selected board space"></section></aside></div></main>
-<dialog id="modal"><div class="modalhead"><button aria-label="Close dialog" id="close">×</button></div><div id="content"></div></dialog>
+</aside></div></main>
+<dialog id="modal"><div class="sheetbar"><span>Harbor Deeds</span><button aria-label="Close dialog" id="close">×</button></div><div id="sheetLedger" aria-label="All player balances"></div><div id="content"></div></dialog>
 <script id="grand" type="application/json">{"dice": {"count": 2, "sides": 6}, "cash": 850, "salary": 240, "auction_increment": 10, "rounds": 26, "notices": [90, -60, 120, -80, 50], "development": {"policy": "even", "set_rent_pct": 200, "levels": [{"cost_pct": 7, "rent_pct": 300}, {"cost_pct": 11, "rent_pct": 380}, {"cost_pct": 14, "rent_pct": 440}]}, "tiles": [{"name": "Port Office", "kind": "start", "mark": "\u2693"}, {"name": "Rope Walk", "kind": "deed", "group": "Old Town", "price": 80, "rent": 20}, {"name": "Bottle Post", "kind": "notice", "mark": "\u2709"}, {"name": "Net Loft", "kind": "deed", "group": "Old Town", "price": 100, "rent": 25}, {"name": "Salt Row", "kind": "deed", "group": "Old Town", "price": 120, "rent": 30}, {"name": "Lifeboat Guild", "kind": "guild", "mark": "\u271a", "cash_offer": 25, "cover_offer": 75}, {"name": "Copper Yard", "kind": "deed", "group": "Foundry", "price": 140, "rent": 35}, {"name": "Signal Tower", "kind": "notice", "mark": "\u2709"}, {"name": "Iron Works", "kind": "deed", "group": "Foundry", "price": 160, "rent": 40}, {"name": "Kiln Street", "kind": "deed", "group": "Foundry", "price": 180, "rent": 45}, {"name": "Auction House", "kind": "exchange", "mark": "\u2696"}, {"name": "Slipway", "kind": "deed", "group": "Shipyards", "price": 150, "rent": 38}, {"name": "Dry Dock", "kind": "deed", "group": "Shipyards", "price": 170, "rent": 43}, {"name": "Hull Survey", "kind": "fee", "price": 65, "mark": "\u00a7"}, {"name": "Spar Yard", "kind": "deed", "group": "Shipyards", "price": 190, "rent": 48}, {"name": "Cable Office", "kind": "notice", "mark": "\u2709"}, {"name": "Kelp Farm", "kind": "deed", "group": "Tidelands", "price": 160, "rent": 40}, {"name": "Marsh Cut", "kind": "deed", "group": "Tidelands", "price": 180, "rent": 45}, {"name": "Pilots Guild", "kind": "guild", "mark": "\u271a", "cash_offer": 35, "cover_offer": 100}, {"name": "Reed Bank", "kind": "deed", "group": "Tidelands", "price": 200, "rent": 50}, {"name": "Beacon Post", "kind": "notice", "mark": "\u2709"}, {"name": "Market Hall", "kind": "deed", "group": "Market", "price": 200, "rent": 50}, {"name": "Silk Arcade", "kind": "deed", "group": "Market", "price": 220, "rent": 55}, {"name": "Canal Toll", "kind": "fee", "price": 80, "mark": "\u00a7"}, {"name": "Pearl Court", "kind": "deed", "group": "Market", "price": 240, "rent": 60}, {"name": "Bond Exchange", "kind": "exchange", "mark": "\u2696"}, {"name": "Fish Hall", "kind": "deed", "group": "Exchange", "price": 190, "rent": 48}, {"name": "Tea Wharf", "kind": "deed", "group": "Exchange", "price": 210, "rent": 53}, {"name": "Packet Boat", "kind": "notice", "mark": "\u2709"}, {"name": "Grain Quay", "kind": "deed", "group": "Exchange", "price": 230, "rent": 58}, {"name": "Admiralty Guild", "kind": "guild", "mark": "\u271a", "cash_offer": 40, "cover_offer": 120}, {"name": "East Basin", "kind": "deed", "group": "Marina", "price": 260, "rent": 65}, {"name": "Sail Quay", "kind": "deed", "group": "Marina", "price": 280, "rent": 70}, {"name": "Dock Levy", "kind": "fee", "price": 100, "mark": "\u00a7"}, {"name": "Crown Pier", "kind": "deed", "group": "Marina", "price": 300, "rent": 75}, {"name": "Radio Room", "kind": "notice", "mark": "\u2709"}, {"name": "Glass Strand", "kind": "deed", "group": "Headlands", "price": 280, "rent": 70}, {"name": "Cliff House", "kind": "deed", "group": "Headlands", "price": 300, "rent": 75}, {"name": "Harbor Wire", "kind": "notice", "mark": "\u2709"}, {"name": "Cape Royal", "kind": "deed", "group": "Headlands", "price": 320, "rent": 80}], "cards": [{"title": "Mail boat arrives", "kind": "cash", "amount": 70}, {"title": "Salvage bounty", "kind": "cash", "amount": 100}, {"title": "Fogbound cargo", "kind": "cash", "amount": -55}, {"title": "Broken mooring", "kind": "cash", "amount": -35}, {"title": "Warehouse dividend", "kind": "deeds", "amount": 12}, {"title": "Fire inspection", "kind": "levels", "amount": -15}, {"title": "Lantern festival", "kind": "levels", "amount": 20}, {"title": "Mutual aid charter", "kind": "cover", "amount": 65}]}</script><script id="config" type="application/json">{
   "dice":{"count":2,"sides":6},
   "cash": 750, "salary": 120, "auction_increment": 10, "rounds": 18, "notices": [90,-60,120,-80,50],
@@ -271,7 +347,8 @@ dialog .facts{display:flex;flex-wrap:wrap;gap:12px;padding:12px 0;margin:0;borde
   },
   "surfaces": [
     ["Inspect / browse","Select a tile with pointer or keyboard; check focus vs landing, name, cost and owner."],
-    ["Players / activity / rules","Switch views and dismiss sheets without losing the current decision."],
+    ["Players / activity / rules","Desktop keeps the board and command dock visible. Switch the right instrument, inspect a named holding or return to the offered lot. Phone switches views."],
+    ["Treasury","Check every seat without a click, scroll, or hover on all instruments and inside game sheets. For path costs, budgets and contrast evidence see review/clicks.json and review/desktop.py."],
     ["Local setup","Check solo, pass-and-play, custom seats, map, policy and clock before replacing a game."],
     ["Online setup","Host, join by code, copy invite, assign seats and launch. Guests cannot change the rules."],
     ["Network recovery","Pause on disconnect. Rehost, rejoin, cancel or forget; historical commands must remain silent."],
@@ -433,7 +510,7 @@ function foley(kind){
   }
 }
 
-const routeScreen=matchMedia('(max-width:1199px), (max-height:820px)');
+const routeScreen=matchMedia('(max-width:1199px), (max-height:940px)');
 const still=matchMedia('(prefers-reduced-motion: reduce)');
 const signed=n=>`${n<0?'−':'+'}${money(Math.abs(n))}`;
 const pips=[[],[4],[0,8],[0,4,8],[0,2,6,8],[0,2,4,6,8],[0,2,3,5,6,8]];
@@ -474,10 +551,11 @@ function plate(tag,title,detail,prop,kind){
 }
 function ledger(s){
   const actor=actingSeat(s);
-  $('stageLedger').innerHTML=s.players.map((p,i)=>{
+  const rows=s.players.map((p,i)=>{
     const diff=lastDeltas[i]||0;
-    return `<div class="account ${actor===i&&s.phase!=='over'?'acting':''}" style="--seat:${colors[i]}" aria-label="${seat(i)}: ${p.out?'bankrupt':money(p.cash)}${diff?', change '+signed(diff):''}"><span class="seatDisc">${i+1}</span><b>${p.out?'Out':money(p.cash)}</b>${diff?`<em class="${diff>0?'credit':'debit'}">${signed(diff)}</em>`:''}</div>`;
+    return `<div class="account ${actor===i&&s.phase!=='over'?'acting':''}" style="--seat:${colors[i]}" aria-label="${seat(i)}: ${p.out?'bankrupt':money(p.cash)}${diff?', change '+signed(diff):''}"><span class="seatDisc">${i+1}</span><span class="seatName">${seat(i)}</span><b>${p.out?'Out':money(p.cash)}</b>${diff?`<em class="${diff>0?'credit':'debit'}">${signed(diff)}</em>`:''}</div>`;
   }).join('');
+  $('stageLedger').innerHTML=rows;$('sheetLedger').innerHTML=rows;
 }
 function syncStage(s){
   ledger(s);
@@ -955,7 +1033,7 @@ const $ = id => document.getElementById(id);
 const maps = {compact:JSON.parse($('config').textContent),outer:JSON.parse($('outer').textContent),grand:JSON.parse($('grand').textContent)};
 const DEFAULT_CLOCK=5;
 let rules=maps.compact, clockSeconds=DEFAULT_CLOCK;
-const colors = ['#a54d37','#347367','#936c20','#5d608a'];
+const colors = ['#9a321f','#006458','#76500b','#53468d'];
 const bands = {'Old Town':'#b76952', Foundry:'#d39e47', Market:'#7989a9', Marina:'#589587', Shipyards:'#ac84a2', Exchange:'#7195aa',Tidelands:'#80a357',Headlands:'#94724e'};
 const money = n => '$' + n.toLocaleString('en-US');
 const seat = n => `Seat ${n + 1}`;
@@ -1055,6 +1133,8 @@ const controllers = {
       b.textContent = label;
       b.disabled = disabled;
       b.className = primary ? 'primary' : '';
+      const key=({'Roll dice':'R','Draft trade':'T','Improve':'I'})[label];
+      if(key){b.dataset.key=key;b.setAttribute('aria-keyshortcuts',key);b.insertAdjacentHTML('beforeend',`<kbd aria-hidden="true">${key}</kbd>`)}
       b.addEventListener('click',fn,{signal});
       $('actions').append(b);
       return b;
@@ -1127,7 +1207,7 @@ function openDialog(html) {
   $('content').innerHTML = html;
   if (!$('modal').open) $('modal').showModal();
   const heading=$('content').querySelector('h2');if(heading){heading.id='sheetTitle';$('modal').setAttribute('aria-labelledby','sheetTitle')}
-  $('modal').scrollTop=0;
+  $('content').scrollTop=0;
   $('modal').dispatchEvent(new Event('clockchange'));
 }
 function curve(i) {
@@ -1165,7 +1245,7 @@ function selectSpace(i){
   document.querySelectorAll('.tile').forEach(el=>el.classList.toggle('selected',el.id===`tile-${i}`));
 }
 function detail(i) {
-  selectSpace(i);if(!desktop.matches)openDialog(detailHtml(i));
+  selectSpace(i);if(desktop.matches){showView('board');$('inspector').scrollTop=0}else openDialog(detailHtml(i));
 }
 const summary=(deed,cash)=>[deed===null?'':rules.tiles[deed].name,cash?money(cash):''].filter(Boolean).join(' + ');
 function facts(entries){
@@ -1192,7 +1272,7 @@ function render() {
       b.onkeydown=e=>{
         const dir={ArrowLeft:-1,ArrowRight:1}[e.key];if(!dir||!desktop.matches)return;
         e.preventDefault();const next=(i+dir+rules.tiles.length)%rules.tiles.length;
-        $(`tile-${next}`).focus();selectSpace(next);
+        $(`tile-${next}`).focus();detail(next);
       };
       $('board').append(b);
     }
@@ -1201,7 +1281,8 @@ function render() {
     const owner=s.owners[i],value=owner!==null?`Rent ${money(s.rents[i])}`:tile.kind==='fee'?`−${money(tile.price)}`:tile.price?money(tile.price):({start:'Salary',notice:'Draw',guild:'Choose',exchange:'Auction',rest:'Rest'})[tile.kind];
     const flag=owner!==null?`<span class="flag" style="--seat:${colors[owner]}">⚑${owner+1}</span>`:'';
     const markers=here.map(j=>`<span class="token${j===s.turn?' arrived':''}" style="background:${colors[j]}">${j+1}</span>`).join('')+(here.length>1?`<span class="crew">●×${here.length}</span>`:'');
-    b.innerHTML=`<strong>${tile.name}</strong><span class="tileValue">${value}</span>${flag||markers?`<span class="berth">${flag}${markers}</span>`:''}`;
+    b.style.setProperty('--fold-row',1+Math.floor(i/8));b.style.setProperty('--fold-col',Math.floor(i/8)%2?8-i%8:1+i%8);
+    b.innerHTML=`<span class="station" aria-hidden="true">${String(i).padStart(2,'0')} ${Math.floor(i/8)%2?'←':'→'}</span><strong>${tile.name}</strong><span class="tileValue">${value}</span>${flag||markers?`<span class="berth">${flag}${markers}</span>`:''}`;
     b.setAttribute('aria-label',[tile.name,tile.group||tile.kind,value,owner===null?'':`Owned by ${seat(owner)}, level ${s.levels[i]}`,here.length?'Occupied by '+here.map(seat).join(', '):'','Inspect space'].filter(Boolean).join('. '));
   }
   $('register').innerHTML=s.players.map((player,i)=>{
@@ -1210,13 +1291,15 @@ function render() {
       const levels=owned.filter(k=>rules.tiles[k].group===g).reduce((n,k)=>n+s.levels[k],0);
       return count?`<span title="${g}" style="--band:${bands[g]}">${g} ${count}/${rules.tiles.filter(t=>t.group===g).length}${levels?` · ${levels} built · locked`:''}</span>`:'';
     }).join('');
-    return `<div class="row"><span class="badge" style="background:${colors[i]}">${i+1}</span><div><strong>${seat(i)}</strong><div class="meta">${player.out?'Bankrupt':seats[i]==='bot'?'Bot':'Local player'} · ${owned.length} deeds</div><div class="holdings">${groups}</div></div><span class="money">${money(player.cash)}</span></div>`;
+    const assigned=room?.started?room.owners[i]:null;
+    const controller=seats[i]==='bot'?'Bot':assigned===null?'Local player':assigned===0?'Host':`Device ${assigned}`;
+    const links=owned.map(k=>`<button class="holding" data-deed="${k}">${rules.tiles[k].name}</button>`).join('');
+    return `<div class="row"><span class="badge" style="background:${colors[i]}">${i+1}</span><div><strong>${seat(i)}</strong><div class="meta">${player.out?'Bankrupt':controller} · ${owned.length} deeds</div><div class="holdings">${groups}</div><div>${links}</div></div><span class="money">${money(player.cash)}</span></div>`;
   }).join('');
-  $('balances').innerHTML=s.players.map((v,i)=>`<div class="ledger"><i style="background:${colors[i]}"></i>${seat(i)}<b>${v.out?'Bankrupt':money(v.cash)}</b></div>`).join('');
   syncStage(s);
   const market=s.phase==='offer'||s.phase==='auction',at=s.auction?.tile??s.players[s.turn].pos;
   const key=`${s.round}/${s.turn}/${at}/${market}`;
-  if(key!==focusKey){inspected=at;focusKey=key}
+  if(key!==focusKey){inspected=at;focusKey=key;if(market)$('inspector').scrollTop=0}
   selectSpace(inspected);
   $('mobileLadder').innerHTML=market?curve(at):'';
   $('log').innerHTML=[...s.events].reverse().map(e=>`<li>${e}</li>`).join('');
@@ -1290,11 +1373,23 @@ function settings(){
     <label class="field">Human bid clock<select id="clock"><option value="5" selected>5 seconds</option><option value="0">Untimed</option><option value="15">15 seconds</option><option value="30">30 seconds</option></select></label>`;
 }
 function showView(name){
+  document.body.dataset.instrument=name;
   for(const tab of document.querySelectorAll('[data-view]')){
-    const active=tab.dataset.view===name;tab.setAttribute('aria-pressed',String(active));$(tab.dataset.view+'View').hidden=!active;
+    const active=tab.dataset.view===name;tab.setAttribute('aria-pressed',String(active));
+    $(tab.dataset.view+'View').hidden=!active&&!(desktop.matches&&tab.dataset.view==='board');
   }
+  $('inspector').hidden=!desktop.matches||name!=='board';
+  document.querySelector('[data-view=board]').textContent=desktop.matches?'Space':'Board';
 }
+desktop.addEventListener('change',()=>showView(document.querySelector('[data-view][aria-pressed=true]').dataset.view));
+$('register').onclick=e=>{const b=e.target.closest('[data-deed]');if(b)detail(+b.dataset.deed)};
 document.querySelector('.switcher').onclick=e=>{if(e.target.dataset.view)showView(e.target.dataset.view)};
+document.addEventListener('keydown',e=>{
+  if(!desktop.matches||$('modal').open||e.repeat||e.isComposing||e.altKey||e.ctrlKey||e.metaKey||e.target.matches('input,textarea,select,[contenteditable=true]'))return;
+  const key=e.key.toUpperCase(),view={B:'board',F:'players',L:'activity'}[key];
+  const control=view?document.querySelector(`[data-view="${view}"]`):key==='?'?$('rulesBtn'):/^[RTI]$/.test(key)?document.querySelector(`#actions [data-key="${key}"]:enabled`):null;
+  if(control){e.preventDefault();control.click()}
+});
 function setup(){
   if(room){roomMenu();return}
   const fields=Array.from({length:4},(_,i)=>`<label class="field">${seat(i)}<select id="seat-${i}">${(i<2?['human','bot']:['off','human','bot']).map(v=>`<option value="${v}" ${v===(seats[i]??'off')?'selected':''}>${{human:'Local player',bot:'Bot',off:'Empty'}[v]}</option>`).join('')}</select></label>`).join('');
@@ -1319,6 +1414,7 @@ $('rulesBtn').onclick=()=>openDialog(`<h2>The rulebook</h2><p>Start with ${money
 try {
   initFeedback();
   $('rulesBtn').addEventListener('click',()=>{
+    $('content').insertAdjacentHTML('afterbegin','<p class="keyGuide"><b>Desktop keys</b> &nbsp; R Roll · T Draft trade · I Improve · B Space · F Players · L Activity · ← → browse focused spaces · Esc close sheet</p>');
     $('content').insertAdjacentHTML('beforeend',`<h3>Improve full districts</h3><p>Before rolling, choose Improve. This table uses ${({even:'even building: improve a lowest-level deed',free:'unrestricted building: choose any deed',district:'whole-district building: improve every deed together'})[rules.development.policy]}. There are ${rules.development.levels.length} levels. Construction raises rent, locks the district against trades and has no end-game resale value.</p><a href="./development.html" target="_blank" rel="noopener">See costs and break-even analysis</a>`);
   });
   const bytes=Uint8Array.from(atob($('binary').textContent),c=>c.charCodeAt(0));

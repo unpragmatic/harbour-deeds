@@ -22,7 +22,7 @@ with sync_playwright() as pw:
             phase=p.locator('body').get_attribute('data-phase')
             actions=p.locator('#actions')
             if phase=='roll':
-                if actions.get_by_text('Improve',exact=True).count(): break
+                if actions.get_by_role('button',name='Improve',exact=True).count(): break
                 actions.get_by_text('Roll dice').click()
             elif phase=='end': p.clock.run_for(1000)
             elif phase=='offer': actions.get_by_text('Start auction').click()
@@ -33,7 +33,7 @@ with sync_playwright() as pw:
         improve=p.get_by_role('button',name='Improve',exact=True)
         improve.click()
         p.click('#hold')
-        balances=p.locator('#balances').text_content()
+        balances=p.locator('#stageLedger').text_content()
         improve.click()
         for width in (320,390,1280):
             p.set_viewport_size({'width':width,'height':844})
@@ -48,7 +48,7 @@ with sync_playwright() as pw:
         deed=first.locator('strong').inner_text().split(' · ')[0]
         first.click()
         assert p.locator('body').get_attribute('data-phase')=='roll'
-        assert p.locator('#balances').text_content()!=balances
+        assert p.locator('#stageLedger').text_content()!=balances
         assert 'improved' in p.locator('#log').text_content()
         if mode=='even':
             p.set_viewport_size({'width':390,'height':844})

@@ -22,7 +22,8 @@
   },
   "surfaces": [
     ["Inspect / browse","Select a tile with pointer or keyboard; check focus vs landing, name, cost and owner."],
-    ["Players / activity / rules","Switch views and dismiss sheets without losing the current decision."],
+    ["Players / activity / rules","Desktop keeps the board and command dock visible. Switch the right instrument, inspect a named holding or return to the offered lot. Phone switches views."],
+    ["Treasury","Check every seat without a click, scroll, or hover on all instruments and inside game sheets. For path costs, budgets and contrast evidence see review/clicks.json and review/desktop.py."],
     ["Local setup","Check solo, pass-and-play, custom seats, map, policy and clock before replacing a game."],
     ["Online setup","Host, join by code, copy invite, assign seats and launch. Guests cannot change the rules."],
     ["Network recovery","Pause on disconnect. Rehost, rejoin, cancel or forget; historical commands must remain silent."],

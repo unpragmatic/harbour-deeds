@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#193e36"><title>Harbor Deeds | The game table</title><style>/*STYLE*/</style></head>
 <body>
 <header><div class="mast"><span class="seal" aria-hidden="true">⚓</span><strong>Harbor Deeds</strong></div><div class="headright"><span class="live">Local table</span><button id="soundBtn" aria-label="Sound effects" aria-pressed="false">♪ Off</button><button id="rulesBtn" aria-label="Rulebook">?</button><button id="setupBtn">New table</button></div></header>
-<main><nav class="switcher" aria-label="Game views"><button data-view="board" aria-pressed="true">Board</button><button data-view="players" aria-pressed="false">Players</button><button data-view="activity" aria-pressed="false">Activity</button></nav>
+<main><section class="treasury" aria-label="All player balances"><strong>Table funds</strong><div id="stageLedger"></div></section>
 <div class="layout"><section class="boardbox" id="boardView" aria-label="Game board"><div class="boardhead"><strong id="mapTitle">Inner Harbor</strong><small id="round"></small></div><div class="board" id="board">
 <div class="ocean"><div class="chart"><small class="atlasMark">PORT AUTHORITY · HYDROGRAPHIC SURVEY</small>
 <svg viewBox="0 0 260 100" class="art" role="img" aria-label="An engraved lighthouse overlooking a sailing ship">
@@ -13,12 +13,15 @@
 <h2 id="boardName">Inner Harbor</h2><div id="chartStatus"></div></div>
 <section id="stage" aria-label="Table action"><div class="stageFace">
 <div class="stageCopy" role="status" aria-atomic="true"><div id="stageTag"></div><div id="stageTitle"></div><div id="stageDetail"></div></div>
-<div id="stageProp" aria-hidden="true"></div></div><div id="stageLedger" aria-label="Merchant balances"></div></section>
+<div id="stageProp" aria-hidden="true"></div></div></section>
 <div id="mobileLadder"></div></div><div id="wake" aria-hidden="true"></div></div>
 <div class="boardfoot"><span>↻ &nbsp; Clockwise</span><span>⚑ Owner · ● Visitor</span></div></section>
-<section class="panel workspace" id="playersView" hidden><h2>Players</h2><p>Cash, deeds and district progress.</p><div id="register"></div></section>
-<section class="panel workspace" id="activityView" hidden><h2>Activity</h2><p>Latest first</p><ol id="log" aria-live="off"></ol></section>
+<section class="instruments" aria-label="Table inspector">
+<nav class="switcher" aria-label="Game views"><button data-view="board" aria-keyshortcuts="B" title="Inspect a space (B)" aria-pressed="true">Board</button><button data-view="players" aria-keyshortcuts="F" title="Player holdings (F)" aria-pressed="false">Players</button><button data-view="activity" aria-keyshortcuts="L" title="Ship’s log (L)" aria-pressed="false">Activity</button></nav>
+<section id="inspector" aria-label="Selected board space"></section>
+<section class="panel workspace" id="playersView" hidden><h2>Players</h2><p>District holdings · select a deed to inspect</p><div id="register"></div></section>
+<section class="panel workspace" id="activityView" hidden><h2>Ship’s log</h2><p>Latest entry first</p><ol id="log" aria-live="off"></ol></section></section>
 <aside><section class="panel desk"><div class="panelhead"><small id="phaseLabel">TURN DESK</small><span id="controlType"></span></div><div id="turn" aria-live="polite"></div><div id="actions"></div></section>
-<section class="panel quick"><div class="panelhead"><small>MERCHANT REGISTER</small></div><div id="balances"></div></section><section id="inspector" aria-label="Selected board space"></section></aside></div></main>
-<dialog id="modal"><div class="modalhead"><button aria-label="Close dialog" id="close">×</button></div><div id="content"></div></dialog>
+</aside></div></main>
+<dialog id="modal"><div class="sheetbar"><span>Harbor Deeds</span><button aria-label="Close dialog" id="close">×</button></div><div id="sheetLedger" aria-label="All player balances"></div><div id="content"></div></dialog>
 <script id="grand" type="application/json">__GRAND__</script><script id="config" type="application/json">__RULES__</script><script id="outer" type="application/json">__OUTER__</script><script id="binary" type="application/octet-stream">__WASM__</script><script type="module">/*APP*/</script></body></html>

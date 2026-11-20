@@ -1,4 +1,4 @@
-const routeScreen=matchMedia('(max-width:1199px), (max-height:820px)');
+const routeScreen=matchMedia('(max-width:1199px), (max-height:940px)');
 const still=matchMedia('(prefers-reduced-motion: reduce)');
 const signed=n=>`${n<0?'−':'+'}${money(Math.abs(n))}`;
 const pips=[[],[4],[0,8],[0,4,8],[0,2,6,8],[0,2,4,6,8],[0,2,3,5,6,8]];
@@ -39,10 +39,11 @@ function plate(tag,title,detail,prop,kind){
 }
 function ledger(s){
   const actor=actingSeat(s);
-  $('stageLedger').innerHTML=s.players.map((p,i)=>{
+  const rows=s.players.map((p,i)=>{
     const diff=lastDeltas[i]||0;
-    return `<div class="account ${actor===i&&s.phase!=='over'?'acting':''}" style="--seat:${colors[i]}" aria-label="${seat(i)}: ${p.out?'bankrupt':money(p.cash)}${diff?', change '+signed(diff):''}"><span class="seatDisc">${i+1}</span><b>${p.out?'Out':money(p.cash)}</b>${diff?`<em class="${diff>0?'credit':'debit'}">${signed(diff)}</em>`:''}</div>`;
+    return `<div class="account ${actor===i&&s.phase!=='over'?'acting':''}" style="--seat:${colors[i]}" aria-label="${seat(i)}: ${p.out?'bankrupt':money(p.cash)}${diff?', change '+signed(diff):''}"><span class="seatDisc">${i+1}</span><span class="seatName">${seat(i)}</span><b>${p.out?'Out':money(p.cash)}</b>${diff?`<em class="${diff>0?'credit':'debit'}">${signed(diff)}</em>`:''}</div>`;
   }).join('');
+  $('stageLedger').innerHTML=rows;$('sheetLedger').innerHTML=rows;
 }
 function syncStage(s){
   ledger(s);

@@ -21,7 +21,7 @@ expanded["development"] = dict(base["development"], levels=[
     zip(base["development"]["levels"], outer["development_cost_pct"], strict=True)
 ])
 for marker, value in {
-    "/*STYLE*/": "\n".join((web / name).read_text() for name in ["style.css","table.css"]),
+    "/*STYLE*/": "\n".join((web / name).read_text() for name in ["style.css","table.css","workspace.css"]),
     "__RULES__": (web / "rules.json").read_text(),
     "__OUTER__": json.dumps(expanded),
     "__GRAND__": json.dumps(dict(expanded, **json.loads((web / "grand-harbor.json").read_text()))),
@@ -34,6 +34,16 @@ variants = {s.lower() for s in re.findall(r'^    (\w+)\s*[\({]', commands, re.M)
 documented = set(json.loads((web/'interactions.json').read_text())['commands'])
 if variants != documented:
     raise ValueError(f'Update web/interactions.json for engine commands: {variants ^ documented}')
+survey=json.loads((root/'review/clicks.json').read_text())
+actions=[(key,count) for rows in survey['interactions'].values() for key,_,_,count in rows]
+costs=dict(actions)
+if len(actions)!=len(costs) or not variants<=costs.keys() or any(type(n)!=int or n<0 for n in costs.values()):
+    raise ValueError('Provide a unique interaction and click count for every engine command in review/clicks.json')
+seen=set()
+for key,_,_,steps,budget in survey['scenarios']:
+    if key in seen or sum(costs[a] for a in steps.split())>budget:
+        raise ValueError(f'Duplicate scenario or exceeded click budget: {key}')
+    seen.add(key)
 (root / "dist").mkdir(exist_ok=True)
 (root / "dist/index.html").write_text(html)
 peer = root / "node_modules/peerjs"

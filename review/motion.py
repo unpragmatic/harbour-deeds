@@ -47,7 +47,7 @@ async def main():
         ship=page.locator('.sailing')
         await expect(ship).to_be_visible(timeout=500)
         start=await ship.bounding_box();await page.wait_for_timeout(230);travel=await ship.bounding_box()
-        assert travel and abs(start['y']-travel['y'])>20
+        assert travel and max(abs(start[d]-travel[d]) for d in ('x','y'))>20
         await page.screenshot(path=root/'motion-roll.png')
         await page.wait_for_timeout(650)
         await button('Start auction').click();await page.wait_for_timeout(950)

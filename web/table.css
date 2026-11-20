@@ -56,7 +56,7 @@
   #inspectQuote{display:inline-block;margin-left:8px;min-height:32px;padding:2px 3px;border:0;text-decoration:underline;text-underline-offset:2px;font:650 13px/1.15 system-ui}
 }
 .desk #actions button:not(:disabled):active{transform:translateY(2px);box-shadow:inset 0 2px 3px #0004}
-@media(min-width:1200px) and (min-height:821px){
+@media(min-width:1200px) and (min-height:941px){
   .layout .boardbox:has(.board[data-map=grand]){grid-template-rows:auto minmax(720px,1fr) auto}
   .board[data-map=grand]{width:100%;min-height:720px}
   .board[data-map=grand] .tile:has(.berth){gap:0;padding:5px 2px 2px}

@@ -2,7 +2,7 @@ const $ = id => document.getElementById(id);
 const maps = {compact:JSON.parse($('config').textContent),outer:JSON.parse($('outer').textContent),grand:JSON.parse($('grand').textContent)};
 const DEFAULT_CLOCK=5;
 let rules=maps.compact, clockSeconds=DEFAULT_CLOCK;
-const colors = ['#a54d37','#347367','#936c20','#5d608a'];
+const colors = ['#9a321f','#006458','#76500b','#53468d'];
 const bands = {'Old Town':'#b76952', Foundry:'#d39e47', Market:'#7989a9', Marina:'#589587', Shipyards:'#ac84a2', Exchange:'#7195aa',Tidelands:'#80a357',Headlands:'#94724e'};
 const money = n => '$' + n.toLocaleString('en-US');
 const seat = n => `Seat ${n + 1}`;
@@ -102,6 +102,8 @@ const controllers = {
       b.textContent = label;
       b.disabled = disabled;
       b.className = primary ? 'primary' : '';
+      const key=({'Roll dice':'R','Draft trade':'T','Improve':'I'})[label];
+      if(key){b.dataset.key=key;b.setAttribute('aria-keyshortcuts',key);b.insertAdjacentHTML('beforeend',`<kbd aria-hidden="true">${key}</kbd>`)}
       b.addEventListener('click',fn,{signal});
       $('actions').append(b);
       return b;
@@ -174,7 +176,7 @@ function openDialog(html) {
   $('content').innerHTML = html;
   if (!$('modal').open) $('modal').showModal();
   const heading=$('content').querySelector('h2');if(heading){heading.id='sheetTitle';$('modal').setAttribute('aria-labelledby','sheetTitle')}
-  $('modal').scrollTop=0;
+  $('content').scrollTop=0;
   $('modal').dispatchEvent(new Event('clockchange'));
 }
 function curve(i) {
@@ -212,7 +214,7 @@ function selectSpace(i){
   document.querySelectorAll('.tile').forEach(el=>el.classList.toggle('selected',el.id===`tile-${i}`));
 }
 function detail(i) {
-  selectSpace(i);if(!desktop.matches)openDialog(detailHtml(i));
+  selectSpace(i);if(desktop.matches){showView('board');$('inspector').scrollTop=0}else openDialog(detailHtml(i));
 }
 const summary=(deed,cash)=>[deed===null?'':rules.tiles[deed].name,cash?money(cash):''].filter(Boolean).join(' + ');
 function facts(entries){
@@ -239,7 +241,7 @@ function render() {
       b.onkeydown=e=>{
         const dir={ArrowLeft:-1,ArrowRight:1}[e.key];if(!dir||!desktop.matches)return;
         e.preventDefault();const next=(i+dir+rules.tiles.length)%rules.tiles.length;
-        $(`tile-${next}`).focus();selectSpace(next);
+        $(`tile-${next}`).focus();detail(next);
       };
       $('board').append(b);
     }
@@ -248,7 +250,8 @@ function render() {
     const owner=s.owners[i],value=owner!==null?`Rent ${money(s.rents[i])}`:tile.kind==='fee'?`−${money(tile.price)}`:tile.price?money(tile.price):({start:'Salary',notice:'Draw',guild:'Choose',exchange:'Auction',rest:'Rest'})[tile.kind];
     const flag=owner!==null?`<span class="flag" style="--seat:${colors[owner]}">⚑${owner+1}</span>`:'';
     const markers=here.map(j=>`<span class="token${j===s.turn?' arrived':''}" style="background:${colors[j]}">${j+1}</span>`).join('')+(here.length>1?`<span class="crew">●×${here.length}</span>`:'');
-    b.innerHTML=`<strong>${tile.name}</strong><span class="tileValue">${value}</span>${flag||markers?`<span class="berth">${flag}${markers}</span>`:''}`;
+    b.style.setProperty('--fold-row',1+Math.floor(i/8));b.style.setProperty('--fold-col',Math.floor(i/8)%2?8-i%8:1+i%8);
+    b.innerHTML=`<span class="station" aria-hidden="true">${String(i).padStart(2,'0')} ${Math.floor(i/8)%2?'←':'→'}</span><strong>${tile.name}</strong><span class="tileValue">${value}</span>${flag||markers?`<span class="berth">${flag}${markers}</span>`:''}`;
     b.setAttribute('aria-label',[tile.name,tile.group||tile.kind,value,owner===null?'':`Owned by ${seat(owner)}, level ${s.levels[i]}`,here.length?'Occupied by '+here.map(seat).join(', '):'','Inspect space'].filter(Boolean).join('. '));
   }
   $('register').innerHTML=s.players.map((player,i)=>{
@@ -257,13 +260,15 @@ function render() {
       const levels=owned.filter(k=>rules.tiles[k].group===g).reduce((n,k)=>n+s.levels[k],0);
       return count?`<span title="${g}" style="--band:${bands[g]}">${g} ${count}/${rules.tiles.filter(t=>t.group===g).length}${levels?` · ${levels} built · locked`:''}</span>`:'';
     }).join('');
-    return `<div class="row"><span class="badge" style="background:${colors[i]}">${i+1}</span><div><strong>${seat(i)}</strong><div class="meta">${player.out?'Bankrupt':seats[i]==='bot'?'Bot':'Local player'} · ${owned.length} deeds</div><div class="holdings">${groups}</div></div><span class="money">${money(player.cash)}</span></div>`;
+    const assigned=room?.started?room.owners[i]:null;
+    const controller=seats[i]==='bot'?'Bot':assigned===null?'Local player':assigned===0?'Host':`Device ${assigned}`;
+    const links=owned.map(k=>`<button class="holding" data-deed="${k}">${rules.tiles[k].name}</button>`).join('');
+    return `<div class="row"><span class="badge" style="background:${colors[i]}">${i+1}</span><div><strong>${seat(i)}</strong><div class="meta">${player.out?'Bankrupt':controller} · ${owned.length} deeds</div><div class="holdings">${groups}</div><div>${links}</div></div><span class="money">${money(player.cash)}</span></div>`;
   }).join('');
-  $('balances').innerHTML=s.players.map((v,i)=>`<div class="ledger"><i style="background:${colors[i]}"></i>${seat(i)}<b>${v.out?'Bankrupt':money(v.cash)}</b></div>`).join('');
   syncStage(s);
   const market=s.phase==='offer'||s.phase==='auction',at=s.auction?.tile??s.players[s.turn].pos;
   const key=`${s.round}/${s.turn}/${at}/${market}`;
-  if(key!==focusKey){inspected=at;focusKey=key}
+  if(key!==focusKey){inspected=at;focusKey=key;if(market)$('inspector').scrollTop=0}
   selectSpace(inspected);
   $('mobileLadder').innerHTML=market?curve(at):'';
   $('log').innerHTML=[...s.events].reverse().map(e=>`<li>${e}</li>`).join('');
@@ -337,11 +342,23 @@ function settings(){
     <label class="field">Human bid clock<select id="clock"><option value="5" selected>5 seconds</option><option value="0">Untimed</option><option value="15">15 seconds</option><option value="30">30 seconds</option></select></label>`;
 }
 function showView(name){
+  document.body.dataset.instrument=name;
   for(const tab of document.querySelectorAll('[data-view]')){
-    const active=tab.dataset.view===name;tab.setAttribute('aria-pressed',String(active));$(tab.dataset.view+'View').hidden=!active;
+    const active=tab.dataset.view===name;tab.setAttribute('aria-pressed',String(active));
+    $(tab.dataset.view+'View').hidden=!active&&!(desktop.matches&&tab.dataset.view==='board');
   }
+  $('inspector').hidden=!desktop.matches||name!=='board';
+  document.querySelector('[data-view=board]').textContent=desktop.matches?'Space':'Board';
 }
+desktop.addEventListener('change',()=>showView(document.querySelector('[data-view][aria-pressed=true]').dataset.view));
+$('register').onclick=e=>{const b=e.target.closest('[data-deed]');if(b)detail(+b.dataset.deed)};
 document.querySelector('.switcher').onclick=e=>{if(e.target.dataset.view)showView(e.target.dataset.view)};
+document.addEventListener('keydown',e=>{
+  if(!desktop.matches||$('modal').open||e.repeat||e.isComposing||e.altKey||e.ctrlKey||e.metaKey||e.target.matches('input,textarea,select,[contenteditable=true]'))return;
+  const key=e.key.toUpperCase(),view={B:'board',F:'players',L:'activity'}[key];
+  const control=view?document.querySelector(`[data-view="${view}"]`):key==='?'?$('rulesBtn'):/^[RTI]$/.test(key)?document.querySelector(`#actions [data-key="${key}"]:enabled`):null;
+  if(control){e.preventDefault();control.click()}
+});
 function setup(){
   if(room){roomMenu();return}
   const fields=Array.from({length:4},(_,i)=>`<label class="field">${seat(i)}<select id="seat-${i}">${(i<2?['human','bot']:['off','human','bot']).map(v=>`<option value="${v}" ${v===(seats[i]??'off')?'selected':''}>${{human:'Local player',bot:'Bot',off:'Empty'}[v]}</option>`).join('')}</select></label>`).join('');
@@ -366,6 +383,7 @@ $('rulesBtn').onclick=()=>openDialog(`<h2>The rulebook</h2><p>Start with ${money
 try {
   initFeedback();
   $('rulesBtn').addEventListener('click',()=>{
+    $('content').insertAdjacentHTML('afterbegin','<p class="keyGuide"><b>Desktop keys</b> &nbsp; R Roll · T Draft trade · I Improve · B Space · F Players · L Activity · ← → browse focused spaces · Esc close sheet</p>');
     $('content').insertAdjacentHTML('beforeend',`<h3>Improve full districts</h3><p>Before rolling, choose Improve. This table uses ${({even:'even building: improve a lowest-level deed',free:'unrestricted building: choose any deed',district:'whole-district building: improve every deed together'})[rules.development.policy]}. There are ${rules.development.levels.length} levels. Construction raises rent, locks the district against trades and has no end-game resale value.</p><a href="./development.html" target="_blank" rel="noopener">See costs and break-even analysis</a>`);
   });
   const bytes=Uint8Array.from(atob($('binary').textContent),c=>c.charCodeAt(0));
