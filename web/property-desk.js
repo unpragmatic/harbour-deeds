@@ -27,6 +27,7 @@ function closePlots(focus=false){
   if(!plotDesk)return;
   const {origin}=plotDesk;
   plotDesk=null;
+  syncPhoneBoard();
   delete document.body.dataset.plot;
   $('propertyDesk').hidden=$('plotGuide').hidden=true;
   $('propertyDesk').replaceChildren();$('plotGuide').replaceChildren();
@@ -57,6 +58,7 @@ function openPlots(mode,i){
   const origin=plotDesk?.origin??document.activeElement;
   showView('board');
   plotDesk={origin,mode,i:null};
+  syncPhoneBoard();
   document.body.dataset.plot=mode;
   $('propertyDesk').hidden=false;
   setPlot(q?(plotMembers(q).includes(preferred)?preferred:q.tile):null);

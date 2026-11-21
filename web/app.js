@@ -287,6 +287,7 @@ function render() {
       b = document.createElement('button'); b.id=`tile-${i}`;
       const [row,col] = activeBoard.layout.positions[i];
       b.style.gridArea=`${row} / ${col}`;
+      b.style.setProperty('--ring-row',row);b.style.setProperty('--ring-col',col);
       b.className='tile '+(tile.kind==='deed'?'deed':'special');
       b.dataset.kind=tile.kind;
       if(tile.kind==='deed')b.dataset.print=printCode(tile.group);
@@ -316,7 +317,7 @@ function render() {
     const face=deed?`<span class="deedFace" aria-hidden="true"></span>
       <span class="deedHead" aria-hidden="true"><span class="districtMark"><span class="printCode">${printCode(tile.group)}</span><span class="printName">${tile.group}</span></span>${mark}</span>`:
       `<span class="portSeal" aria-hidden="true">${icon(portSeal[tile.kind])}</span>`;
-    b.innerHTML=`${face}<span class="station" aria-hidden="true">${String(i).padStart(2,'0')} ${foldRow%2?'←':'→'}</span><span class="${deed?'deedLabel':'portLabel'}"><strong>${tile.name}</strong><span class="tileValue">${value}</span></span>${markers?`<span class="berth" data-ships="${here.length}">${markers}</span>`:''}`;
+    b.innerHTML=`${face}<span class="station" aria-hidden="true">${String(i).padStart(2,'0')}<span class="foldArrow"> ${foldRow%2?'←':'→'}</span></span><span class="${deed?'deedLabel':'portLabel'}"><strong>${tile.name}</strong><span class="tileValue">${value}</span></span>${markers?`<span class="berth" data-ships="${here.length}">${markers}</span>`:''}`;
     const title=owner!==null?`Owned by ${seat(owner)}${faresFor(tile.group)?'':`, level ${s.levels[i]}`}. ${held} of ${district.size} ${tile.group} deeds`:(deed?'Unowned':'');
     b.setAttribute('aria-label',[tile.name,tile.group||tile.kind,value,title,full?`Complete ${tile.group} set`:'',here.length?'Occupied by '+here.map(seat).join(', '):'','Inspect space'].filter(Boolean).join('. '));
   }
@@ -386,8 +387,9 @@ function initialize(types,map,seconds,seed,policy,edition=currentEdition,charter
   const base=boardSpec.rules;
   rules={...base,development:{...base.development,policy:policy??base.development.policy}};clockSeconds=seconds;
   if(usesCharter(edition)&&charter){
-    if(!validCharter(charter))throw Error('Invalid victory or liquidation settings');
-    rules={...rules,rounds:charter.rounds,victory:charter.victory,liquidation:{...rules.liquidation,deeds:charter.deeds,improvements:charter.improvements}};
+    if(!validCharter(charter))throw Error('Invalid table settings');
+    rules={...rules,cash:charter.cash??base.cash,auction_declined:charter.forceAuction??base.auction_declined,
+      rounds:charter.rounds,victory:charter.victory,liquidation:{...rules.liquidation,deeds:charter.deeds,improvements:charter.improvements}};
   }else if(!usesCharter(edition)){
     rules={...rules,victory:'net_worth',liquidation:{deeds:false,improvements:false,improvement_rate_pct:50}};
   }
@@ -401,6 +403,7 @@ function initialize(types,map,seconds,seed,policy,edition=currentEdition,charter
   board.querySelector('.ocean').style.gridArea=`2 / 2 / ${rows} / ${cols}`;
   board.dataset.map=map;board.dataset.density=density;
   board.style.setProperty('--fold-columns',foldColumns);
+  board.style.setProperty('--ring-rows',rows);board.style.setProperty('--ring-cols',cols);
   $('routeDirection').textContent=direction==='clockwise'?'↻  Clockwise':'↺  Counterclockwise';
   placeStage();
   const mapName=boardSpec.label;
@@ -427,8 +430,10 @@ async function play(types,map=catalog.defaultBoard,seconds=DEFAULT_CLOCK,policy,
   }
 }
 function report(err){$('actions').replaceChildren();$('turn').textContent=`Game unavailable: ${err.message}`;console.error(err)}
-const charterOf=r=>({victory:r.victory??'net_worth',rounds:r.rounds,deeds:r.liquidation?.deeds??false,improvements:r.liquidation?.improvements??false});
-const validCharter=c=>c&&['net_worth','elimination'].includes(c.victory)&&Number.isSafeInteger(c.rounds)&&c.rounds>=1&&c.rounds<=200&&typeof c.deeds==='boolean'&&typeof c.improvements==='boolean';
+const maxOpeningCash=1000000;
+const charterOf=r=>({victory:r.victory??'net_worth',rounds:r.rounds,deeds:r.liquidation?.deeds??false,improvements:r.liquidation?.improvements??false,cash:r.cash,forceAuction:r.auction_declined!==false});
+const validCharter=c=>c&&['net_worth','elimination'].includes(c.victory)&&Number.isSafeInteger(c.rounds)&&c.rounds>=1&&c.rounds<=200&&typeof c.deeds==='boolean'&&typeof c.improvements==='boolean'&&
+  (c.cash===undefined||Number.isSafeInteger(c.cash)&&c.cash>=1&&c.cash<=maxOpeningCash)&&(c.forceAuction===undefined||typeof c.forceAuction==='boolean');
 function boardControls(initial,onChange=()=>{}){
   const map=$('map');
   for(const [id,b] of Object.entries(catalog.boards))
@@ -436,31 +441,37 @@ function boardControls(initial,onChange=()=>{}){
   map.value=initial.map;
   $('clock').value=String(initial.seconds);
   const chosen=()=>({map:map.value,policy:$('policy').value,seconds:Number($('clock').value),
-    charter:{victory:$('victory').value,rounds:$('roundLimit').valueAsNumber,deeds:$('debtDeeds').checked,improvements:$('debtLevels').checked}});
+    charter:{victory:$('victory').value,rounds:$('roundLimit').valueAsNumber,deeds:$('debtDeeds').checked,improvements:$('debtLevels').checked,cash:$('openingCash').valueAsNumber,forceAuction:$('forceAuction').checked}});
   const changed=()=>{
+    $('auctionHelp').textContent=$('forceAuction').checked?'Buy at list price or start an auction. Bidders may still withdraw.':'Declining leaves the deed on the market without an auction.';
     $('roundField').hidden=$('victory').value==='elimination';onChange(chosen());
   };
   const selectBoard=({policy,charter}={})=>{
     const base=catalog.boards[map.value].rules,c=charter??charterOf(base);
     $('policy').value=policy??base.development.policy;
+    $('openingCash').value=c.cash??base.cash;$('forceAuction').checked=c.forceAuction??(base.auction_declined!==false);
     $('victory').value=c.victory;$('roundLimit').value=c.rounds;$('debtDeeds').checked=c.deeds;$('debtLevels').checked=c.improvements;
     changed();
   };
   map.onchange=()=>selectBoard();
-  for(const id of ['policy','clock','victory','debtDeeds','debtLevels'])$(id).onchange=changed;
-  $('roundLimit').oninput=changed;
+  for(const id of ['policy','clock','victory','debtDeeds','debtLevels','forceAuction'])$(id).onchange=changed;
+  $('roundLimit').oninput=$('openingCash').oninput=changed;
   selectBoard(initial);
   return ()=>{
     if($('victory').value==='elimination'&&!$('roundLimit').validity.valid){
       $('roundLimit').value=catalog.boards[map.value].rules.rounds;changed();
     }
     const choice=chosen();
-    if(!validCharter(choice.charter)){$('roundLimit').reportValidity();return null}
+    if(!$('openingCash').reportValidity()||!$('roundLimit').reportValidity()||!validCharter(choice.charter))return null;
     return choice;
   };
 }
 function settings(){
   return `<label class="field">Board<select id="map"></select></label>
+    <fieldset class="charter"><legend>Cash &amp; auctions</legend>
+    <label class="field">Starting cash per player ($)<input id="openingCash" type="number" min="1" max="${maxOpeningCash}" step="1" inputmode="numeric" required></label>
+    <label><input type="checkbox" id="forceAuction" aria-describedby="auctionHelp"> Force auctions on declined deeds</label>
+    <p id="auctionHelp">Buy at list price or start an auction. Bidders may still withdraw.</p></fieldset>
     <fieldset class="charter"><legend>Victory &amp; bankruptcy</legend><label class="field">Win by<select id="victory"><option value="net_worth">Net worth at round limit</option><option value="elimination">Last solvent merchant</option></select></label>
     <label class="field" id="roundField">Round limit<input type="number" id="roundLimit" min="1" max="200" step="1" required></label>
     <p>To cover a bill, allow the debtor to sell:</p><label><input id="debtDeeds" type="checkbox"> Undeveloped deeds</label><label><input id="debtLevels" type="checkbox"> Improvement levels</label></fieldset>

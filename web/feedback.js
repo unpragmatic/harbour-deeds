@@ -6,7 +6,7 @@ const paceChoices=[
   ['fast','Fast','A quick cast with the ship already underway.'],
   ['reduced','Reduced motion','Show the settled dice and result without animation.']
 ];
-let pace='standard',accents=true,storageAvailable=true;
+let pace='standard',accents=true,phoneBoard='folded',storageAvailable=true;
 const effectivePace=()=>still.matches?'reduced':pace;
 const signed=n=>`${n<0?'−':'+'}${money(Math.abs(n))}`;
 const pips=[[],[4],[0,8],[0,4,8],[0,2,6,8],[0,2,4,6,8],[0,2,3,5,6,8]];
@@ -31,9 +31,13 @@ function diceProp(values){
     return `<span class="die" data-value="${v}"><span class="dieCube">${faces.map((n,i)=>`<span class="pipFace face${i}">${face(n)}</span>`).join('')}</span></span>`;
   }).join('')}</span>`;
 }
+function syncPhoneBoard(){
+  $('board').classList.toggle('mobileLoop',!desktop.matches&&phoneBoard==='circuit'&&!tradeMap&&!plotDesk);
+}
 function placeStage(){
   const stage=$('stage'),board=$('board'),route=routeScreen.matches;
   board.classList.toggle('route',route);stage.classList.toggle('strip',route);
+  syncPhoneBoard();
   if(route)board.before(stage);else board.querySelector('.ocean').append(stage);
 }
 const animations=new Set(), effectTimers=new Set();
@@ -71,24 +75,31 @@ function syncPrefs(){
 }
 function openPrefs(){
   openDialog(`<h2>Table presentation</h2><p>These preferences stay in this browser. They do not change another player’s view or the bidding clock.</p>
+    <div class="phoneBoardField"><label class="field">Phone board<select id="phoneBoard">
+    <option value="folded">Detailed tiles</option><option value="circuit">Around the board</option></select></label>
+    <p>Follow numbered spaces around the edge. Tap one for its name and details. Trade and deed selection use detailed tiles.</p></div>
     <fieldset id="motionChoices"><legend>Animation pace</legend>${paceChoices.map(([v,name,help])=>
     `<label><input type="radio" name="motionPace" value="${v}" ${pace===v?'checked':''}><span><b>${name}</b><small>${help}</small></span></label>`).join('')}</fieldset>
     <label class="fxOption"><input type="checkbox" id="showAccents" ${accents?'checked':''}> Show wakes, stamps and district seals</label>
     <p id="motionStatus" role="status"></p>`);
   const change=()=>{
     pace=$('motionChoices').querySelector(':checked').value;accents=$('showAccents').checked;
-    try{localStorage.setItem(prefsKey,JSON.stringify({pace,accents}));storageAvailable=true}catch{storageAvailable=false}
-    clearMotion();syncPrefs();
+    phoneBoard=$('phoneBoard').value;
+    try{localStorage.setItem(prefsKey,JSON.stringify({pace,accents,phoneBoard}));storageAvailable=true}catch{storageAvailable=false}
+    clearMotion();syncPrefs();syncPhoneBoard();
   };
-  $('motionChoices').onchange=change;$('showAccents').onchange=change;syncPrefs();
+  $('phoneBoard').value=phoneBoard;
+  $('motionChoices').onchange=$('showAccents').onchange=$('phoneBoard').onchange=change;syncPrefs();
 }
 function initFeedback(){
   let saved;
   try{saved=JSON.parse(localStorage.getItem(prefsKey))}catch(e){if(e.name!=='SyntaxError')storageAvailable=false}
   if(paceChoices.some(([v])=>v===saved?.pace))pace=saved.pace;
+  if(saved?.phoneBoard==='circuit')phoneBoard='circuit';
   accents=saved?.accents!==false;syncPrefs();
   if($('prefsBtn'))$('prefsBtn').onclick=openPrefs;
   initSound();routeScreen.addEventListener('change',()=>{clearMotion();placeStage()});
+  desktop.addEventListener('change',()=>{clearMotion();syncPhoneBoard()});
   still.addEventListener('change',()=>{clearMotion();syncPrefs()});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)clearMotion()});
   window.addEventListener('resize',()=>{if(voyager)clearMotion()});

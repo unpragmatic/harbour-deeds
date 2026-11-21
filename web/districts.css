@@ -77,3 +77,30 @@
 .deckGuide dl{margin:8px 0}
 .deckGuide dl>div{display:grid;grid-template-columns:minmax(0, .86fr) minmax(0, 1.14fr);gap:8px;border-top:1px solid #a79877;padding:5px 0;font:13px/1.3 system-ui}
 .deckGuide dt{font-weight:750}.deckGuide dd{margin:0}
+.phoneBoardField{display:none}
+@media(max-width:800px){
+  .phoneBoardField{display:block}
+  .layout .boardbox .board.mobileLoop{
+    grid-template:repeat(var(--ring-rows),minmax(44px,1fr)) / repeat(var(--ring-cols),minmax(24px,1fr))!important;
+    min-width:calc(var(--ring-cols)*25px + 3px);gap:1px
+  }
+  .board.mobileLoop .tile,.board.mobileLoop[data-density=dense] .tile{
+    grid-area:var(--ring-row) / var(--ring-col)!important;min-height:44px;padding:0;justify-content:center
+  }
+  .board.mobileLoop .ocean,.board.mobileLoop .ocean:has(#mobileLadder:not(:empty)){
+    display:grid;grid-area:2 / 2 / var(--ring-rows) / var(--ring-cols)!important
+  }
+  .board.mobileLoop #mobileLadder,.board.mobileLoop .foldArrow,.board.mobileLoop .deedLabel,
+  .board.mobileLoop .portLabel,.board.mobileLoop .districtMark,.board.mobileLoop .ownerMark span{display:none}
+  .board.route.mobileLoop .tile .station{
+    display:block;position:static;color:#172634;background:#fff4d8;padding:0 2px;
+    font:750 12px/1.15 system-ui;font-variant-numeric:tabular-nums
+  }
+  .board.mobileLoop .tile.special .station{color:#fff9e6;background:#263d49}
+  .board.mobileLoop .tile.hasOwner .deedHead{min-height:0;justify-content:center}
+  .board.mobileLoop .ownerMark b{font-size:10px}
+  .board.mobileLoop .tile .berth{height:14px}
+  .board.mobileLoop .tile .berth .token{height:14px;max-width:18px}
+  .board.mobileLoop .tile .berth[data-ships="3"],.board.mobileLoop .tile .berth[data-ships="4"]{height:auto;flex-wrap:wrap}
+  .board.mobileLoop .tile .berth:is([data-ships="3"],[data-ships="4"]) .token{flex:0 1 48%;max-width:13px}
+}
