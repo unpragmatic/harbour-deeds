@@ -91,6 +91,28 @@ with sync_playwright() as pw:
     expect(p.locator('#tradeImpact')).to_contain_text('Fare: $55 → $25')
     expect(p.locator('#tradeImpact')).to_contain_text('Fare: $0 → $25')
     seen['trade-airport']=p.evaluate('clicks')-before
+    # Seed 46 gives the first seat three doubles, then three failed prison rolls.
+    p.add_init_script('crypto.getRandomValues=a=>(a[0]=46,a)')
+    p.goto('http://table.test/?board=richup')
+    p.click('#setupBtn');p.click('#passPlay')
+    roll=p.get_by_role('button',name='Roll dice')
+    for streak in (1,2):
+        roll.click()
+        expect(p.locator('#actions')).to_contain_text('Seat 1 rolls again')
+        expect(p.locator('#turn h2')).to_contain_text('Roll again')
+        if streak==2:expect(p.locator('#turn')).to_contain_text('Another double sends you to prison')
+    roll.click()
+    expect(p.locator('#stageDetail')).to_contain_text('3 consecutive doubles')
+    expect(p.locator('#actions')).to_contain_text('Next turn')
+    roll.click()  # Seat 2 draws a prison card.
+    roll.click()
+    expect(p.locator('#stageDetail')).to_contain_text('remains in prison')
+    roll.click()
+    expect(p.locator('#stageDetail')).to_contain_text('Released on doubles')
+    p.get_by_role('button',name='Pass',exact=True).click()
+    expect(p.locator('#actions')).to_contain_text('Next turn')
+    roll.click();roll.click();roll.click()
+    expect(p.locator('#stageDetail')).to_contain_text('served their time and can move next turn')
     assert not errors,errors
     (root/'review/boards-results.json').write_text(json.dumps({'observed':seen,'ownerContrast':[round(s['ratio'],2) for s in samples]},indent=2)+'\n')
     browser.close()
