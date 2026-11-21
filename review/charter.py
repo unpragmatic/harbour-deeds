@@ -46,10 +46,10 @@ with sync_playwright() as pw:
             roll();buy();roll();buy();roll();end();roll();end()
             n=p.evaluate('clicks')
             tile=p.locator('#tile-12')
-            expect(tile.locator('.flag')).to_have_text('DEED 1');expect(tile.locator('.token')).to_have_text('2')
+            expect(tile.locator('.ownerMark b')).to_have_text('S1');expect(tile.locator('.token')).to_have_text('2')
             expect(p.locator('#stageLedger .shipLocation').nth(1)).to_have_text('Silk Arcade')
             expect(p.locator('#stageLedger .portOwner').nth(1)).to_have_text('Deed: Seat 1')
-            assert read('#tile-12 .flag') and read('#tile-12 .token svg') and read('#stageLedger .portOwner')
+            assert read('#tile-12 .ownerMark') and read('#tile-12 .token svg') and read('#stageLedger .portOwner')
             observed['rival-berth']=p.evaluate('clicks')-n
             expect(p.locator('#tile-0 .token')).to_have_text('1')
             expect(p.locator('#stageLedger .shipLocation').first).to_have_text('Port Office')
@@ -75,7 +75,7 @@ with sync_playwright() as pw:
                 expect(p.locator('.plotReadout')).to_contain_text('$105 → $70')
                 p.click('#plotCommit');observed['strip-level']=p.evaluate('clicks')-n
                 expect(p.locator('#stageLedger .account b').first).to_have_text('$10')
-                expect(p.locator('#tile-6 .flag')).to_have_text('DEED 1')
+                expect(p.locator('#tile-6 .ownerMark')).to_have_text('S1 SET')
             elif ending=='sale':
                 n=p.evaluate('clicks');action('Review assets')
                 expect(p.locator('.plotReadout')).to_contain_text('Copper Yard')
@@ -83,15 +83,16 @@ with sync_playwright() as pw:
                 p.screenshot(path=root/'debt-sale.png')
                 p.click('#plotCommit');observed['pay-debt']=p.evaluate('clicks')-n
                 expect(p.locator('#stageLedger .account b').first).to_have_text('$30')
-                assert not p.locator('#tile-6 .flag').count()
+                assert not p.locator('#tile-6 .ownerMark').count()
             else:
                 action('Declare bankruptcy');p.click('#keepPlaying')
-                expect(p.locator('#tile-6 .flag')).to_have_text('DEED 1')
+                expect(p.locator('#tile-6 .ownerMark b')).to_have_text('S1')
                 n=p.evaluate('clicks');action('Declare bankruptcy');p.click('#surrender')
                 observed['choose-bankruptcy']=p.evaluate('clicks')-n;end()
                 expect(p.locator('#turn h2')).to_have_text('Seat 2 wins')
                 expect(p.locator('#turn')).to_contain_text('Last solvent merchant')
                 assert not p.locator('#board [data-ship="0"]').count()
+                assert 'S1' not in p.locator('.ownerMark b').all_text_contents()
         p.close()
     browser.close()
 (root/'charter-results.json').write_text(json.dumps({'observed':observed},indent=2)+'\n')

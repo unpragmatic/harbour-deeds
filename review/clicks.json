@@ -1,6 +1,7 @@
 {
   "method": "Desktop mouse paths from the named starting state. Count each deliberate activation, including opening a native select and picking an option (2). Typing, waiting, automatic resolution, and site navigation are excluded and named where relevant. Reading at 0 means no click, hover, scroll, or keyboard shortcut. Decisions with several participants count each participant’s clicks. Repeated bids and edits add their own costs. Budgets are ceilings, not an instruction to remove safeguards.",
   "criteria": [
+    {"id":"ownership-mark","name":"One ownership mark per deed","rule":"A single horizontal mark must say both who owns the deed and how much of its district that seat owns. A complete set replaces the fraction, not the space around it. Unowned deeds have no mark. Keep ships and selection separate. Check a split district, a proposed swap, the accepted swap and a sale that breaks just one set. The same information must work without color, hovering or opening a panel.","interactions":["titleHolder","setRead"],"scenarios":["split-owner","read-full-set","release-title","rival-berth"]},
     {"id":"district-identity","name":"Read a district from the whole deed","rule":"District identity belongs to the tile face, not its header. With color and the top third excluded, the middle and lower face must still carry the district’s recognizable print. Names and values must remain legible on that print. Check every shipped map and the folded phone board, including intervening service spaces. Ownership and trade selections must not erase the print. A complete set must be readable without opening a portfolio, and its mark must disappear when the set breaks.","interactions":["districtRead","setRead"],"scenarios":["match-print","header-free","match-print-phone","read-full-set","trade-print"]},
     {"id":"decision-stakes","name":"Show why this decision matters now","rule":"When a deed is one player's last missing district member, an offer or auction must name that player and the rent at stake before the commitment, even if it is a rival. Before rolling, identify an almost complete district's missing deed and owner without a portfolio lookup. Show the real net-worth gap on a scored table; cash is not the score.","interactions":["stakes","race"],"scenarios":["chase","block","price-out"]},
     {"id":"read-through-handoff","name":"Read the result; never tidy it away","rule":"The next turn must be playable while a letter still shows its recipient, instruction and actual effect. Allow a six-second read without input, on desktop and a muted reduced-motion phone. Then reclaim the chart automatically. One visit to Activity must recover the exact result, even after rejoin. Filing is not a game command and must not pause a bid clock.","interactions":["cardRead","cardFile","activity"],"scenarios":["read-dispatch","read-dispatch-phone","file-dispatch","recall-dispatch"]},
@@ -10,7 +11,7 @@
   "interactions": {
     "Read and navigate": [
       ["districtRead","Deeds visible on board","Identify district membership from the printed face without selecting, hovering or relying on color",0],
-      ["setRead","Multiple seats own deeds","Distinguish a full set from district membership and identify its owner",0],
+      ["setRead","Multiple seats own deeds","Read the deed owner’s share of the district or their complete set",0],
       ["stakes","One deed away, or last deed on offer","Read the named district opportunity or rival’s stake",0],
       ["race","Pre-roll, round-limited table","Read current net worth and gap to first place",0],
       ["cardRead","Live dispatch and the next turn","Read the printed instruction, recipient, resolved amount and resulting balance or cover",0],
@@ -129,7 +130,9 @@
     ["header-free","Color and the top third of each desktop deed excluded","Distinguish every district from the engraving that remains around its name and amount","districtRead",0],
     ["match-print-phone","Folded phone board with the first two rows in view","Recognize the Old Town deeds on either side of Bottle Post","districtRead",0],
     ["trade-print","Recipient is looking at a two-deed offer","Read both selected districts from their faces while GIVE and GET are visible","districtRead",0],
-    ["read-full-set","A trade completes Shipyards and Exchange","Read the printed set marks and owners; a later bank sale breaks only Shipyards","districtRead setRead",0],
+    ["split-owner","Recipient views a trade between split districts","Read who owns each deed now and how many siblings that owner holds; the proposal is not yet a transfer","titleHolder setRead",0],
+    ["read-full-set","A trade completes Shipyards and Exchange","Identify both new complete sets and their owners from the same marks","districtRead setRead",0],
+    ["release-title","A bank sale breaks Shipyards but not Exchange","See the sold deed lose its mark, remaining members return to 2/3, and Exchange keep SET","setRead",0],
     ["chase","Before rolling, with one missing Shipyards deed","Identify Spar Yard, who owns it and the net-worth gap","race stakes",0],
     ["block","A rival owns the other two Exchange deeds","See what the rival gains if this lot goes to auction","stakes",0],
     ["price-out","Short of cash at auction on the last Shipyards deed","See what is at stake even though withdrawing is the only legal move","stakes",0],

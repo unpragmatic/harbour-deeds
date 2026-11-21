@@ -63,7 +63,7 @@ with sync_playwright() as pw:
         tile=p.locator(f'#tile-{i}')
         box=tile.bounding_box()
         frame=tile.locator('.deedFace').bounding_box()
-        labels=tile.locator('.tileValue,.districtMark,.setStamp,.flag,.token,.station').evaluate_all(
+        labels=tile.locator('.tileValue,.districtMark,.ownerMark,.token,.station').evaluate_all(
             'els=>els.map(e=>e.getBoundingClientRect().toJSON()).filter(r=>r.width)')
         x0,y0=round(frame['x']),round(frame['y'])
         ink,flat=images
@@ -106,6 +106,27 @@ with sync_playwright() as pw:
             plate.paste(color.crop(tuple(round(v) for v in (key['x'],key['y'],key['x']+key['width'],key['y']+key['height']))),(x,y+left.height+3))
         plate.resize((plate.width*2,plate.height*2),Image.Resampling.NEAREST).save(review/'district-pairs.png')
 
+    def ownership(i,owner,held=0,size=3):
+        tile=p.locator(f'#tile-{i}')
+        mark=tile.locator('.ownerMark')
+        if owner is None:
+            expect(mark).to_have_count(0)
+            assert 'Unowned' in tile.get_attribute('aria-label')
+            return
+        expect(mark).to_have_text(f'S{owner} '+('SET' if held==size else f'{held}/{size}'))
+        assert f'Owned by Seat {owner}' in tile.get_attribute('aria-label')
+        assert f'{held} of {size} {tiles[i]["group"]} deeds' in tile.get_attribute('aria-label')
+        for part in ('b','span'):visible(f'#tile-{i} .ownerMark {part}')
+    def shipyards_row():
+        img=Image.open(BytesIO(p.screenshot())).convert('RGB')
+        boxes=[p.locator(f'#tile-{i}').bounding_box() for i in [11,12,14]]
+        w,h=round(boxes[0]['width'])+3,round(boxes[0]['height'])
+        row=Image.new('RGB',(3*w-3,h),'#37322b')
+        for j,r in enumerate(boxes):
+            x,y=round(r['x']),round(r['y'])
+            row.paste(img.crop((x,y,x+w-3,y+h)),(j*w,0))
+        return row
+
     monochrome(True)
     for board in ('compact','outer','grand'):
         tiles=table(board)
@@ -113,6 +134,7 @@ with sync_playwright() as pw:
         visible('#printKey>div')
         templates=templates_from_key(images[0],{t['group'] for t in tiles if t['kind']=='deed'})
         assert p.locator('.special .deedFace').count()==0
+        expect(p.locator('.ownerMark')).to_have_count(0)
         for i,t in enumerate(tiles):
             if t['kind']!='deed':continue
             tile=p.locator(f'#tile-{i}')
@@ -127,27 +149,46 @@ with sync_playwright() as pw:
     print_pairs(tiles,images[0])
     # These are accepted Rust commands from the design match, not invented ownership.
     table('grand',moves[:swap+1])
-    expect(p.locator('.setStamp')).to_have_count(0)
+    rows=[shipyards_row()]
     monochrome(True)
+    for i,owner,held in [(11,1,2),(12,1,2),(14,3,1),(29,1,1)]:
+        ownership(i,owner,held)
+    seen['split-owner']=p.evaluate('inputs')
     images=photos()
     for i,leg in [(14,'GIVE'),(29,'GET')]:
         expect(p.locator(f'#tile-{i} .tileValue')).to_contain_text(leg)
         visible(f'#tile-{i} .tileValue')
         body_print(i,tiles[i]['group'],images,templates)
     seen['trade-print']=p.evaluate('inputs')
+    p.set_viewport_size({'width':320,'height':680})
+    p.locator('#board.route').wait_for()
+    ownership(14,3,1);ownership(29,1,1)
+    visible('#tile-29 .token');visible('#tile-29 .printName')
+    p.set_viewport_size({'width':1366,'height':768})
+    p.locator('#board:not(.route)').wait_for()
     monochrome(False)
     table('grand',moves[:swap+2])
     for i in [11,12,14,26,27,29]:
-        for part in ['.setStamp','.flag','.tileValue','strong']:visible(f'#tile-{i} {part}')
-    expect(p.locator('.setStamp')).to_have_count(6)
+        ownership(i,1 if i<26 else 3,3)
+        for part in ['.tileValue','strong']:visible(f'#tile-{i} {part}')
+    rows.append(shipyards_row())
+    expect(p.locator('.ownerMark.complete')).to_have_count(6)
     seen['read-full-set']=p.evaluate('inputs')
     shot('district-sets')
     monochrome(True)
     images=photos()
     for i in [11,12,14,26,27,29]:body_print(i,tiles[i]['group'],images,templates)
     table('grand',moves[:swap+2]+[{'action':'sell','actor':0,'tile':14}])
-    expect(p.locator('.setStamp')).to_have_count(3)
-    for i in [11,12,14]:expect(p.locator(f'#tile-{i} .setStamp')).to_have_count(0)
+    expect(p.locator('.ownerMark.complete')).to_have_count(3)
+    ownership(11,1,2);ownership(12,1,2);ownership(14,None)
+    ownership(29,3,3)
+    seen['release-title']=p.evaluate('inputs')
+    monochrome(False)
+    rows.append(shipyards_row())
+    w,h=rows[0].size
+    chart=Image.new('RGB',(w,len(rows)*(h+3)-3),'#37322b')
+    for j,row in enumerate(rows):chart.paste(row,(0,j*(h+3)))
+    chart.resize((chart.width*2,chart.height*2),Image.Resampling.NEAREST).save(review/'ownership-changes.png')
     expect(p.locator('#tile-14 .printCode')).to_have_text('SY')
     # First two rows of the folded board include all Old Town deeds and a dispatch between them.
     table('grand')

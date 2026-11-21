@@ -12,9 +12,7 @@
 #stageLedger button.shipLocation{min-width:0;min-height:0;justify-self:start;margin:0;padding:0;border:0;border-radius:0;text-align:left;background:none;text-decoration:underline dotted #b6b6a5;text-underline-offset:2px}
 #stageLedger .portOwner{grid-area:2/3;justify-self:end;color:#d4dfda;font:600 11px/1.15 system-ui}
 #stageLedger .account em{position:absolute;top:3px;right:80px;font-size:11px}
-.board .tile.hasOwner{padding-inline-start:15px!important}
 .board .tile.hasOwner .tileValue{white-space:nowrap;font-size:11px}
-.board .tile>.flag{position:absolute;inset:0 auto 0 0;margin:0;padding:2px 0;display:grid;place-items:center;writing-mode:vertical-rl;transform:rotate(180deg);width:13px;border-radius:0;color:white;background:var(--seat);font:800 9px/1 system-ui;letter-spacing:.06em;z-index:1}
 .board .tile.fleetHere{background-color:#fff0c1;box-shadow:inset 0 -3px #73551b}
 .board .tile .berth{display:flex;position:static;width:100%;align-items:center;justify-content:center;gap:0;line-height:1;height:22px;flex-shrink:0}
 .board .tile .berth .token,.board .tile .berth:has(.crew) .token{display:block;position:static;width:32px;max-width:100%;height:22px;min-width:0;flex:0 1 32px;border:0;border-radius:0;background:none;line-height:1}
@@ -42,8 +40,6 @@
   .ocean #stageProp>svg{width:63px;height:63px}.ocean #stageTitle{font-size:clamp(28px,3vw,44px)}
 }
 @media(min-width:1200px) and (min-height:720px){
-  .board[data-map=compact] .tile.hasOwner{padding:18px 4px 3px!important}
-  .board[data-map=compact] .tile>.flag{width:auto;height:17px;inset:0 auto auto 0;writing-mode:horizontal-tb;transform:none;padding:1px 9px;clip-path:polygon(0 0,100% 0,calc(100% - 5px) 50%,100% 100%,0 100%);font-size:11px}
   .board[data-map=compact] .tile .berth{height:30px}
   .board[data-map=compact] .tile .berth .token{width:45px;height:30px;flex-basis:45px}
 }

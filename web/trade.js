@@ -117,7 +117,7 @@ function openTrade(s,send=null){
   }
   $('tradeGuide').hidden=false;
   $('tradeLegend').hidden=false;
-  $('tradeLegend').textContent=draft?'◇ Available · ✓ Selected · ↔ Other partner · Locked = developed district':`${seat(who)}’s terms · ✓ GIVE / GET marks the transfer. Deed flags still show current owners.`;
+  $('tradeLegend').textContent=draft?'◇ Available · ✓ Selected · ↔ Other partner · Locked = developed district':`${seat(who)}’s terms · GIVE / GET is proposed. Ownership stays put until acceptance.`;
   updateTrade(true);
   $('boardView').scrollTop=0;
   if(draft||me&&!$('modal').open)$('tradeTitle').focus({preventScroll:true});

@@ -184,13 +184,17 @@ function detailHtml(i) {
     rest:'A safe harbor. No payment is due here.'
   };
   const max=rules.development.levels.length,level=state.levels[i];
-  const group=rules.tiles.flatMap((x,k)=>x.kind==='deed'&&x.group===t.group?[k]:[]);
+  const group=districtTiles(t.group);
   const have=group.filter(k=>state.owners[k]===owner).length;
-  const status=owner===null?'Complete the district to build.':have<group.length?`${seat(owner)} has ${have}/${group.length} deeds. A complete district unlocks building.`:
+  const status=owner===null||have<group.length?'Complete the district to build.':
     level===max?'Fully improved.':rules.development.policy==='even'&&group.some(k=>state.levels[k]<level)?'Improve the lower-level deeds first.':'The owner can improve before rolling.';
   const visitors=state.players.flatMap((p,j)=>!p.out&&p.pos===i?[seat(j)]:[]);
   const q=state.sells?.find(q=>q.tile===i),bonus=state.bonuses?.[i]??0;
-  const roster=t.kind==='deed'?`<p class="districtRoster"><b>${t.group} · ${group.length} deeds</b><br>${group.map(k=>rules.tiles[k].name).join(' · ')}</p>`:'';
+  const holders=[...new Set(group.map(k=>state.owners[k]))];
+  const roster=t.kind==='deed'?`<p class="districtRoster"><b>${t.group} · ${group.length} deeds</b><br>${holders.map(who=>{
+    const names=group.filter(k=>state.owners[k]===who).map(k=>rules.tiles[k].name);
+    return `${who===null?'Unowned':seat(who)}: ${names.join(' · ')}`;
+  }).join('<br>')}</p>`:'';
   return `<small class="plate">SPACE ${String(i).padStart(2,'0')} / ${t.kind==='deed'?`${swatch(t.group)} ${t.group}`:'Port services'}</small><h2>${t.name}</h2>${t.kind==='deed'?`<p>${owner===null?'On the market':`Owned by ${seat(owner)}`} · Level ${level}/${max}</p>${facts([['List price',money(t.price)],['Current rent',money(state.rents[i])],...(q?[['Bank offer',money(q.price)]]:[])])}${bonus?`<p>Refitted: next rent includes a one-use ${money(bonus)} bonus.</p>`:''}${curve(i)}${roster}<p>${status}${locked(state,rules,i)?' No sale or trade while this district is developed.':''}</p>`:`<p>${info[t.kind]}</p>`}${visitors.length?`<p>Visiting: ${visitors.join(', ')}</p>`:''}`;
 }
 function selectSpace(i){
@@ -243,9 +247,10 @@ function render() {
   $('chartStatus').textContent=s.phase==='roll'?`${seat(a)} at ${t.name}`:s.phase==='auction'?`${t.name} · Auction in progress`:s.phase==='trade'?'Private negotiation':s.phase==='over'?'Port closed':`${s.dice.join(' + ')} → ${t.name}`;
   $('round').textContent = `ROUND ${String(s.round).padStart(2,'0')}${rules.victory==='elimination'?' · LAST SHIP STANDING':` / ${rules.rounds} · NET WORTH`}`;
   const groups=[...new Set(rules.tiles.filter(t=>t.kind==='deed').map(t=>t.group))];
-  const sets=new Map(groups.map(g=>{
-    const members=districtTiles(g),owner=s.owners[members[0]];
-    return [g,owner!==null&&members.every(i=>s.owners[i]===owner)?owner:null];
+  const districts=new Map(groups.map(g=>{
+    const members=districtTiles(g),counts=s.players.map(()=>0);
+    for(const i of members)if(s.owners[i]!==null)counts[s.owners[i]]++;
+    return [g,{size:members.length,counts}];
   }));
   for (const [i,tile] of rules.tiles.entries()) {
     let b = $(`tile-${i}`);
@@ -271,24 +276,24 @@ function render() {
     b.classList.remove('located');
     const here=s.players.flatMap((player,j)=>player.pos===i&&!player.out?[j]:[]);
     const owner=s.owners[i],value=owner!==null?`Rent ${money(s.rents[i])}`:tile.kind==='fee'?`−${money(tile.price)}`:tile.price?money(tile.price):({start:'Salary',notice:'Draw',guild:'Choose',exchange:'Auction',works:'Commission',rest:'Rest'})[tile.kind];
-    const flag=owner!==null?`<span class="flag" style="--seat:${colors[owner]}" aria-hidden="true">DEED ${owner+1}</span>`:'';
+    const deed=tile.kind==='deed',district=deed?districts.get(tile.group):null;
+    const held=owner===null?0:district.counts[owner],full=owner!==null&&held===district.size;
+    const mark=owner===null?'':`<span class="ownerMark${full?' complete':''}" style="--seat:${colors[owner]}"><b>S${owner+1}</b> <span>${full?'SET':`${held}/${district.size}`}</span></span>`;
     const markers=here.map(j=>`<span class="token${j===s.turn?' arrived':''}" data-ship="${j}" style="--seat:${colors[j]}" aria-hidden="true">${shipPiece(j,here.length>2)}</span>`).join('');
     b.classList.toggle('hasOwner',owner!==null);b.classList.toggle('fleetHere',here.length>0);
     b.style.setProperty('--fold-row',1+Math.floor(i/8));b.style.setProperty('--fold-col',Math.floor(i/8)%2?8-i%8:1+i%8);
-    const deed=tile.kind==='deed',full=deed&&sets.get(tile.group)!==null;
     const face=deed?`<span class="deedFace" aria-hidden="true"></span>
-      <span class="districtMark" aria-hidden="true"><span class="printCode">${printCode(tile.group)}</span><span class="printName">${tile.group}</span></span>
-      ${full?'<em class="setStamp" aria-hidden="true">SET</em>':''}`:
+      <span class="deedHead" aria-hidden="true"><span class="districtMark"><span class="printCode">${printCode(tile.group)}</span><span class="printName">${tile.group}</span></span>${mark}</span>`:
       `<span class="portSeal" aria-hidden="true">${icon(portSeal[tile.kind])}</span>`;
-    b.classList.toggle('fullSet',full);
-    b.innerHTML=`${face}${flag}<span class="station" aria-hidden="true">${String(i).padStart(2,'0')} ${Math.floor(i/8)%2?'←':'→'}</span><span class="${deed?'deedLabel':'portLabel'}"><strong>${tile.name}</strong><span class="tileValue">${value}</span></span>${markers?`<span class="berth" data-ships="${here.length}">${markers}</span>`:''}`;
-    b.setAttribute('aria-label',[tile.name,tile.group||tile.kind,value,owner===null?'':`Owned by ${seat(owner)}, level ${s.levels[i]}`,full?`Complete ${tile.group} set`:'',here.length?'Occupied by '+here.map(seat).join(', '):'','Inspect space'].filter(Boolean).join('. '));
+    b.innerHTML=`${face}<span class="station" aria-hidden="true">${String(i).padStart(2,'0')} ${Math.floor(i/8)%2?'←':'→'}</span><span class="${deed?'deedLabel':'portLabel'}"><strong>${tile.name}</strong><span class="tileValue">${value}</span></span>${markers?`<span class="berth" data-ships="${here.length}">${markers}</span>`:''}`;
+    const title=owner!==null?`Owned by ${seat(owner)}, level ${s.levels[i]}. ${held} of ${district.size} ${tile.group} deeds`:(deed?'Unowned':'');
+    b.setAttribute('aria-label',[tile.name,tile.group||tile.kind,value,title,full?`Complete ${tile.group} set`:'',here.length?'Occupied by '+here.map(seat).join(', '):'','Inspect space'].filter(Boolean).join('. '));
   }
   $('register').innerHTML=s.players.map((player,i)=>{
     const owned=deeds(s,i), holdings=groups.map(g=>{
-      const count=owned.filter(k=>rules.tiles[k].group===g).length;
+      const {counts,size}=districts.get(g),count=counts[i];
       const levels=owned.filter(k=>rules.tiles[k].group===g).reduce((n,k)=>n+s.levels[k],0);
-      return count?`<span>${swatch(g)} ${g} ${count}/${districtTiles(g).length}${sets.get(g)===i?' · Full set':''}${levels?` · ${levels} built · locked`:''}</span>`:'';
+      return count?`<span>${swatch(g)} ${g} ${count}/${size}${count===size?' · Full set':''}${levels?` · ${levels} built · locked`:''}</span>`:'';
     }).join('');
     const assigned=room?.started?room.owners[i]:null;
     const controller=seats[i]==='bot'?'Bot':assigned===null?'Local player':assigned===0?'Host':`Device ${assigned}`;

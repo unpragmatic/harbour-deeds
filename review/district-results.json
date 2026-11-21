@@ -2,8 +2,10 @@
   "observed": {
     "match-print": 0,
     "header-free": 0,
+    "split-owner": 0,
     "trade-print": 0,
     "read-full-set": 0,
+    "release-title": 0,
     "match-print-phone": 0
   }
 }

@@ -27,7 +27,9 @@ Each seat selects a controller implementing `(snapshot, abortSignal) => Promise<
 
 ## Interaction review
 
-Each deed is printed edge to edge in its district’s color and engraving: Old Town is brickwork, Shipyards is planking, Exchange is lattice. Only the price, rent or action quote gets a plain ticket. Service spaces have dark faces and large symbols instead. The desktop key names each print; folded tiles show the district name. A double frame and **SET** mark a complete district, the **DEED** ribbon names the owner, and numbered ships show who is there now.
+Each deed is printed edge to edge in its district’s color and engraving: Old Town is brickwork, Shipyards is planking, Exchange is lattice. The desktop key names each print; folded tiles show the district name. A small ticket shows price, rent or action. Service spaces have dark faces and large symbols instead.
+
+An owned deed has one horizontal ownership mark: **S1 2/3** means Seat 1 owns this deed and two of the district’s three deeds. **S1 SET** means Seat 1 owns them all. Unowned deeds have no mark; ships below the price show visitors, not title holders. Select a deed to see which district members each seat owns and which are still on the market. A proposed trade never changes those marks until accepted.
 
 `web/district-prints.json` is the designer’s visual palette, not a game rule. After building, `review/districts.py` checks the [whole-tile criterion](https://unpragmatic.github.io/harbour-deeds/components.html#district-identity): match the rendered engraving without color or the tile’s top third. The check includes the folded phone board, both selected trade legs, and a set completed and then broken by Rust-accepted moves.
 

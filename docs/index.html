@@ -94,7 +94,7 @@ dialog .facts{display:flex;flex-wrap:wrap;gap:12px;padding:12px 0;margin:0;borde
 .board[data-map=grand] .deed:before{height:3px}.board[data-map=grand] .tile[data-kind=notice]{background:#dae4ee;color:#294968}.board[data-map=grand] .tile[data-kind=guild]{background:#d9e8d7;color:#335f45}.board[data-map=grand] .tile[data-kind=exchange]{background:#f4dfb6;color:#745224}.board[data-map=grand] .tile[data-kind=fee]{background:#efddcf;color:#724731}
 @media(min-width:801px){.board[data-map=grand]{width:min(100%,calc((100dvh - 230px)*1.45));aspect-ratio:auto}.board[data-map=grand] .tile .token{width:12px;height:12px;line-height:11px}}
 @media(max-width:800px){.layout .boardbox:has([data-map=grand]){display:block}.layout .boardbox[hidden]{display:none!important}.board[data-map=grand]{display:grid;grid-template: auto / repeat(4,minmax(0,1fr))!important;height:auto;max-height:none;aspect-ratio:auto;min-height:0}.board[data-map=grand] .tile{grid-area:auto!important;min-height:59px;padding:5px 3px 7px}.board[data-map=grand] .tile strong{font-size:12px}.board[data-map=grand] .ocean{grid-area:auto / 1 / auto / -1!important}.board[data-map=grand] .ocean .chart>*:not(#chartStatus){display:none}.board[data-map=grand] .chart #chartStatus{margin:0}.board[data-map=grand] .chart{border:0}.board[data-map=grand] .tile .num{display:block}}
-.tileValue,.berth{display:flex;align-items:center;justify-content:center;gap:2px;max-width:100%}.tileValue{font:600 10px/1.1 system-ui;color:#41574b}.berth{line-height:1}.flag{font:bold 10px/1 system-ui}.board .tile .berth .token{width:12px;height:12px;font:700 9px/10px system-ui}
+.tileValue,.berth{display:flex;align-items:center;justify-content:center;gap:2px;max-width:100%}.tileValue{font:600 10px/1.1 system-ui;color:#41574b}.berth{line-height:1}.board .tile .berth .token{width:12px;height:12px;font:700 9px/10px system-ui}
 .board .tile:has(.berth){padding-bottom:2px}.desk .panelhead{flex-wrap:wrap}
 #receipt{font:600 12px/1.25 system-ui;color:#7a4918}.headright #soundBtn{white-space:nowrap}button:not(:disabled):active{filter:brightness(.91)}
 .tile{container-type:inline-size}.crew{display:none;font:700 10px/12px system-ui}
@@ -156,7 +156,6 @@ dialog .facts{display:flex;flex-wrap:wrap;gap:12px;padding:12px 0;margin:0;borde
 .board .tile.selected{outline:2px dashed #775015;outline-offset:-4px}
 .board .tile .berth{gap:3px}
 .board .tile .berth .token{width:16px;height:16px;font:800 12px/14px system-ui}
-.board .tile .flag{padding:1px 3px;color:#fff;background:var(--seat);border-radius:2px;font:800 11px/13px system-ui}
 .crew{font-size:12px}
 @container(max-width:92px){.berth:has(.token:nth-of-type(4)) .token{display:none}.berth:has(.token:nth-of-type(4)) .crew{display:inline}}
 .desk #phaseLabel{font-size:13px;font-weight:800}.desk #controlType{font-weight:680}
@@ -396,9 +395,7 @@ body[data-plot] :is(#turn,#actions,#stage){display:none!important}
 #stageLedger button.shipLocation{min-width:0;min-height:0;justify-self:start;margin:0;padding:0;border:0;border-radius:0;text-align:left;background:none;text-decoration:underline dotted #b6b6a5;text-underline-offset:2px}
 #stageLedger .portOwner{grid-area:2/3;justify-self:end;color:#d4dfda;font:600 11px/1.15 system-ui}
 #stageLedger .account em{position:absolute;top:3px;right:80px;font-size:11px}
-.board .tile.hasOwner{padding-inline-start:15px!important}
 .board .tile.hasOwner .tileValue{white-space:nowrap;font-size:11px}
-.board .tile>.flag{position:absolute;inset:0 auto 0 0;margin:0;padding:2px 0;display:grid;place-items:center;writing-mode:vertical-rl;transform:rotate(180deg);width:13px;border-radius:0;color:white;background:var(--seat);font:800 9px/1 system-ui;letter-spacing:.06em;z-index:1}
 .board .tile.fleetHere{background-color:#fff0c1;box-shadow:inset 0 -3px #73551b}
 .board .tile .berth{display:flex;position:static;width:100%;align-items:center;justify-content:center;gap:0;line-height:1;height:22px;flex-shrink:0}
 .board .tile .berth .token,.board .tile .berth:has(.crew) .token{display:block;position:static;width:32px;max-width:100%;height:22px;min-width:0;flex:0 1 32px;border:0;border-radius:0;background:none;line-height:1}
@@ -426,8 +423,6 @@ body[data-plot] :is(#turn,#actions,#stage){display:none!important}
   .ocean #stageProp>svg{width:63px;height:63px}.ocean #stageTitle{font-size:clamp(28px,3vw,44px)}
 }
 @media(min-width:1200px) and (min-height:720px){
-  .board[data-map=compact] .tile.hasOwner{padding:18px 4px 3px!important}
-  .board[data-map=compact] .tile>.flag{width:auto;height:17px;inset:0 auto auto 0;writing-mode:horizontal-tb;transform:none;padding:1px 9px;clip-path:polygon(0 0,100% 0,calc(100% - 5px) 50%,100% 100%,0 100%);font-size:11px}
   .board[data-map=compact] .tile .berth{height:30px}
   .board[data-map=compact] .tile .berth .token{width:45px;height:30px;flex-basis:45px}
 }
@@ -576,7 +571,6 @@ body[data-trade] .desk{overflow:auto}
 .deedFace{--wash:color-mix(in srgb,var(--stock,#dfd8ba) 68%,transparent);
   background-color:var(--stock,#dfd8ba);background-image:linear-gradient(var(--wash),var(--wash)),var(--engraving,none);
   background-repeat:repeat;background-position:left top}
-.fullSet .deedFace{box-shadow:inset 0 0 0 1px var(--ink),inset 0 0 0 2px var(--stock),inset 0 0 0 3px var(--ink)}
 .tile:is(.landing,.located,.selected,:focus-visible,[data-plot],[data-trade-tile]) .deedFace{inset:3px}
 .tile:is([data-plot=off],[data-trade-tile=off],[data-trade-tile=locked]) .deedFace{opacity:.42}
 .deedLabel,.portLabel{display:block;position:relative;max-width:100%;min-width:0}
@@ -586,16 +580,17 @@ body[data-trade] .desk{overflow:auto}
 .deedLabel strong,.portLabel strong{display:block}
 .tile:is([aria-pressed=true],[data-trade-tile=out]) .deedLabel .tileValue{background:#ffdf9a}
 .tile[data-trade-tile=in] .deedLabel .tileValue,.tile[data-plot=candidate]:not([aria-pressed=true]) .deedLabel .tileValue{background:#e2fff0}
-.districtMark,.setStamp{position:absolute;top:2px;white-space:nowrap;font:800 10px/1.1 system-ui,sans-serif;padding:0 3px}
-.districtMark{left:2px;color:#fff;background:var(--ink,#37442e)}
-.printName{display:none}.setStamp{right:2px;color:#fff9e8;background:#253731;border:1px double #f9edd4;font-style:normal}
+.deedHead{position:absolute;inset:2px 2px auto;display:flex;justify-content:space-between;align-items:start;gap:1px;white-space:nowrap}
+.districtMark{font:700 10px/1.2 system-ui,sans-serif;color:#262d29;background:var(--stock,#dfd8ba);padding-inline:1px}
+.printCode{display:block}.printName{display:none}
+.ownerMark{display:inline-flex;align-items:stretch;background:var(--seat);color:white;white-space:nowrap;
+  font:750 11px/1.1 system-ui,sans-serif;font-variant-numeric:tabular-nums;box-shadow:0 1px 0 #15242580}
+.ownerMark b,.ownerMark span{padding:0 2px}.ownerMark span{background:#fff4d8;color:#21312f}
+.ownerMark.complete span{background:transparent;color:inherit}
 .tile.deed .berth{position:relative}.board .tile.deed .berth .token{background:#fffae5;border-radius:4px}
-.board .tile:focus-visible .districtMark,.board .tile.selected .districtMark{left:4px}
+.board .tile:is(:focus-visible,.selected) .deedHead{inset-inline:3px}
 .board .tile.deed,.board[data-map] .tile.deed:has(.berth){padding-top:16px;gap:0}
 .board:not(.route) .tile.deed:not(.fleetHere){padding-block:12px 6px}
-.board .tile.deed>.flag,.board[data-map=compact] .tile.deed>.flag{inset:15px auto 0 0;margin:0;height:auto;width:13px;
-  padding:0;writing-mode:vertical-rl;transform:rotate(180deg);clip-path:none;font-size:9px}
-.board[data-map=compact] .tile.deed.hasOwner{padding:16px 3px 2px 15px!important}
 .board.route .tile.deed .printName{display:block}.board.route .tile.deed .printCode{display:none}
 .portSeal{overflow:hidden;background:var(--enamel,#294554);color:#fff3d2}
 .portSeal svg{position:absolute;top:0;right:0;width:79%;height:100%;opacity:.18}
@@ -618,12 +613,13 @@ body[data-trade] .desk{overflow:auto}
 }
 @media(min-width:1120px) and (max-height:800px){
   .board[data-map] .tile.deed:has(.berth){padding-top:13px;padding-bottom:1px}
-  .board .tile.deed.fleetHere>.flag,.board[data-map=compact] .tile.deed.fleetHere>.flag{top:12px}
   .board .tile.deed .berth,.board .tile.deed .berth .token{height:15px}
   .board .tile.deed.fleetHere strong{font-size:12px;line-height:1}
 }
 @media(min-width:1200px) and (max-height:740px){
   .board:not(.route) .tile.deed:has(.berth){padding-block:12px 0}
+  .board:not(.route) .fleetHere .deedHead{top:0}
+  .board:not(.route) .fleetHere .ownerMark{line-height:1}
   .board:not(.route) .tile.deed .berth,.board:not(.route) .tile.deed .berth .token{height:12px}
 }
 @media(min-width:1120px){
@@ -634,7 +630,7 @@ body[data-trade] .desk{overflow:auto}
 @media(forced-colors:active){
   .engraving{forced-color-adjust:none}
   .deedFace{forced-color-adjust:none}
-  .districtMark,.setStamp,#printKey>div{border:1px solid CanvasText}
+  .ownerMark,#printKey>div{outline:1px solid CanvasText}
   .deedLabel,.portLabel{color:ButtonText;background:ButtonFace;text-shadow:none}
 }
 
@@ -674,7 +670,7 @@ body[data-trade] .desk{overflow:auto}
 <div class="stageCopy" role="status" aria-atomic="true"><div id="stageTag"></div><div id="stageTitle"></div><div id="stageDetail"></div></div>
 <div id="stageProp" aria-hidden="true"></div></div></section>
 <div id="mobileLadder"></div></div><div id="wake" aria-hidden="true"></div></div>
-<div class="boardfoot"><span>↻ &nbsp; Clockwise</span><span>DEED # = owner &nbsp; · &nbsp; Numbered ship = current position</span><span id="tradeLegend" hidden></span><div id="printKey" aria-label="District key"></div></div></section>
+<div class="boardfoot"><span>↻ &nbsp; Clockwise</span><span>S1 2/3 = Seat 1 owns two of three · SET = full district · Ship = visitor</span><span id="tradeLegend" hidden></span><div id="printKey" aria-label="District key"></div></div></section>
 <aside><section class="panel desk" aria-label="Current decision"><div class="panelhead"><small id="phaseLabel">TURN DESK</small><span id="controlType"></span></div><div id="turn" aria-live="polite"></div><section id="tradeDesk" aria-label="Trade terms" hidden></section><div id="actions"></div><section id="propertyDesk" aria-label="Manage board spaces" hidden></section></section></aside>
 <section class="instruments" aria-label="Table inspector">
 <nav class="switcher" aria-label="Game views"><button data-view="board" aria-keyshortcuts="B" title="Inspect a space (B)" aria-pressed="true">Board</button><button data-view="players" aria-keyshortcuts="F" title="Player holdings (F)" aria-pressed="false">Players</button><button data-view="activity" aria-keyshortcuts="L" title="Ship’s log (L)" aria-pressed="false">Activity</button></nav>
@@ -726,8 +722,8 @@ body[data-trade] .desk{overflow:auto}
   "identifiers": [
     ["1 · Destination", "Name stays legible at all times. A gold frame means inspected; the ship markers show actual occupants."],
     ["2 · Decision value", "Print the deed name over a light engraving and put only its price, rent or action quote on a small plain ticket. Service spaces use a dark face with a service symbol and a written effect instead."],
-    ["District membership versus a full set", "The whole deed is printed in its district’s color and motif. Even without the top third, a member should match its siblings in grayscale. The perimeter key and folded tile names spell out the district. A double frame and SET stamp mean a single seat owns the set; a DEED ribbon names that seat. Neither mark means a ship is here or a trade has been agreed."],
-    ["3 · Ownership versus presence","A permanent DEED number identifies the owner even when their ship is elsewhere. The numbered ship pieces below the price are the current visitors. Fleet station always names every ship’s berth, balance and who owns its space."],
+    ["District membership versus a full set", "The whole deed carries its district’s color and motif. Match its siblings in grayscale without the top third. The perimeter key and folded tile names spell out the district; only the ownership mark changes when a set completes or breaks."],
+    ["3 · Ownership versus presence","Use one mark only on owned deeds. S1 2/3 means Seat 1 owns this deed and two of the three in its district; S1 SET means it owns them all. Group the district’s deeds by holder in the inspector. Numbered ships are visitors, not owners. Keep the mark clear of the title, price and ships, even with four visitors."],
     ["4 · Detail on demand", "Inspector and accessible label carry district, level, precise amounts and full effects. Never rely on color or sound alone."],
     ["Property map · eligibility and consequence", "A hollow diamond and signed quote mark each candidate; a check identifies the selected deed. Show affected district members separately from the clicked member. See the board-target-preview criterion in the interaction and scenario audit."]
   ],
@@ -2029,7 +2025,7 @@ function openTrade(s,send=null){
   }
   $('tradeGuide').hidden=false;
   $('tradeLegend').hidden=false;
-  $('tradeLegend').textContent=draft?'◇ Available · ✓ Selected · ↔ Other partner · Locked = developed district':`${seat(who)}’s terms · ✓ GIVE / GET marks the transfer. Deed flags still show current owners.`;
+  $('tradeLegend').textContent=draft?'◇ Available · ✓ Selected · ↔ Other partner · Locked = developed district':`${seat(who)}’s terms · GIVE / GET is proposed. Ownership stays put until acceptance.`;
   updateTrade(true);
   $('boardView').scrollTop=0;
   if(draft||me&&!$('modal').open)$('tradeTitle').focus({preventScroll:true});
@@ -2299,13 +2295,17 @@ function detailHtml(i) {
     rest:'A safe harbor. No payment is due here.'
   };
   const max=rules.development.levels.length,level=state.levels[i];
-  const group=rules.tiles.flatMap((x,k)=>x.kind==='deed'&&x.group===t.group?[k]:[]);
+  const group=districtTiles(t.group);
   const have=group.filter(k=>state.owners[k]===owner).length;
-  const status=owner===null?'Complete the district to build.':have<group.length?`${seat(owner)} has ${have}/${group.length} deeds. A complete district unlocks building.`:
+  const status=owner===null||have<group.length?'Complete the district to build.':
     level===max?'Fully improved.':rules.development.policy==='even'&&group.some(k=>state.levels[k]<level)?'Improve the lower-level deeds first.':'The owner can improve before rolling.';
   const visitors=state.players.flatMap((p,j)=>!p.out&&p.pos===i?[seat(j)]:[]);
   const q=state.sells?.find(q=>q.tile===i),bonus=state.bonuses?.[i]??0;
-  const roster=t.kind==='deed'?`<p class="districtRoster"><b>${t.group} · ${group.length} deeds</b><br>${group.map(k=>rules.tiles[k].name).join(' · ')}</p>`:'';
+  const holders=[...new Set(group.map(k=>state.owners[k]))];
+  const roster=t.kind==='deed'?`<p class="districtRoster"><b>${t.group} · ${group.length} deeds</b><br>${holders.map(who=>{
+    const names=group.filter(k=>state.owners[k]===who).map(k=>rules.tiles[k].name);
+    return `${who===null?'Unowned':seat(who)}: ${names.join(' · ')}`;
+  }).join('<br>')}</p>`:'';
   return `<small class="plate">SPACE ${String(i).padStart(2,'0')} / ${t.kind==='deed'?`${swatch(t.group)} ${t.group}`:'Port services'}</small><h2>${t.name}</h2>${t.kind==='deed'?`<p>${owner===null?'On the market':`Owned by ${seat(owner)}`} · Level ${level}/${max}</p>${facts([['List price',money(t.price)],['Current rent',money(state.rents[i])],...(q?[['Bank offer',money(q.price)]]:[])])}${bonus?`<p>Refitted: next rent includes a one-use ${money(bonus)} bonus.</p>`:''}${curve(i)}${roster}<p>${status}${locked(state,rules,i)?' No sale or trade while this district is developed.':''}</p>`:`<p>${info[t.kind]}</p>`}${visitors.length?`<p>Visiting: ${visitors.join(', ')}</p>`:''}`;
 }
 function selectSpace(i){
@@ -2358,9 +2358,10 @@ function render() {
   $('chartStatus').textContent=s.phase==='roll'?`${seat(a)} at ${t.name}`:s.phase==='auction'?`${t.name} · Auction in progress`:s.phase==='trade'?'Private negotiation':s.phase==='over'?'Port closed':`${s.dice.join(' + ')} → ${t.name}`;
   $('round').textContent = `ROUND ${String(s.round).padStart(2,'0')}${rules.victory==='elimination'?' · LAST SHIP STANDING':` / ${rules.rounds} · NET WORTH`}`;
   const groups=[...new Set(rules.tiles.filter(t=>t.kind==='deed').map(t=>t.group))];
-  const sets=new Map(groups.map(g=>{
-    const members=districtTiles(g),owner=s.owners[members[0]];
-    return [g,owner!==null&&members.every(i=>s.owners[i]===owner)?owner:null];
+  const districts=new Map(groups.map(g=>{
+    const members=districtTiles(g),counts=s.players.map(()=>0);
+    for(const i of members)if(s.owners[i]!==null)counts[s.owners[i]]++;
+    return [g,{size:members.length,counts}];
   }));
   for (const [i,tile] of rules.tiles.entries()) {
     let b = $(`tile-${i}`);
@@ -2386,24 +2387,24 @@ function render() {
     b.classList.remove('located');
     const here=s.players.flatMap((player,j)=>player.pos===i&&!player.out?[j]:[]);
     const owner=s.owners[i],value=owner!==null?`Rent ${money(s.rents[i])}`:tile.kind==='fee'?`−${money(tile.price)}`:tile.price?money(tile.price):({start:'Salary',notice:'Draw',guild:'Choose',exchange:'Auction',works:'Commission',rest:'Rest'})[tile.kind];
-    const flag=owner!==null?`<span class="flag" style="--seat:${colors[owner]}" aria-hidden="true">DEED ${owner+1}</span>`:'';
+    const deed=tile.kind==='deed',district=deed?districts.get(tile.group):null;
+    const held=owner===null?0:district.counts[owner],full=owner!==null&&held===district.size;
+    const mark=owner===null?'':`<span class="ownerMark${full?' complete':''}" style="--seat:${colors[owner]}"><b>S${owner+1}</b> <span>${full?'SET':`${held}/${district.size}`}</span></span>`;
     const markers=here.map(j=>`<span class="token${j===s.turn?' arrived':''}" data-ship="${j}" style="--seat:${colors[j]}" aria-hidden="true">${shipPiece(j,here.length>2)}</span>`).join('');
     b.classList.toggle('hasOwner',owner!==null);b.classList.toggle('fleetHere',here.length>0);
     b.style.setProperty('--fold-row',1+Math.floor(i/8));b.style.setProperty('--fold-col',Math.floor(i/8)%2?8-i%8:1+i%8);
-    const deed=tile.kind==='deed',full=deed&&sets.get(tile.group)!==null;
     const face=deed?`<span class="deedFace" aria-hidden="true"></span>
-      <span class="districtMark" aria-hidden="true"><span class="printCode">${printCode(tile.group)}</span><span class="printName">${tile.group}</span></span>
-      ${full?'<em class="setStamp" aria-hidden="true">SET</em>':''}`:
+      <span class="deedHead" aria-hidden="true"><span class="districtMark"><span class="printCode">${printCode(tile.group)}</span><span class="printName">${tile.group}</span></span>${mark}</span>`:
       `<span class="portSeal" aria-hidden="true">${icon(portSeal[tile.kind])}</span>`;
-    b.classList.toggle('fullSet',full);
-    b.innerHTML=`${face}${flag}<span class="station" aria-hidden="true">${String(i).padStart(2,'0')} ${Math.floor(i/8)%2?'←':'→'}</span><span class="${deed?'deedLabel':'portLabel'}"><strong>${tile.name}</strong><span class="tileValue">${value}</span></span>${markers?`<span class="berth" data-ships="${here.length}">${markers}</span>`:''}`;
-    b.setAttribute('aria-label',[tile.name,tile.group||tile.kind,value,owner===null?'':`Owned by ${seat(owner)}, level ${s.levels[i]}`,full?`Complete ${tile.group} set`:'',here.length?'Occupied by '+here.map(seat).join(', '):'','Inspect space'].filter(Boolean).join('. '));
+    b.innerHTML=`${face}<span class="station" aria-hidden="true">${String(i).padStart(2,'0')} ${Math.floor(i/8)%2?'←':'→'}</span><span class="${deed?'deedLabel':'portLabel'}"><strong>${tile.name}</strong><span class="tileValue">${value}</span></span>${markers?`<span class="berth" data-ships="${here.length}">${markers}</span>`:''}`;
+    const title=owner!==null?`Owned by ${seat(owner)}, level ${s.levels[i]}. ${held} of ${district.size} ${tile.group} deeds`:(deed?'Unowned':'');
+    b.setAttribute('aria-label',[tile.name,tile.group||tile.kind,value,title,full?`Complete ${tile.group} set`:'',here.length?'Occupied by '+here.map(seat).join(', '):'','Inspect space'].filter(Boolean).join('. '));
   }
   $('register').innerHTML=s.players.map((player,i)=>{
     const owned=deeds(s,i), holdings=groups.map(g=>{
-      const count=owned.filter(k=>rules.tiles[k].group===g).length;
+      const {counts,size}=districts.get(g),count=counts[i];
       const levels=owned.filter(k=>rules.tiles[k].group===g).reduce((n,k)=>n+s.levels[k],0);
-      return count?`<span>${swatch(g)} ${g} ${count}/${districtTiles(g).length}${sets.get(g)===i?' · Full set':''}${levels?` · ${levels} built · locked`:''}</span>`:'';
+      return count?`<span>${swatch(g)} ${g} ${count}/${size}${count===size?' · Full set':''}${levels?` · ${levels} built · locked`:''}</span>`:'';
     }).join('');
     const assigned=room?.started?room.owners[i]:null;
     const controller=seats[i]==='bot'?'Bot':assigned===null?'Local player':assigned===0?'Host':`Device ${assigned}`;

@@ -16,7 +16,7 @@ sections = {
         ('desktop-auction','After: timed auction','Bidder, next commitment, time remaining and all cash balances remain visible. Inspecting the lot is not a bid.'),
     ],
     'Read the table in play': [
-        ('fleet-stations','Whose ship, and whose deed?','Seat 2 is on Silk Arcade; its DEED 1 ribbon belongs to Seat 1, whose ship is at Port Office. Fleet station spells out both locations without hovering. Select a berth name to locate that ship without changing the chosen deed.'),
+        ('fleet-stations','Whose ship, and whose deed?','Ship 2 is visiting Silk Arcade. The S1 mark says the deed belongs to Seat 1, whose ship is at Port Office. Select a fleet berth to locate that ship without changing the chosen deed.'),
         ('dispatch-desktop','Read it now or later','Fogbound cargo charged Seat 1 $55. Passing Port Office earned $240. The letter separates both amounts while Seat 2 plays, then leaves the chart on its own. Activity keeps the exact receipt.'),
         ('dispatch-phone','Read through a handoff','Muted and reduced motion: the card still names its recipient and displays $65 of cover, with the next player’s roll available underneath.'),
         ('display-settings','Presentation, per device','Standard separates the cast, the journey and the landing. Fast shortens presentation; reduced motion uses the same final result. This is not a host rule and does not change the five-second clock.'),
@@ -34,10 +34,11 @@ sections = {
     ],
     'Navigate and inspect': [
         ('district-pairs','Eight districts without their headers','For each district: a full deed on the left, a different member on the right with color and the top third removed. These are enlarged crops of the actual board, not drawings of the intended tile.'),
-        ('district-sets','A set, not just a color','After the trade, a double frame and SET stamp mark all six Shipyards and Exchange deeds. The DEED ribbons still identify two different owners; the numbered ship at Grain Quay is a visitor.'),
+        ('ownership-changes','Split → complete → sold','The same three Shipyards deeds, top to bottom. Before the swap Seat 1 owns two and Seat 3 one. After acceptance, all three marks read S1 SET. Selling Spar Yard removes its mark and the two remaining deeds return to S1 2/3.'),
+        ('district-sets','Two owners, two complete sets','Shipyards is marked S1 SET; Exchange is S3 SET. Grain Quay belongs to Seat 3 even with Ship 1 visiting. The inspector groups district deeds by their current holder.'),
         ('district-grayscale','Follow the printed faces','All 24 Grand Harbor deeds carry their engraving across the board space. Bottle Post interrupts the brickwork of Old Town with a dark envelope face: a draw, not a deed.'),
         ('district-phone','Full names on the folded route','Three Old Town deeds share the same brickwork and full district name. The deed title sits directly on the print; a small plain ticket keeps the price distinct. No legend lookup or tap is required.'),
-        ('crowded-space', 'Four visitors on an improved deed', 'Density fixture: the deed ribbon is separate from all four numbered ship markers. Nobody disappears into an anonymous count; the inspector keeps the development ladder.'),
+        ('crowded-space', 'Four visitors on an improved deed', 'Density fixture: one ownership mark above the name, four numbered ships below the rent. The inspector keeps the development ladder.'),
         ('grand-harbor', 'Grand Harbor circuit', 'The 40-space circuit distinguishes guilds, dispatches, exchanges, fees and deed districts. Inspect a space to read its effect.'),
         ('grand-chart', 'Pocket chart', 'On small devices the larger circuit becomes a scrollable route in movement order. The desktop perimeter is not shrunk to fit a phone.'),
         ('workbench', 'Purchase decision on desktop', 'The landed deed opens beside the board. See every tier’s construction cost, total rent and incremental payoff before buying or opening an auction.'),
@@ -54,7 +55,7 @@ sections = {
         ('custom-bid', 'Custom bid', 'Show the legal range before numeric entry. A custom bid never commits until submitted; online, the host clock still applies.'),
         ('bid', 'Bidder handoff', 'Keep the leader and acting seat separate. The amount on each bid button is the actual commitment, not an increment.'),
         ('draft', 'Two districts, one draft', 'Grain Quay for Spar Yard completes Exchange and Shipyards. The suggested swap balances the printed values with $40. Either player’s stake is visible before a proposal is sent. Select another actual tile to change the deal.'),
-        ('trade', 'The same deal, from the other chair', 'The proposer changed the premium to $30. GIVE and GET flip to the recipient’s perspective, while the deed flags still identify their current owners. Accept and Decline are separate from reading.'),
+        ('trade', 'The same deal, from the other chair', 'The proposer changed the premium to $30. GIVE and GET flip to the recipient’s perspective; ownership and the set counts stay unchanged until acceptance.'),
         ('trade-phone', 'Review on the folded chart', 'The same proposed assets are marked on the phone route. Cash and district effects live with the decision; the original owner keeps the deed until acceptance.'),
     ],
     'Settle the game': [
@@ -124,6 +125,7 @@ for c in criteria:
     if not set(c['scenarios'])<=obs.keys():raise ValueError(f'Missing measured paths for {c["id"]}')
     out.append(f'<h3 id="{escape(c["id"])}">{escape(c["name"])}</h3><p>{escape(c["rule"])}</p>')
     if c['id']=='district-identity':out.append('<p>Ignore the top third and remove color. On each remaining third, the browser checks for visible engraving around the title, excluding prices, stamps and ship pieces. The combined samples must match their own named print more closely than any other. This includes both legs of a pending trade and a complete set. A header stripe cannot pass. <a href="#group3">Compare the faces.</a></p>')
+    if c['id']=='ownership-mark':out.append('<p><a href="#group3">Compare Shipyards before and after the accepted trade and sale.</a> These are the actual board tiles; no separate SET stamp or extra frame appears.</p>')
     if c['id']=='read-through-handoff':out.append('<p>The browser observes the text for six seconds across handoff on each device, takes the next turn and checks that the letter clears without input. Activity recovers the same recipient, bill and cash afterward. <a href="#group1">See the letters.</a></p>')
     if c['id']=='board-target-preview':out.append('<p>Trades were in the click inventory, but not in this criterion. The old modal passed without showing a single target. The build now requires every deed-targeting Rust command, including the proposal payload and its responses, to appear in a linked scenario. <a href="#group4">See the two-sided trade.</a></p>')
 def criterion_for(scope,key):

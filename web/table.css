@@ -43,7 +43,6 @@
 .board .tile.selected{outline:2px dashed #775015;outline-offset:-4px}
 .board .tile .berth{gap:3px}
 .board .tile .berth .token{width:16px;height:16px;font:800 12px/14px system-ui}
-.board .tile .flag{padding:1px 3px;color:#fff;background:var(--seat);border-radius:2px;font:800 11px/13px system-ui}
 .crew{font-size:12px}
 @container(max-width:92px){.berth:has(.token:nth-of-type(4)) .token{display:none}.berth:has(.token:nth-of-type(4)) .crew{display:inline}}
 .desk #phaseLabel{font-size:13px;font-weight:800}.desk #controlType{font-weight:680}

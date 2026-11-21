@@ -2,8 +2,8 @@
   "identifiers": [
     ["1 · Destination", "Name stays legible at all times. A gold frame means inspected; the ship markers show actual occupants."],
     ["2 · Decision value", "Print the deed name over a light engraving and put only its price, rent or action quote on a small plain ticket. Service spaces use a dark face with a service symbol and a written effect instead."],
-    ["District membership versus a full set", "The whole deed is printed in its district’s color and motif. Even without the top third, a member should match its siblings in grayscale. The perimeter key and folded tile names spell out the district. A double frame and SET stamp mean a single seat owns the set; a DEED ribbon names that seat. Neither mark means a ship is here or a trade has been agreed."],
-    ["3 · Ownership versus presence","A permanent DEED number identifies the owner even when their ship is elsewhere. The numbered ship pieces below the price are the current visitors. Fleet station always names every ship’s berth, balance and who owns its space."],
+    ["District membership versus a full set", "The whole deed carries its district’s color and motif. Match its siblings in grayscale without the top third. The perimeter key and folded tile names spell out the district; only the ownership mark changes when a set completes or breaks."],
+    ["3 · Ownership versus presence","Use one mark only on owned deeds. S1 2/3 means Seat 1 owns this deed and two of the three in its district; S1 SET means it owns them all. Group the district’s deeds by holder in the inspector. Numbered ships are visitors, not owners. Keep the mark clear of the title, price and ships, even with four visitors."],
     ["4 · Detail on demand", "Inspector and accessible label carry district, level, precise amounts and full effects. Never rely on color or sound alone."],
     ["Property map · eligibility and consequence", "A hollow diamond and signed quote mark each candidate; a check identifies the selected deed. Show affected district members separately from the clicked member. See the board-target-preview criterion in the interaction and scenario audit."]
   ],
