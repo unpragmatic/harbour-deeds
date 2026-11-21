@@ -33,11 +33,13 @@ Each seat selects a controller implementing `(snapshot, abortSignal) => Promise<
 
 ## Interaction review
 
-Each deed is printed edge to edge in its district’s color and engraving: Old Town is brickwork, Shipyards is planking, Exchange is lattice. The desktop key names each print; folded tiles show the district name. A small ticket shows price, rent or action. Service spaces have dark faces and large symbols instead.
+Each deed is printed edge to edge in its district’s color and engraving: Old Town is brickwork, Shipyards is planking, Exchange is lattice. Select a deed to see the district name and roster; folded tiles show the name directly. A small ticket shows price, rent or action. Service spaces have dark faces and large symbols instead.
 
 An owned deed has one horizontal ownership mark: **S1 2/3** means Seat 1 owns this deed and two of the district’s three deeds. **S1 SET** means Seat 1 owns them all. Unowned deeds have no mark; ships below the price show visitors, not title holders. Select a deed to see which district members each seat owns and which are still on the market. A proposed trade never changes those marks until accepted.
 
 `web/district-prints.json` is the designer’s visual palette, not a game rule. After building, `review/districts.py` checks the [whole-tile criterion](https://unpragmatic.github.io/harbour-deeds/components.html#district-identity): match the rendered engraving without color or the tile’s top third. The check includes the folded phone board, both selected trade legs, and a set completed and then broken by Rust-accepted moves.
+
+Apply the [earned-space criterion](https://unpragmatic.github.io/harbour-deeds/components.html#earned-space) before adding permanent UI: what player task gets harder if this component goes away? Keep evidence for that task in the scenario audit, not just a description of the component. The district walkthrough checks the board’s visible panels and footer height on desktop and phone, then checks that trade guidance appears only in context. After running a focused walkthrough, `python review/components.py --reuse-published-captures` refreshes the report using the existing illustrations for missing screenshots; measured paths are still required.
 
 Maintain `web/interactions.json` with changes to controls, cues and board identifiers. The build rejects undocumented Rust commands. Local, host and guest live moves use the command-to-cue mapping; replay, simulation and ordinary turn advancement are silent. `review/components.py` publishes the same inventory in the illustrated checklist. For new UI-only flows, update the surfaces list and the relevant browser walkthrough in the same change.
 

@@ -46,15 +46,6 @@
 .tile.special:is([data-plot=off],[data-trade-tile=off]) .portSeal{background:#454e50}
 .board.route .tile.special .station{color:#fff3d2}
 .holdings>span{border:0;font:650 12px/1.4 system-ui;padding-left:0}.holdings .engraving{width:20px}
-.boardfoot #printKey{display:none}
-@media(min-width:1200px) and (min-height:720px){
-  .boardfoot{flex-wrap:wrap;row-gap:2px}
-  .boardfoot #printKey{order:-1;display:flex;width:100%;justify-content:space-between;align-items:center;color:#fff9df;
-    font:600 12px/1.25 system-ui;letter-spacing:0}
-  #printKey>div{display:flex;align-items:center;gap:3px;white-space:nowrap}
-  #printKey b{font:800 10px/1.25 ui-monospace,monospace;color:#e3ddc5}
-  #printKey .engraving{box-sizing:content-box;width:21px;border:1px solid #e4dcc6}
-}
 @media(min-width:1120px) and (max-height:800px){
   .board[data-map] .tile.deed:has(.berth){padding-top:13px;padding-bottom:1px}
   .board[data-map] .tile.deed.hasOwner:has(.berth){padding-top:17px}
@@ -78,7 +69,7 @@
 @media(forced-colors:active){
   .engraving{forced-color-adjust:none}
   .deedFace{forced-color-adjust:none}
-  .ownerMark,#printKey>div{outline:1px solid CanvasText}
+  .ownerMark{outline:1px solid CanvasText}
   .deedLabel,.portLabel{color:ButtonText;background:ButtonFace;text-shadow:none}
 }
 .deckGuide{margin-top:9px;color:#192e34}

@@ -612,15 +612,6 @@ body[data-trade] .desk{overflow:auto}
 .tile.special:is([data-plot=off],[data-trade-tile=off]) .portSeal{background:#454e50}
 .board.route .tile.special .station{color:#fff3d2}
 .holdings>span{border:0;font:650 12px/1.4 system-ui;padding-left:0}.holdings .engraving{width:20px}
-.boardfoot #printKey{display:none}
-@media(min-width:1200px) and (min-height:720px){
-  .boardfoot{flex-wrap:wrap;row-gap:2px}
-  .boardfoot #printKey{order:-1;display:flex;width:100%;justify-content:space-between;align-items:center;color:#fff9df;
-    font:600 12px/1.25 system-ui;letter-spacing:0}
-  #printKey>div{display:flex;align-items:center;gap:3px;white-space:nowrap}
-  #printKey b{font:800 10px/1.25 ui-monospace,monospace;color:#e3ddc5}
-  #printKey .engraving{box-sizing:content-box;width:21px;border:1px solid #e4dcc6}
-}
 @media(min-width:1120px) and (max-height:800px){
   .board[data-map] .tile.deed:has(.berth){padding-top:13px;padding-bottom:1px}
   .board[data-map] .tile.deed.hasOwner:has(.berth){padding-top:17px}
@@ -644,7 +635,7 @@ body[data-trade] .desk{overflow:auto}
 @media(forced-colors:active){
   .engraving{forced-color-adjust:none}
   .deedFace{forced-color-adjust:none}
-  .ownerMark,#printKey>div{outline:1px solid CanvasText}
+  .ownerMark{outline:1px solid CanvasText}
   .deedLabel,.portLabel{color:ButtonText;background:ButtonFace;text-shadow:none}
 }
 .deckGuide{margin-top:9px;color:#192e34}
@@ -699,7 +690,7 @@ body[data-trade] .desk{overflow:auto}
 <div class="stageCopy" role="status" aria-atomic="true"><div id="stageTag"></div><div id="stageTitle"></div><div id="stageDetail"></div></div>
 <div id="stageProp" aria-hidden="true"></div></div></section>
 <div id="mobileLadder"></div></div><div id="wake" aria-hidden="true"></div></div>
-<div class="boardfoot"><span id="routeDirection"></span><span>S1 2/3 = Seat 1 owns two of three · SET = full district · Ship = visitor</span><span id="tradeLegend" hidden></span><div id="printKey" aria-label="District key"></div></div></section>
+<div class="boardfoot"><span id="routeDirection"></span><span id="tradeLegend" hidden></span></div></section>
 <aside><section class="panel desk" aria-label="Current decision"><div class="panelhead"><small id="phaseLabel">TURN DESK</small><span id="controlType"></span></div><div id="turn" aria-live="polite"></div><section id="tradeDesk" aria-label="Trade terms" hidden></section><div id="actions"></div><section id="propertyDesk" aria-label="Manage board spaces" hidden></section></section></aside>
 <section class="instruments" aria-label="Table inspector">
 <nav class="switcher" aria-label="Game views"><button data-view="board" aria-keyshortcuts="B" title="Inspect a space (B)" aria-pressed="true">Board</button><button data-view="players" aria-keyshortcuts="F" title="Player holdings (F)" aria-pressed="false">Players</button><button data-view="activity" aria-keyshortcuts="L" title="Ship’s log (L)" aria-pressed="false">Activity</button></nav>
@@ -713,7 +704,7 @@ body[data-trade] .desk{overflow:auto}
   "identifiers": [
     ["1 · Destination", "Name stays legible at all times. A gold frame means inspected; the ship markers show actual occupants."],
     ["2 · Decision value", "Print the deed name over a light engraving and put only its price, rent or action quote on a small plain ticket. Service spaces use a dark face with a service symbol and a written effect instead."],
-    ["District membership versus a full set", "The whole deed carries its district’s color and motif. Match its siblings in grayscale without the top third. The perimeter key and folded tile names spell out the district; only the ownership mark changes when a set completes or breaks."],
+    ["District membership versus a full set", "The whole deed carries its district’s color and motif. Match its siblings in grayscale without the top third. Inspect a deed for the named district and roster; only the ownership mark changes when a set completes or breaks."],
     ["3 · Ownership versus presence","Use one mark only on owned deeds. S1 2/3 means Seat 1 owns this deed and two of the three in its district; S1 SET means it owns them all. Group the district’s deeds by holder in the inspector. Numbered ships are visitors, not owners. Keep the mark clear of the title, price and ships, even with four visitors."],
     ["4 · Detail on demand", "Inspector and accessible label carry district, level, precise amounts and full effects. Never rely on color or sound alone."],
     ["Property map · eligibility and consequence", "A hollow diamond and signed quote mark each candidate; a check identifies the selected deed. Show affected district members separately from the clicked member. See the board-target-preview criterion in the interaction and scenario audit."]
@@ -2578,8 +2569,6 @@ function initialize(types,map,seconds,seed,policy,edition=currentEdition,charter
   board.dataset.map=map;board.dataset.density=density;
   board.style.setProperty('--fold-columns',foldColumns);
   $('routeDirection').textContent=direction==='clockwise'?'↻  Clockwise':'↺  Counterclockwise';
-  $('printKey').innerHTML=[...new Set(rules.tiles.filter(t=>t.kind==='deed').map(t=>t.group))].map(g=>
-    `<div>${swatch(g)}<b>${printCode(g)}</b> ${g}</div>`).join('');
   placeStage();
   const mapName=boardSpec.label;
   $('boardName').textContent=mapName;$('mapTitle').textContent=`${mapName} · ${rules.tiles.length} spaces · ${rules.dice?.count??2}d${rules.dice?.sides??6}`;
@@ -2703,6 +2692,7 @@ $('rulesBtn').onclick=()=>openDialog(`<h2>The rulebook</h2><h3>How to win this t
 try {
   initFeedback();
   $('rulesBtn').addEventListener('click',()=>{
+    $('content').insertAdjacentHTML('beforeend','<h3>Reading a deed</h3><p>Matching prints belong to the same district. Select a deed for the full district name and its members. S1 2/3 means Seat 1 owns two of three deeds; SET means the whole district. Ships mark visitors, not owners.</p>');
     $('content').insertAdjacentHTML('afterbegin','<p class="keyGuide"><b>Desktop keys</b> &nbsp; R Roll · T Draft trade · I Improve · S Sell quote · B Space · F Players · L Activity · ← → browse focused spaces · Esc close sheet</p>');
     $('content').insertAdjacentHTML('beforeend',`<h3>Manage deeds on the board</h3><p>Before rolling, select a marked deed or choose Manage deeds. Switch between Improve and Sell to compare your options. Selecting a space only previews it; Confirm is a separate action. ${bankTerms()} Player trades leave the original bank acquisition price unchanged. Permanently developed districts cannot be sold.</p>${rules.tiles.some(t=>t.kind==='works')?'<h3>Public works</h3><p>Land at a works with an eligible deed to commission a one-use rent bonus. It pays only on the next rival rent. No full set is needed, and passing costs nothing.</p>':''}`);
     $('content').insertAdjacentHTML('beforeend',`<h3>Improve full districts</h3><p>This table uses ${({even:'even building: improve a lowest-level deed',free:'unrestricted building: choose any deed',district:'whole-district building: improve every deed together'})[rules.development.policy]}. There are ${rules.development.levels.length} levels. Construction raises rent, locks the district against trades and has no end-game resale value.</p><a href="./development.html" target="_blank" rel="noopener">See costs and break-even analysis</a>`);
