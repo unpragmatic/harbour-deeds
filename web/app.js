@@ -402,8 +402,6 @@ function initialize(types,map,seconds,seed,policy,edition=currentEdition,charter
   board.dataset.map=map;board.dataset.density=density;
   board.style.setProperty('--fold-columns',foldColumns);
   $('routeDirection').textContent=direction==='clockwise'?'↻  Clockwise':'↺  Counterclockwise';
-  $('printKey').innerHTML=[...new Set(rules.tiles.filter(t=>t.kind==='deed').map(t=>t.group))].map(g=>
-    `<div>${swatch(g)}<b>${printCode(g)}</b> ${g}</div>`).join('');
   placeStage();
   const mapName=boardSpec.label;
   $('boardName').textContent=mapName;$('mapTitle').textContent=`${mapName} · ${rules.tiles.length} spaces · ${rules.dice?.count??2}d${rules.dice?.sides??6}`;
@@ -527,6 +525,7 @@ $('rulesBtn').onclick=()=>openDialog(`<h2>The rulebook</h2><h3>How to win this t
 try {
   initFeedback();
   $('rulesBtn').addEventListener('click',()=>{
+    $('content').insertAdjacentHTML('beforeend','<h3>Reading a deed</h3><p>Matching prints belong to the same district. Select a deed for the full district name and its members. S1 2/3 means Seat 1 owns two of three deeds; SET means the whole district. Ships mark visitors, not owners.</p>');
     $('content').insertAdjacentHTML('afterbegin','<p class="keyGuide"><b>Desktop keys</b> &nbsp; R Roll · T Draft trade · I Improve · S Sell quote · B Space · F Players · L Activity · ← → browse focused spaces · Esc close sheet</p>');
     $('content').insertAdjacentHTML('beforeend',`<h3>Manage deeds on the board</h3><p>Before rolling, select a marked deed or choose Manage deeds. Switch between Improve and Sell to compare your options. Selecting a space only previews it; Confirm is a separate action. ${bankTerms()} Player trades leave the original bank acquisition price unchanged. Permanently developed districts cannot be sold.</p>${rules.tiles.some(t=>t.kind==='works')?'<h3>Public works</h3><p>Land at a works with an eligible deed to commission a one-use rent bonus. It pays only on the next rival rent. No full set is needed, and passing costs nothing.</p>':''}`);
     $('content').insertAdjacentHTML('beforeend',`<h3>Improve full districts</h3><p>This table uses ${({even:'even building: improve a lowest-level deed',free:'unrestricted building: choose any deed',district:'whole-district building: improve every deed together'})[rules.development.policy]}. There are ${rules.development.levels.length} levels. Construction raises rent, locks the district against trades and has no end-game resale value.</p><a href="./development.html" target="_blank" rel="noopener">See costs and break-even analysis</a>`);

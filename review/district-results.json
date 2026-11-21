@@ -1,11 +1,14 @@
 {
   "observed": {
+    "perimeter-chrome": 0,
     "match-print": 0,
     "header-free": 0,
+    "trade-chrome": 0,
     "split-owner": 0,
     "trade-print": 0,
     "read-full-set": 0,
     "release-title": 0,
+    "folded-chrome": 0,
     "match-print-phone": 0
   }
 }

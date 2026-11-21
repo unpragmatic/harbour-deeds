@@ -2,11 +2,17 @@
 from base64 import b64encode
 from html import escape
 import json
+import re
+import sys
 from io import BytesIO
 from pathlib import Path
 from PIL import Image
 
 root = Path(__file__).resolve().parent
+report=root.parent/'docs/components.html'
+# The repo ships the illustrated report, not every historical PNG. In a partial
+# walkthrough, keep those previously published captures byte-for-byte.
+published=dict(re.findall(r'<article><h3>([^<]+)</h3><details><summary>Inspect capture<img src="data:image/webp;base64,([^"]+)"',report.read_text())) if sys.argv[1:]==['--reuse-published-captures'] else {}
 sections = {
     'Desktop playtest review': [
         ('decision-flow-before','Before: one offer, three reading locations','The previous layout repeated the space name in the chart, inspector and footer. Buying meant leaving the economics at the upper right for a button at the opposite end of the screen. The folded chart was hard to follow as a circuit.'),
@@ -163,12 +169,16 @@ out.append('</ul></details></section>')
 for i, (section, rows) in enumerate(sections.items()):
     out.append(f'<section id="group{i}"><h2>{escape(section)}</h2><div class="grid">')
     for file, title, finding in rows:
-        image = Image.open(root/f'{file}.png').convert('RGB')
-        image.thumbnail((1440, 1000))
-        buf = BytesIO()
-        image.save(buf, 'WEBP', quality=86, method=5)
-        data = b64encode(buf.getvalue()).decode()
+        source=root/f'{file}.png'
+        if source.is_file() or escape(title) not in published:
+            image=Image.open(source).convert('RGB')
+            image.thumbnail((1440, 1000))
+            buf=BytesIO()
+            image.save(buf,'WEBP',quality=86,method=5)
+            data=b64encode(buf.getvalue()).decode()
+        else:
+            data=published[escape(title)]
         out.append(f'<article><h3>{escape(title)}</h3><details><summary>Inspect capture<img src="data:image/webp;base64,{data}" alt="{escape(title)} in the running game"></summary></details><p>{escape(finding)}</p></article>')
     out.append('</div></section>')
 out.append('</main></html>')
-(root.parent/'docs/components.html').write_text('\n'.join(out))
+report.write_text('\n'.join(out))

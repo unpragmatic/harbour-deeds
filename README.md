@@ -21,6 +21,8 @@ node --test tests/engine.mjs tests/airports.mjs tests/richup.mjs tests/board-reg
 
 **[Play RichUp Classic](https://unpragmatic.github.io/harbour-deeds/?board=richup).** The 40 clockwise spaces start at the upper left. The 22 city deeds specify their individual purchase prices, five build costs and six rents rather than using a global percentage curve. Four airports pay $25/$50/$100/$200; the two companies charge 4× or 10× the landing roll. Treasure and Surprise have separate 17-card stacks. Select a draw space to see its complete public list; inspecting it neither draws a card nor shows what comes next.
 
+When you buy a company, the receipt shows its rent multiplier rather than a fixed fare. When a rival lands there, the chart shows the calculation: for example, a roll of 7 costs $28 with one company or $70 if the landlord owns both.
+
 The factual reference is a [captured Classic game state](https://github.com/cjtsolutions/richup-benchmark/blob/6d964238470da8729c214a765709b91bac10b67f/tests/sample_game_state.json). Salary, rounded cash tax, utility multipliers, deck cycling, doubles, bail and pardon behavior were cross-checked against the player build archived alongside it. The preset uses the captured room’s $1,500 opening cash, even building, no doubled base rent and no auctions on declined deeds. The board and deed ledgers map one-to-one; card wording and artwork are original. This is **not server or full rules parity**: seats use Harbor controllers and trade negotiation, the standard Harbor liquidation desk handles debt, and unpaid off-turn group-card charges settle at that seat’s next turn. Teams, mortgages, and online RichUp rooms are not implemented. Changing victory or development in setup is a house rule.
 
 Each seat selects a controller implementing `(snapshot, abortSignal) => Promise<command>`. The host routes the decision to the turn owner, current auction bidder, or trade recipient. All commands go to the same WASM handler.
@@ -31,11 +33,13 @@ Each seat selects a controller implementing `(snapshot, abortSignal) => Promise<
 
 ## Interaction review
 
-Each deed is printed edge to edge in its district’s color and engraving: Old Town is brickwork, Shipyards is planking, Exchange is lattice. The desktop key names each print; folded tiles show the district name. A small ticket shows price, rent or action. Service spaces have dark faces and large symbols instead.
+Each deed is printed edge to edge in its district’s color and engraving: Old Town is brickwork, Shipyards is planking, Exchange is lattice. Select a deed to see the district name and roster; folded tiles show the name directly. A small ticket shows price, rent or action. Service spaces have dark faces and large symbols instead.
 
 An owned deed has one horizontal ownership mark: **S1 2/3** means Seat 1 owns this deed and two of the district’s three deeds. **S1 SET** means Seat 1 owns them all. Unowned deeds have no mark; ships below the price show visitors, not title holders. Select a deed to see which district members each seat owns and which are still on the market. A proposed trade never changes those marks until accepted.
 
 `web/district-prints.json` is the designer’s visual palette, not a game rule. After building, `review/districts.py` checks the [whole-tile criterion](https://unpragmatic.github.io/harbour-deeds/components.html#district-identity): match the rendered engraving without color or the tile’s top third. The check includes the folded phone board, both selected trade legs, and a set completed and then broken by Rust-accepted moves.
+
+Apply the [earned-space criterion](https://unpragmatic.github.io/harbour-deeds/components.html#earned-space) before adding permanent UI: what player task gets harder if this component goes away? Keep evidence for that task in the scenario audit, not just a description of the component. The district walkthrough checks the board’s visible panels and footer height on desktop and phone, then checks that trade guidance appears only in context. After running a focused walkthrough, `python review/components.py --reuse-published-captures` refreshes the report using the existing illustrations for missing screenshots; measured paths are still required.
 
 Maintain `web/interactions.json` with changes to controls, cues and board identifiers. The build rejects undocumented Rust commands. Local, host and guest live moves use the command-to-cue mapping; replay, simulation and ordinary turn advancement are silent. `review/components.py` publishes the same inventory in the illustrated checklist. For new UI-only flows, update the surfaces list and the relevant browser walkthrough in the same change.
 

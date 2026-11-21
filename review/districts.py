@@ -3,7 +3,7 @@ import json
 import subprocess
 from io import BytesIO
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageDraw
 from playwright.sync_api import expect, sync_playwright
 
 review=Path(__file__).resolve().parent
@@ -42,6 +42,29 @@ with sync_playwright() as pw:
         return p.evaluate('([board,moves])=>printTable(board,moves)',[board,commands])
     prints=json.loads((root/'web/district-prints.json').read_text())
     widths={g:v['width'] for g,v in prints.items()}
+    # The reference comes from the design palette, not a legend in the player's UI.
+    masks=p.evaluate('''prints=>Object.fromEntries(Object.entries(prints).map(([name,{width,path}])=>{
+      const canvas=document.createElement('canvas');canvas.width=width;canvas.height=12;
+      const ctx=canvas.getContext('2d');ctx.lineWidth=2;ctx.stroke(new Path2D(path));
+      const pixels=ctx.getImageData(0,0,width,12).data;
+      return [name,Array.from({length:width*12},(_,i)=>pixels[i*4+3]>127)];
+    }))''',prints)
+    def board_chrome(scenario,folded=False,trade=False):
+        # Account for visible panels, not a blacklist of obsolete component IDs.
+        def panels(selector):
+            return p.locator(selector).evaluate_all('ns=>ns.filter(n=>n.getClientRects().length).map(n=>n.id||n.className)')
+        outer=['boardhead',*(['stage'] if folded and not trade else []),'board','boardfoot']
+        assert panels('#boardView > *')==outer,(scenario,panels('#boardView > *'))
+        assert panels('.boardhead > *')==['mapTitle','round'],scenario
+        assert panels('.boardfoot > *')==['tradeLegend' if trade else 'routeDirection'],scenario
+        if trade:
+            expect(p.locator('#tradeLegend')).to_contain_text('GIVE / GET')
+        else:
+            assert p.locator('.boardfoot').evaluate('''f=>{
+              const css=getComputedStyle(f);
+              return f.offsetHeight<=Math.ceil(parseFloat(css.lineHeight)+parseFloat(css.paddingTop)+parseFloat(css.paddingBottom))+1;
+            }'''),(scenario,'footer exceeds one line')
+        seen[scenario]=p.evaluate('inputs')
     def photos():
         snap=lambda:Image.open(BytesIO(p.screenshot())).convert('L')
         ink=snap()
@@ -49,16 +72,6 @@ with sync_playwright() as pw:
         flat=snap()
         flat_style.evaluate('e=>e.remove()')
         return ink,flat
-    def templates_from_key(img,groups):
-        samples={}
-        for g in groups:
-            box=p.locator('#printKey>div').filter(has_text=g).locator('.engraving').bounding_box()
-            x,y=round(box['x'])+1,round(box['y'])+1
-            sample=img.crop((x,y,x+widths[g],y+12))
-            low,high=sample.getextrema()
-            assert high-low>=70,(g,low,high)
-            samples[g]=tuple(v<(low+high)/2 for v in sample.tobytes())
-        return samples
     def body_print(i,group,images,templates):
         tile=p.locator(f'#tile-{i}')
         box=tile.bounding_box()
@@ -103,8 +116,7 @@ with sync_playwright() as pw:
             left=capture(color,f'#tile-{a}')
             right=capture(mono,f'#tile-{b}',True)
             plate.paste(left,(x,y));plate.paste(right,(x+75,y+left.height-right.height))
-            key=p.locator('#printKey>div').filter(has_text=g).bounding_box()
-            plate.paste(color.crop(tuple(round(v) for v in (key['x'],key['y'],key['x']+key['width'],key['y']+key['height']))),(x,y+left.height+3))
+            ImageDraw.Draw(plate).text((x,y+left.height+3),g,fill='white')
         plate.resize((plate.width*2,plate.height*2),Image.Resampling.NEAREST).save(review/'district-pairs.png')
 
     def ownership(i,owner,held=0,size=3):
@@ -132,8 +144,8 @@ with sync_playwright() as pw:
     for board in sorted((b['id'] for b in json.loads((root/'web/boards.json').read_text())['boards']),key=lambda b:b=='grand'):
         tiles=table(board)
         images=photos()
-        visible('#printKey>div')
-        templates=templates_from_key(images[0],{t['group'] for t in tiles if t['kind']=='deed'})
+        board_chrome('perimeter-chrome')
+        templates={t['group']:masks[t['group']] for t in tiles if t['kind']=='deed'}
         assert p.locator('.special .deedFace').count()==0
         expect(p.locator('.ownerMark')).to_have_count(0)
         for i,t in enumerate(tiles):
@@ -150,6 +162,7 @@ with sync_playwright() as pw:
     print_pairs(tiles,images[0])
     # These are accepted Rust commands from the design match, not invented ownership.
     table('grand',moves[:swap+1])
+    board_chrome('trade-chrome',trade=True)
     rows=[shipyards_row()]
     monochrome(True)
     for i,owner,held in [(11,1,2),(12,1,2),(14,3,1),(29,1,1)]:
@@ -196,6 +209,7 @@ with sync_playwright() as pw:
     p.set_viewport_size({'width':1120,'height':650});p.locator('#board.route').wait_for()
     assert p.locator('#board .tile').evaluate_all('ns=>ns.every(n=>n.getBoundingClientRect().width>=80)')
     p.set_viewport_size({'width':390,'height':844});monochrome(True)
+    board_chrome('folded-chrome',folded=True)
     for i in [1,3,4]:
         visible(f'#tile-{i} .printName')
         expect(p.locator(f'#tile-{i} .printName')).to_have_text('Old Town')

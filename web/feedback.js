@@ -114,10 +114,13 @@ function cardInstruction(c,units){
 }
 const hasDraw=s=>s.last_card!=null||Boolean(s.card_receipt?.draws.length);
 function namedReceipt(a,s,draw){
-  const c=rules.named_cards[draw.card];
-  return {deck:c.deck,title:c.title,order:cardInstruction(c),result:draw.result,
-    account:`Cash ${money(draw.before)} → ${money(draw.after)}`,
-    kind:draw.after<draw.before?'charge':draw.after>draw.before?'award':'cover',
+  const c=rules.named_cards[draw.card],player=s.players[a];
+  // Intermediate draws close before the next landing. Only the final card can own its rent bill.
+  const rent=draw===s.card_receipt.draws.at(-1)?utilityRentBill(s,a):null;
+  const after=rent?player.cash:draw.after;
+  return {deck:c.deck,title:c.title,order:cardInstruction(c),result:rent?`${draw.result} ${rent}`:draw.result,
+    account:`Cash ${money(draw.before)} → ${money(after)}`,
+    kind:after<draw.before?'charge':after>draw.before?'award':'cover',
     address:`To ${seat(a)} · ${rules.tiles[draw.source].name}`,serial:`${c.deck} / Round ${s.round}`};
 }
 // A receipt is frozen at the draw. In particular, a later default can return the
@@ -217,6 +220,15 @@ function syncStage(s){
 }
 const rolledDoubles=s=>s.dice.length===2&&s.dice[0]===s.dice[1];
 const reachedDoublesLimit=(b,s)=>!b.players[b.turn].in_prison&&rolledDoubles(s)&&(b.doubles_in_row??0)+1===rules.doubles_limit;
+function ownedUtilityRate(s,i){
+  const group=rules.tiles[i].group,rates=utilityFor(group),owner=s.owners[i];
+  if(!rates||owner==null)return null;
+  return rates[districtTiles(group).filter(k=>s.owners[k]===owner).length-1];
+}
+function utilityRentBill(s,a){
+  const pos=s.players[a].pos,owner=s.owners[pos],rate=ownedUtilityRate(s,pos);
+  return rate==null||owner===a?null:`Rent to ${seat(owner)} · roll ${s.dice.reduce((x,y)=>x+y,0)} × ${rate} = ${money(s.rents[pos])}`;
+}
 function outcome(m,b,s){
   const a=m.actor,dieTotal=s.dice.reduce((x,y)=>x+y,0),pos=s.players[a].pos;
   const delta=s.players[a].cash-b.players[a].cash, lot=b.auction?.tile??m.tile??pos;
@@ -228,7 +240,10 @@ function outcome(m,b,s){
     detail=s.players.filter(p=>!p.out).length===1?'Last solvent merchant':'Cash and printed deed values settled';prop='final';cue='final';kind='final';targets=[];
   }else if(action==='roll'){
     tag=`${who} rolled ${dieTotal}`;title=tile.name;prop='dice';
-    if(tile.kind==='deed')detail=s.owners[pos]===null?`For sale · ${money(tile.price)}`:s.owners[pos]===a?'Your own deed':`Rent to ${seat(s.owners[pos])} · ${money(utilityFor(tile.group)?s.rents[pos]:b.rents[pos])}`;
+    if(tile.kind==='deed'){
+      const owner=s.owners[pos];
+      detail=owner===null?`For sale · ${money(tile.price)}`:owner===a?'Your own deed':utilityRentBill(s,a)??`Rent to ${seat(owner)} · ${money(b.rents[pos])}`;
+    }
     else detail=({guild:'Guild charter · cash or cover',works:s.commissions?.length?'Public works · commission a deed or skip':'Public works · no eligible project',fee:tile.cash_tax_pct!=null?`${tile.cash_tax_pct}% cash tax`:`Harbor dues · ${money(tile.price??0)}`,start:'Start payment',rest:s.players[a].in_prison?'Detained':s.players[a].skip_turns?'On vacation':'Just visiting',notice:'Port notice',
       exchange:s.auction?`Auction: ${rules.tiles[s.auction.tile].name}`:'All deeds owned'})[tile.kind];
     if(hasDraw(s)){detail='Card delivered';kind='dispatch'}
@@ -250,7 +265,8 @@ function outcome(m,b,s){
   }else if(action==='bail'||action==='pardon'){
     tag='Prison release';title=action==='pardon'?'Pardon redeemed':`Bail paid · ${money(-delta)}`;detail=`${who} is free next turn.`;
   }else if(action==='buy'){
-    tag='Deed recorded';title=tile.name;detail=`${who} paid ${money(-delta)} · Rent ${money(s.rents[lot])}`;prop='deed';cue='file';
+    const rate=ownedUtilityRate(s,lot);
+    tag='Deed recorded';title=tile.name;detail=`${who} paid ${money(-delta)} · Rent ${rate==null?money(s.rents[lot]):rateLabel(tile.group,rate)}`;prop='deed';cue='file';
   }else if(action==='sell'){
     const quote=b.sells.find(q=>q.tile===lot);
     tag='Sold to the bank';title=tile.name;
