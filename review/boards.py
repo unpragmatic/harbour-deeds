@@ -113,6 +113,20 @@ with sync_playwright() as pw:
     expect(p.locator('#actions')).to_contain_text('Next turn')
     roll.click();roll.click();roll.click()
     expect(p.locator('#stageDetail')).to_contain_text('served their time and can move next turn')
+    # Buy both companies before Seat 2 lands at Power Company on a different roll.
+    p.evaluate('() => {crypto.getRandomValues=a=>(a[0]=1769,a)}')
+    p.click('#setupBtn');p.click('#passPlay')
+    buy=p.get_by_role('button',name='Buy · $150',exact=True)
+    decline=p.get_by_role('button',name='Pass',exact=True)
+    roll.click();buy.click()
+    expect(p.locator('#stageDetail')).to_have_text('Seat 1 paid $150 · Rent 4× dice')
+    for _ in range(2):
+        roll.click();decline.click()
+    roll.click();buy.click()
+    expect(p.locator('#stageDetail')).to_contain_text('Rent 10× dice')
+    roll.click()
+    expect(p.locator('#stageDetail')).to_contain_text('Rent to Seat 1 · roll 7 × 10 = $70')
+    expect(p.locator('#stageLedger .account').nth(1).locator('em')).to_have_text('−$70')
     assert not errors,errors
     (root/'review/boards-results.json').write_text(json.dumps({'observed':seen,'ownerContrast':[round(s['ratio'],2) for s in samples]},indent=2)+'\n')
     browser.close()
