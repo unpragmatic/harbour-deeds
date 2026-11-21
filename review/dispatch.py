@@ -124,18 +124,23 @@ def read_at_table(browser, game, out, phone):
                               '$65 cover in force' if phone else 'Paid $55',
                               'Cash $850 → $850' if phone else 'Port salary +$240 · Cash $240 → $425'], result
     p.screenshot(path=out/('dispatch-phone.png' if phone else 'dispatch-desktop.png'))
-    # Not just a delayed End: the same piece of paper survives a different
-    # accepted roll; neither reading it nor dismissing it sends a game command.
+    # The next roll is available with the card still up. Filing it needs
+    # no housekeeping and must not silently shift focus/change the game.
     roll.click()
     expect(p.locator('#stageTag')).to_contain_text('Seat 2')
-    expect(p.locator('#dispatchTitle')).to_have_text(title)
-    before = p.evaluate('inputTotals.click')
-    p.click('#dismissDispatch')
+    expect(p.locator('#dispatchCard button')).to_have_count(0)
+    before = p.evaluate('({...inputTotals})')
     expect(p.locator('#dispatchCard')).to_have_count(0)
-    dismiss = p.evaluate('inputTotals.click') - before
-    assert dismiss == 1 and not errors, (dismiss, errors)
+    assert before == p.evaluate('inputTotals') and not errors, errors
+    p.locator('[data-view=activity]').click()
+    archive = p.locator('#lastLetter')
+    expect(archive).to_be_in_viewport()
+    for text in result['text']:
+        expect(archive).to_contain_text(text)
+    result['recallClicks'] = p.evaluate('inputTotals.click') - before['click']
+    assert result['recallClicks'] == 1
     p.close()
-    return result, dismiss
+    return result
 
 
 def accounting(browser, game):
@@ -203,7 +208,6 @@ def online(pw, game):
                 expect(guest.locator('#actions [data-key=R]')).to_be_enabled()
                 handoff = guest.evaluate('takeTime')
                 assert 0 < handoff < 2400, handoff
-                guest.click('#dismissDispatch')
                 guest.locator('#actions [data-key=R]').click()
                 expect(host.locator('body')).to_have_attribute('data-phase','offer')
                 expect(host.locator('#dispatchTitle')).to_have_text('Mutual aid charter')
@@ -212,7 +216,10 @@ def online(pw, game):
                 expect(guest.get_by_role('button',name='Start auction')).to_be_enabled(timeout=18000)
                 expect(guest.locator('#dispatchCard')).to_have_count(0)
                 assert guest.evaluate('dispatchCalls') == 0
-                return {'guestHandoffMs': handoff, 'privateDismissal': True, 'liveCuesPerDevice': 1, 'rejoinCues': 0}
+                guest.locator('[data-view=activity]').click()
+                expect(guest.locator('#lastLetter')).to_contain_text('$65 cover in force')
+                expect(host.locator('#dispatchCard')).to_have_count(0, timeout=10000)
+                return {'guestHandoffMs': handoff, 'automaticFiling': True, 'liveCuesPerDevice': 1, 'rejoinCues': 0, 'archiveOnRejoin': True}
             finally:
                 browser.close()
         finally:
@@ -229,10 +236,10 @@ def main():
     with sync_playwright() as pw:
         browser = pw.chromium.launch(executable_path=os.environ.get('CHROME','/usr/bin/google-chrome'))
         try:
-            desktop, dismiss = read_at_table(browser, game, args.out, False)
-            phone, _ = read_at_table(browser, game, args.out, True)
+            desktop = read_at_table(browser, game, args.out, False)
+            phone = read_at_table(browser, game, args.out, True)
             data = {'observed': {'read-dispatch': desktop['input']['click'], 'read-dispatch-phone': phone['input']['click'],
-                                 'dismiss-dispatch': dismiss}, 'desktop': desktop, 'phone': phone,
+                                 'file-dispatch': 0, 'recall-dispatch': desktop['recallClicks']}, 'desktop': desktop, 'phone': phone,
                     'accounting': accounting(browser, game)}
         finally:
             browser.close()

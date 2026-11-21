@@ -115,7 +115,7 @@ with sync_playwright() as pw:
         expect(p.locator('#inspector')).to_contain_text('Owned by Seat 1')
     expect(button('Draft trade')).to_be_visible()
     with run('cancel-trade'):
-        button('Draft trade').click();p.click('#close');expect(button('Draft trade')).to_be_visible()
+        button('Draft trade').click();p.click('#tradeCancel');expect(button('Draft trade')).to_be_visible()
     with run('complete-trade'):
         button('Draft trade').click();button('Send proposal').click()
         expect(p.locator('body')).to_have_attribute('data-phase','trade')

@@ -1,4 +1,4 @@
-/* The last letter stays on the chart; the helm and the real clock keep moving. */
+/* The letter and its filing are presentation, not a phase of play. */
 #dispatchCard{
   --print:#1b3440;--post:#7c3929;--stock:#fff4d9;
   position:relative;isolation:isolate;margin:0 12px 12px;padding:12px 19px 13px;
@@ -13,7 +13,9 @@
 .dispatchMast b{font:800 13px/1.15 system-ui,sans-serif;letter-spacing:.13em;text-transform:uppercase}
 #dispatchSerial,#dispatchAddress{font:700 12px/1.3 ui-monospace,monospace}
 #dispatchSerial{color:#514e43}
-#dismissDispatch{margin-left:auto;min-height:32px;padding:3px 8px;background:transparent;color:var(--print);border:1px solid #847f6a;border-radius:2px;font:650 13px/1 system-ui}
+.dispatchFiled{margin-left:auto;color:#504b41;font:650 12px/1.2 system-ui}
+.logLetter{color:#263b3c}.logLetter>*{display:block}.logLetter small{color:#544b39}.logLetter strong{font:700 17px/1.3 Georgia,serif}.logLetter span{font-size:14px}
+#lastLetter:not([hidden]){margin-top:7px;padding:7px 10px;border-left:3px solid #956c40;background:#f4e8cc}
 #dispatchCard .dispatchLetter{display:flow-root;padding:12px 0 11px}
 .dispatchPostage{float:right;width:76px;margin:0 1px 0 14px;color:var(--post);transform:rotate(3deg)}
 #dispatchAddress{color:var(--post);margin:0 0 4px;letter-spacing:.035em;text-transform:uppercase}
@@ -36,7 +38,7 @@
 #stage[data-kind=dispatch]:has(#dispatchCard) #stageDetail{display:none}
 .strip #dispatchCard{margin:0 5px 6px;padding:4px 11px 7px;border-top-width:4px}
 .strip #dispatchCard .dispatchMast{gap:7px;padding-bottom:3px}.strip .dispatchMast b{font-size:11px;letter-spacing:.08em}
-.strip #dispatchSerial{font-size:11px}.strip #dismissDispatch{min-height:29px;font-size:12px}
+.strip #dispatchSerial,.strip .dispatchFiled{font-size:11px}
 .strip #dispatchCard .dispatchLetter{padding:7px 0}
 .strip .dispatchPostage{width:50px;margin-left:8px}
 .strip #dispatchAddress{font-size:11px;margin-bottom:2px}

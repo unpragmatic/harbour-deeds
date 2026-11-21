@@ -17,7 +17,7 @@ sections = {
     ],
     'Read the table in play': [
         ('fleet-stations','Whose ship, and whose deed?','Seat 2 is on Silk Arcade; its DEED 1 ribbon belongs to Seat 1, whose ship is at Port Office. Fleet station spells out both locations without hovering. Select a berth name to locate that ship without changing the chosen deed.'),
-        ('dispatch-desktop','A card, not a transient notification','Fogbound cargo charged Seat 1 $55. Passing Port Office also earned $240: the letter separates both amounts, even when Seat 2 is already up. It stays until replaced or dismissed on this device.'),
+        ('dispatch-desktop','Read it now or later','Fogbound cargo charged Seat 1 $55. Passing Port Office earned $240. The letter separates both amounts while Seat 2 plays, then leaves the chart on its own. Activity keeps the exact receipt.'),
         ('dispatch-phone','Read through a handoff','Muted and reduced motion: the card still names its recipient and displays $65 of cover, with the next player’s roll available underneath.'),
         ('display-settings','Presentation, per device','Standard separates the cast, the journey and the landing. Fast shortens presentation; reduced motion uses the same final result. This is not a host rule and does not change the five-second clock.'),
         ('motion-roll','Roll and travel','The dice settle to the Rust result and the numbered ship moves clockwise. The arrival and price remain readable after motion stops.'),
@@ -44,12 +44,14 @@ sections = {
         ('help', 'Rulebook', 'Keep rules one tap away without leaving the table. The decision dock carries the immediate action rather than requiring a rulebook lookup.'),
     ],
     'Make a market decision': [
+        ('rival-stakes','The opponent’s reason to bid','Seat 3 already owns Fish Hall and Tea Wharf. Buying Grain Quay blocks their set; putting it up for auction gives them a shot at $116 rent. The offer tells you before you choose.'),
         ('offer', 'Deed offer', 'Show the cash left after purchase alongside rent. Bid at auction remains a distinct alternative to buying at list price.'),
         ('phone-auction', 'Timed bid', 'A shrinking bar and numeric countdown show the remaining window; the last two seconds change color. Keep bid presets and withdrawal reachable without a keyboard.'),
         ('custom-bid', 'Custom bid', 'Show the legal range before numeric entry. A custom bid never commits until submitted; online, the host clock still applies.'),
         ('bid', 'Bidder handoff', 'Keep the leader and acting seat separate. The amount on each bid button is the actual commitment, not an increment.'),
-        ('draft', 'Trade composer', 'Start from an editable deed-for-cash offer. Sending stays explicit, and the player can cancel without using their proposal.'),
-        ('trade', 'Trade response', 'Label each side from the recipient’s perspective. Accept and decline remain side by side.'),
+        ('draft', 'Two districts, one draft', 'Grain Quay for Spar Yard completes Exchange and Shipyards. The suggested swap balances the printed values with $40. Either player’s stake is visible before a proposal is sent. Select another actual tile to change the deal.'),
+        ('trade', 'The same deal, from the other chair', 'The proposer changed the premium to $30. GIVE and GET flip to the recipient’s perspective, while the deed flags still identify their current owners. Accept and Decline are separate from reading.'),
+        ('trade-phone', 'Review on the folded chart', 'The same proposed assets are marked on the phone route. Cash and district effects live with the decision; the original owner keeps the deed until acceptance.'),
     ],
     'Settle the game': [
         ('debt-sale','Sell a deed or declare bankruptcy','The debtor owes $40. Selling Copper Yard nets $70: the creditor gets $40 and the debtor keeps $30. Declaring bankruptcy instead requires explicit confirmation.'),
@@ -75,10 +77,25 @@ summary{cursor:zoom-in;color:#215849}summary img{display:block;width:100%;height
 .scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font:15px/1.35 system-ui;color:#172634;background:#fff8e9}th,td{text-align:left;vertical-align:top;padding:7px 8px;border-bottom:1px solid #aeb8bf}thead{background:#152638;color:white}caption{text-align:left;font-size:18px;font-weight:700;padding:10px 0}code{font-size:.85em}#clicks details{margin:10px 0}#clicks summary{font-weight:700}
 .grid article:has(details[open]){grid-column:1/-1}details[open] summary{cursor:zoom-out}details[open] img{height:auto;width:auto;max-width:100%;margin-inline:auto}summary:focus-visible,a:focus-visible{outline:3px solid #ad6d1b}small{color:#496354}</style>
 <main><a href="./">← Play Harbor Deeds</a><h1>Component overview</h1><p>A visual walkthrough of the decisions, handoffs and recovery screens. Select any capture to expand it.</p><nav>''']
-out.append('<a href="#clicks">Click inventories</a> <a href="#contrast">Contrast measurements</a> <a href="#motion">Recorded turn</a>')
+out.append('<a href="#playtest">Eight-round playtest</a> <a href="#clicks">Click inventories</a> <a href="#contrast">Contrast measurements</a> <a href="#motion">Recorded turn</a>')
 for i, section in enumerate(sections):
     out.append(f'<a href="#group{i}">{escape(section)}</a>')
 out.append('</nav>')
+out.append('''<section id="playtest"><h2>Playing for a district, not just taking turns</h2>
+<p>Firsthand design playtest of the previous release: Grand Harbor, seed 1, eight rounds instead of the usual 26, untimed bidding. I played Seat 1 through the browser against the shipped bots. This was one deliberately short game, not a balance sample.</p>
+<p>I turned down $204 for Dry Dock and paid $185 for Slipway. That left me one deed short of Shipyards. Later, I spent $230 on Grain Quay to block Seat 3’s Exchange set. The very next auction was for Spar Yard, the deed I wanted. With $125 left I couldn’t raise the $150 bid. Seat 3 won it for $200.</p>
+<p><b>The best decision wasn’t a dice roll.</b> I traded Grain Quay for Spar Yard and $30. We both completed a district. I risked $30 improving Slipway; nobody landed there. Seat 2 landed on my trading partner’s Tea Wharf instead and paid $106. In net worth Seat 2 won with $1,157, ahead of Seat 3 at $1,023 and me at $880.</p>
+<p><b>What felt flat:</b> the table showed Grain Quay’s list price without telling me it would complete my opponent’s set. The pre-roll desk kept saying “Ready to roll,” even when a mutually useful deal had just become possible. The interesting part was anticipating another player’s move, but the game asked me to reconstruct that from property lists. More animations or extra spaces wouldn’t have fixed that.</p>
+<p>The revised helm names missing deeds, the score gap and the rival who stands to complete a set. Trades put both sides on the chart. The remaining limitation is bargaining: a rejection ends the conversation; neither side can counter. That’s the next mechanic worth testing with human opponents, not a change to the rules in this release.</p></section>''')
+sim=json.loads((root/'playtest-results.json').read_text())
+bots=sim['shippedBotsGrandHarbor']
+out.append(f'''<section id="simulation"><h2>Same decisions in the Rust core</h2>
+<p>With the same {sim["identicalRollsAndDraws"]} rolls and card draws, my net worth was <b>${sim["tradeAndBuild"][0]}</b> after the trade and build,
+<b>${sim["tradeAndKeepCash"][0]}</b> after the trade without building, and <b>${sim["noTradeOrBuild"][0]}</b> without either.
+The bots reacted to the actual holdings in each branch. The swap was interesting even though it did not win this seed.</p>
+<p>In {bots["completed"]} full-length Grand Harbor games with three shipped bots, {bots["accepted"]} of {bots["proposals"]} proposals were accepted;
+{bots["twoDeedOffers"]} were deed-for-deed offers. The swap I enjoyed making is not one these bots initiate.
+This measures the controller, not human enjoyment. Reproduce with <code>node tests/playtest.mjs</code> after building.</p></section>''')
 survey=json.loads((root/'clicks.json').read_text())
 results=json.loads((root/'desktop-results.json').read_text())
 actions={k:(start,label,n) for rows in survey['interactions'].values() for k,start,label,n in rows}
@@ -96,14 +113,14 @@ out.append('<p><b>What still takes effort:</b> from Manage deeds, choosing a non
            'Leaving an active network match costs three: the last confirmation protects every device. '
            'Budgets measure effort, not enjoyment; they are not human playtest results.</p>')
 obs=results['observed'].copy()
-for file in ('property-results.json','charter-results.json','dispatch-results.json'):
+for file in ('property-results.json','charter-results.json','dispatch-results.json','stakes-results.json','trade-results.json'):
     obs.update(json.loads((root/file).read_text())['observed'])
 criteria=survey['criteria']
 for c in criteria:
     if not set(c['scenarios'])<=obs.keys():raise ValueError(f'Missing measured paths for {c["id"]}')
     out.append(f'<h3 id="{escape(c["id"])}">{escape(c["name"])}</h3><p>{escape(c["rule"])}</p>')
-    if c['id']=='read-through-handoff':out.append('<p>After the handoff, the browser checks the text line boxes for six seconds on each device. Reading costs zero input. <a href="#group1">See the letters.</a></p>')
-    if c['id']=='board-target-preview':out.append('<p>The previous sale and build sheets met the two-click budget but hid the board. The current review also compares marked tiles with the engine’s quotes. <a href="#group6">Inspect the captures.</a></p>')
+    if c['id']=='read-through-handoff':out.append('<p>The browser observes the text for six seconds across handoff on each device, takes the next turn and checks that the letter clears without input. Activity recovers the same recipient, bill and cash afterward. <a href="#group1">See the letters.</a></p>')
+    if c['id']=='board-target-preview':out.append('<p>Trades were in the click inventory, but not in this criterion. The old modal passed without showing a single target. The build now requires every deed-targeting Rust command, including the proposal payload and its responses, to appear in a linked scenario. <a href="#group4">See the two-sided trade.</a></p>')
 def criterion_for(scope,key):
     return ', '.join(c['name'] for c in criteria if key in c[scope]) or '—'
 out.append(f'<h3>Scenario inventory</h3><p>{len(obs)} paths below counted trusted pointer events in Chromium. Other counts are traced through the shipped controls. '

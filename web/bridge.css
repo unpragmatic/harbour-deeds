@@ -1,4 +1,5 @@
 .charter{margin:8px 0 12px;border:1px solid #84968e}.charter legend{font-weight:750}.charter .field[hidden]{display:none}.charter>label:not(.field){display:inline-flex;align-items:center;gap:4px;padding:4px 6px 6px 0}.charter p{margin:6px 0}.charter input[type=number]{width:6em}
+.desk #turn .stakes{border-inline-start:3px solid #e3b960;padding-inline-start:8px;color:#ffedc5;line-height:1.28}.desk #turn .race{color:#e0e9e9;font-variant-numeric:tabular-nums}
 .soundings{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.ocean>.chart{border:1px solid #b1b99085;inset:8px;background:none}.ocean>.chart>.art{display:none}
 .ocean{background:#24464b}.boardfoot{color:#e2d9bf}.boardhead #round{letter-spacing:.04em}
 .treasury>strong{font:750 11px/1.2 system-ui;letter-spacing:.12em;color:#e3cb91;border-right:2px solid #6f705e}

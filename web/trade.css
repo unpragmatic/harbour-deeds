@@ -1,0 +1,82 @@
+/* Keep the real board and fleet station in view on both sides of the contract. */
+body[data-trade] :is(#turn,#stage,.instruments,.ocean>.chart),
+body[data-trade=draft] #actions,body[data-trade] .boardfoot span:not(#tradeLegend){display:none!important}
+body[data-trade] .boardfoot{justify-content:center;text-align:center}
+body[data-trade] .desk{--trade-paper:#fff6dd;--trade-ink:#223634;--give:#77420c;--get:#14584d}
+#tradeDesk[hidden],#tradeGuide[hidden]{display:none}
+#tradeDesk{color:var(--trade-ink);text-align:left}
+.tradePaper,#tradeGuide{background:#fff6dd;border:1px solid #aa9971;border-top:4px double #88734e;box-shadow:0 2px 6px #101e2233}
+.tradePaper{padding:14px 15px}
+#tradeDesk h2,#tradeGuide>strong{font:700 clamp(23px,2.1vw,32px)/1.08 Georgia,serif;letter-spacing:-.02em;color:#233c39;margin:2px 0 9px}
+.tradeKicker,#tradeGuide small,.tradeLabel,.tradeLeg h3,.guideLegs b{display:block;font:800 11px/1.3 system-ui;letter-spacing:.085em;text-transform:uppercase}
+.tradeKicker,#tradeGuide small{color:#655431}
+.tradePartners{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:8px 0}
+.tradePartners span{font-size:13px;font-weight:650;margin-right:3px}
+.tradePartners button,.tradeFoot button{min-height:36px;padding:4px 10px;border:1px solid #778980;border-radius:3px;background:#fffdf1;color:#233b38;font:700 14px/1.1 system-ui}
+.tradePartners [aria-pressed=true]{background:#244a45;border-color:#264e48;color:white}
+.tradeLegs,.tradeBalances,.guideLegs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.tradeLeg{min-width:0;padding:8px 9px;background:#fae3c2;border-top:4px solid var(--give)}
+.tradeLeg.in{background:#deeee3;border-color:var(--get)}
+.tradeLeg h3,.guideLegs b{margin:0 0 4px;color:var(--give)}
+.tradeLeg.in h3,.guideLegs div+div b{color:var(--get)}
+.tradeLeg strong{display:block;font:700 19px/1.15 Georgia,serif}
+.tradeLeg small{display:block;font:550 12px/1.2 system-ui;letter-spacing:normal;color:#394942;margin-top:3px}
+.foldTradeHint{display:none}
+.tradeCash{display:flex;align-items:center;justify-content:space-between;gap:3px;margin-top:8px;font:650 12px/1.1 system-ui}
+.tradeCash input{min-width:0;width:54%;height:34px;padding:3px;border:1px solid #756d53;border-radius:2px;background:#fffef6;color:#182a2a;font:700 16px/1.15 system-ui}
+.tradeLabel{margin:13px 0 4px;color:#4e5444}
+.tradeBalances div{display:flex;align-items:baseline;justify-content:space-between;gap:2px;border-block:1px solid #9fa58c;padding:5px 1px}
+.tradeBalances span{font-size:13px}.tradeBalances b{font:750 20px/1.15 system-ui;font-variant-numeric:tabular-nums}
+.tradeDistrict{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 6px;padding:2px 0 5px}
+.tradeDistrict strong{grid-column:span 2;font:700 17px/1.1 Georgia,serif}
+.tradeDistrict span{font:500 13px/1.3 system-ui}.tradeDistrict span b{font-weight:750}
+#tradeDesk p,#tradeGuide p{margin:7px 0 0;font:500 13px/1.35 system-ui;color:#394942}
+#tradeRefits:not(:empty){border-left:3px solid #aa681c;padding-left:7px}
+#tradeDesk #tradeError{color:#553f19}#tradeDesk p:empty{display:none}
+.tradeFoot{display:flex;gap:7px;padding-top:10px}
+.tradeFoot button{min-height:44px}.tradeFoot .primary{background:#ffcc61;color:#242b28;border-color:#9c803a}.tradeFoot .primary:disabled{opacity:.65}
+#tradeGuide{position:relative;max-width:min(88%,510px);text-align:left;padding:17px 22px;color:#223634}
+#tradeGuide>strong{display:block;margin:4px 0 12px}
+.guideLegs div{min-width:0;padding:8px 12px;border-left:3px solid #935815;background:#f6e4c6;font:700 18px/1.2 Georgia,serif}
+.guideLegs div+div{background:#deeee3;border-color:#286352}.guideLegs b{color:#77420c}.guideLegs div+div b{color:#14584d}
+.tradeSeals{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.tradeSeals span{font:700 12px/1.3 system-ui;background:#f4e3a8;color:#554016;padding:3px 7px;border:1px solid #aa914f}
+#tradeGuide .tradeKeys{font-size:12px;color:#4b5c55}
+body[data-trade] .board .tile{outline:0}
+.board .tile[data-trade-tile]:disabled{opacity:1;filter:none;cursor:default}
+.board .tile[data-trade-tile=off],.board .tile[data-trade-tile=locked]{background:#dce1d7;color:#52605b;box-shadow:none}
+.board .tile[data-trade-tile=locked] .tileValue{font-weight:800;color:#583b24}
+.board .tile[data-trade-tile=option],.board .tile[data-trade-tile=rival]{background:#fffcf0;box-shadow:inset 0 0 0 2px #727d66}
+body[data-trade] .board .tile[data-trade-tile=out]{background:#ffdfaa;box-shadow:inset 0 0 0 3px #935815}
+body[data-trade] .board .tile[data-trade-tile=in]{background:#d7f0e2;box-shadow:inset 0 0 0 3px #236352}
+.board .tile[data-trade-tile]:is([data-trade-tile=out],[data-trade-tile=in]) .tileValue{font-weight:850;color:#21392f}
+body[data-trade] #board .tile .tileValue:before{content:none}
+body[data-trade] .board .tile:focus-visible{outline:3px dashed #00588a;outline-offset:-5px}
+body[data-trade] .desk{overflow:auto}
+@media(min-width:801px){
+  body[data-trade] .layout .desk{grid-area:1/2/3/3;border-top-color:#ceb57e}
+}
+@media(max-width:1199px),(max-height:719px){
+  /* The folded board groups the same tile buttons without empty rows. */
+  #tradeDesk .foldTradeHint{display:block;margin:4px 0 7px}
+  body[data-trade] .layout .boardbox .board.route{grid-template:auto-flow minmax(68px,auto) / repeat(auto-fit,minmax(min(100%,96px),1fr))!important;align-content:start;flex:0 0 auto}
+  body[data-trade] .board.route .tile{grid-area:auto!important;min-height:68px}
+  body[data-trade] .board.route:has(.hasOwner) .tile[data-trade-tile=off]:not([data-trade-district]),
+  body[data-trade=response] .board.route .tile[data-trade-tile=locked]{display:none}
+  body[data-trade=response] .board.route .tile[data-trade-tile=out]{order:-2}
+  body[data-trade=response] .board.route .tile[data-trade-tile=in]{order:-1}
+}
+@media(max-width:800px){
+  body[data-trade] .layout{grid-template-rows:0 minmax(0,1fr) auto}
+  body[data-trade] .layout .desk{display:flex;flex-direction:column;max-height:62dvh;overflow:hidden;padding:7px 10px max(8px,env(safe-area-inset-bottom))}
+  body[data-trade] .panelhead{flex:none}
+  #tradeDesk{display:flex;flex-direction:column;min-height:0}
+  .tradePaper{overflow:auto;overscroll-behavior:contain;padding:7px 9px}
+  #tradeDesk h2{font-size:21px;margin:1px 0 5px}
+  .tradePartners{margin:4px 0}.tradePartners button{min-height:34px}
+  .tradeLeg{padding:5px 7px}.tradeLeg strong{font-size:17px}.tradeLabel{margin:7px 0 3px}
+  .tradeCash{margin-top:4px}.tradeBalances div{padding:2px}.tradeBalances b{font-size:17px}
+  .tradeFoot,body[data-trade=response] #actions{flex:none;padding-top:6px;margin:0}
+  body[data-trade] .boardhead{padding-top:6px}
+  body[data-trade] .boardfoot{color:#344841;font-size:12px}
+}

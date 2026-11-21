@@ -1,0 +1,15 @@
+{
+  "observed": {
+    "trade-target": 1,
+    "trade-partner": 1,
+    "trade-give": 1,
+    "trade-terms": 0,
+    "trade-cancel": 1,
+    "trade-response": 0,
+    "accept-trade": 1,
+    "decline-trade": 1,
+    "send-offer": 2,
+    "mutual-set": 1,
+    "trade-cash": 1
+  }
+}

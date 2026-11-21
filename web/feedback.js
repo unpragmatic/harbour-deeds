@@ -37,6 +37,8 @@ function placeStage(){
 }
 const animations=new Set(), effectTimers=new Set();
 let lastDeltas=[], readThrough=0,voyager=null;
+const dispatchArchive=new Map();
+let dispatchTimeout;
 function maskVoyager(){
   if(!voyager)return;
   const berth=$(`tile-${voyager.tile}`);
@@ -56,7 +58,7 @@ function clearMotion(){
   $('wake').replaceChildren();releaseBerth();stopFoley();
 }
 function resetStage(){
-  clearMotion();lastDeltas=[];$('dispatchCard')?.remove();delete $('stage').dataset.live;delete $('stage').dataset.set;
+  clearMotion();clearTimeout(dispatchTimeout);dispatchArchive.clear();lastDeltas=[];$('dispatchCard')?.remove();delete $('stage').dataset.live;delete $('stage').dataset.set;
 }
 function syncPrefs(){
   const effective=effectivePace();
@@ -126,7 +128,7 @@ function pinDispatch(receipt){
     card=document.createElement('article');card.id='dispatchCard';
     card.setAttribute('aria-labelledby','dispatchTitle');
     card.innerHTML=`<div class="dispatchMast"><b>Harbor Dispatch</b><span id="dispatchSerial"></span>
-      <button type="button" id="dismissDispatch" aria-label="Dismiss dispatch on this device">Dismiss</button></div>
+      <span class="dispatchFiled">Filed in Activity</span></div>
       <div class="dispatchLetter"><svg class="dispatchPostage" viewBox="0 0 84 68" aria-hidden="true" fill="none" stroke="currentColor">
         <path stroke-width="2" d="M3 3h78v62H3z"/><path d="M6 6h72v56H6zM9 49h66M9 52h66"/>
         <circle cx="54" cy="21" r="7"/><path d="m51 11-2-4m8 4 2-4m4 8 6-4m-5 10 8-1m-15 9 2 4"/>
@@ -135,17 +137,33 @@ function pinDispatch(receipt){
       </svg><p id="dispatchAddress"></p><h3 id="dispatchTitle"></h3><p id="dispatchOrder"></p></div>
       <div class="dispatchReceipt"><strong id="dispatchResult"></strong><span id="dispatchAccount"></span></div>`;
     $('stage').append(card);
-    $('dismissDispatch').onclick=()=>{
-      const focused=document.activeElement===$('dismissDispatch');
-      card.remove();
-      if(focused)document.querySelector('#actions button:not(:disabled), .switcher [aria-pressed=true]')?.focus({preventScroll:true});
-    };
   }
   card.dataset.ink=receipt.kind;
   for(const key of ['serial','address','title','order','result','account']){
     $(`dispatch${key[0].toUpperCase()+key.slice(1)}`).textContent=receipt[key];
   }
+  // Independent of the next command's motion cleanup and of the real bid clock.
+  clearTimeout(dispatchTimeout);
+  dispatchTimeout=setTimeout(()=>card.remove(),8500);
   return card;
+}
+function recordDispatch(move,before,after){
+  if(move.action!=='roll'||after.last_card==null)return;
+  const receipt=dispatchReceipt(move.actor,before,after);
+  const index=after.events.findIndex((e,i)=>i>=before.events.length&&e.startsWith(receipt.title+':'));
+  if(index!==-1)dispatchArchive.set(index,receipt);
+}
+function renderLog(events){
+  const latest=[...dispatchArchive.keys()].at(-1);
+  const receipt=r=>`<small>${r.serial} · ${r.address}</small><strong>${r.title} · ${r.result}</strong><span>${r.order} ${r.account}</span>`;
+  const featured=$('lastLetter');
+  featured.hidden=latest===undefined;
+  featured.innerHTML=featured.hidden?'':receipt(dispatchArchive.get(latest));
+  $('log').innerHTML=events.map((line,i)=>{
+    const r=dispatchArchive.get(i);
+    if(r&&i!==latest)return `<li class="logLetter">${receipt(r)}</li>`;
+    return `<li>${r?`${r.address} · ${r.title}: ${r.result}`:line.replace(/\bdeed (\d+)\b/gi,(word,k)=>rules.tiles[+k]?.name??word)}</li>`;
+  }).reverse().join('');
 }
 function ledger(s){
   const actor=actingSeat(s);

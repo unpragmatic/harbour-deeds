@@ -11,18 +11,18 @@
 <path d="m161 72 44 1-9 7h-26zm20-3V27l-19 42zm3-1 16 2-16-30zm-3-39 9 2-9 3M5 89q14-3 28 0t28 0m18 4q16-3 29 0t29 0m2-7q13-3 25 0t25 0m16-3q13-3 25 0t24 0M37 33q4-3 8 1 3-5 8-4m136-14q4-3 7 1 3-5 8-4m8 25q4-3 7 1 3-5 8-4"/>
 </g></svg>
 <h2 id="boardName">Inner Harbor</h2><div id="chartStatus"></div></div>
-<div id="plotGuide" hidden></div>
+<div id="plotGuide" hidden></div><div id="tradeGuide" hidden></div>
 <section id="stage" aria-label="Table action"><div class="stageFace">
 <div class="stageCopy" role="status" aria-atomic="true"><div id="stageTag"></div><div id="stageTitle"></div><div id="stageDetail"></div></div>
 <div id="stageProp" aria-hidden="true"></div></div></section>
 <div id="mobileLadder"></div></div><div id="wake" aria-hidden="true"></div></div>
-<div class="boardfoot"><span>↻ &nbsp; Clockwise</span><span>DEED # = owner &nbsp; · &nbsp; Numbered ship = current position</span></div></section>
-<aside><section class="panel desk" aria-label="Current decision"><div class="panelhead"><small id="phaseLabel">TURN DESK</small><span id="controlType"></span></div><div id="turn" aria-live="polite"></div><div id="actions"></div><section id="propertyDesk" aria-label="Manage board spaces" hidden></section></section></aside>
+<div class="boardfoot"><span>↻ &nbsp; Clockwise</span><span>DEED # = owner &nbsp; · &nbsp; Numbered ship = current position</span><span id="tradeLegend" hidden></span></div></section>
+<aside><section class="panel desk" aria-label="Current decision"><div class="panelhead"><small id="phaseLabel">TURN DESK</small><span id="controlType"></span></div><div id="turn" aria-live="polite"></div><section id="tradeDesk" aria-label="Trade terms" hidden></section><div id="actions"></div><section id="propertyDesk" aria-label="Manage board spaces" hidden></section></section></aside>
 <section class="instruments" aria-label="Table inspector">
 <nav class="switcher" aria-label="Game views"><button data-view="board" aria-keyshortcuts="B" title="Inspect a space (B)" aria-pressed="true">Board</button><button data-view="players" aria-keyshortcuts="F" title="Player holdings (F)" aria-pressed="false">Players</button><button data-view="activity" aria-keyshortcuts="L" title="Ship’s log (L)" aria-pressed="false">Activity</button></nav>
 <section id="inspector" aria-label="Selected board space"></section>
 <section class="panel workspace" id="playersView" hidden><h2>Players</h2><p>District holdings · select a deed to inspect</p><div id="register"></div></section>
-<section class="panel workspace" id="activityView" hidden><h2>Ship’s log</h2><p>Latest entry first</p><ol id="log" aria-live="off"></ol></section></section>
+<section class="panel workspace" id="activityView" hidden><h2>Ship’s log</h2><article id="lastLetter" class="logLetter" aria-label="Latest dispatch" hidden></article><p>Latest entry first</p><ol id="log" aria-live="off"></ol></section></section>
 </div></main>
 <dialog id="modal"><div class="sheetbar"><span>Harbor Deeds</span><button aria-label="Close dialog" id="close">×</button></div><div id="sheetLedger" aria-label="All player balances"></div><div id="content"></div></dialog>
 <script id="legacyMaps" type="application/json">__LEGACY__</script><script id="grand" type="application/json">__GRAND__</script><script id="config" type="application/json">__RULES__</script><script id="outer" type="application/json">__OUTER__</script><script id="binary" type="application/octet-stream">__WASM__</script><script type="module">/*APP*/</script></body></html>

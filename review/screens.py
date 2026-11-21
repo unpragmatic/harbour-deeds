@@ -61,15 +61,15 @@ with sync_playwright() as pw:
     button('Withdraw').click()
     shot('settled','.desk')
     button('Draft trade').click()
-    for key in ['give','take']:
-        sel=p.locator('#'+key+'Deed')
-        if sel.locator('option').count()>1:
-            sel.select_option(index=1)
-            p.locator('#'+('take' if key=='give' else 'give')+'Cash').fill('120')
-            break
-    shot('draft','dialog')
+    chosen=p.locator('.tile[aria-pressed=true]')
+    assert chosen.count()==1 and not p.locator('dialog').is_visible()
+    chosen.click()
+    assert not button('Send proposal').is_enabled()
+    p.locator('.tile[data-trade-tile=option]').click()
+    p.locator('#giveCash' if p.locator('[data-trade-tile=in]').count() else '#takeCash').fill('120')
+    shot('draft')
     button('Send proposal').click()
-    shot('trade','.desk')
+    shot('trade')
     button('Accept trade').click()
     assert p.locator('body').get_attribute('data-phase')=='roll'
     assert 'accepted' in p.locator('#log').inner_text().lower()

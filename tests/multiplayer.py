@@ -2,6 +2,7 @@
 import contextlib
 import os
 import json
+import re
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -174,6 +175,38 @@ with contextlib.ExitStack() as stack:
     expect(host.locator('#stage[data-live=sell]')).to_have_count(1)
     expect(guest.locator('#stage[data-live=sell]')).to_have_count(1)
     assert host.locator('#stageLedger').inner_text()==guest.locator('#stageLedger').inner_text()
+    host.click('#setupBtn');host.once('dialog',lambda dialog:dialog.accept());host.click('#leave')
+    expect(guest.locator('#reason')).to_contain_text('ended')
+    # Guest buys the first deed. A host draft is private and is discarded on a
+    # room pause. Only the guest can answer the eventual host proposal.
+    host.click('#retry');host.click('#host');code=host.locator('#tableCode').inner_text()
+    guest.click('#retry');guest.click('#join');guest.fill('#code',code);guest.locator('#joinForm button').click()
+    expect(guest.locator('#roomInfo')).to_contain_text('Device 1')
+    host.select_option('#owner0','1');host.select_option('#owner1','0');host.click('#launch')
+    guest.get_by_role('button',name='Roll dice',exact=True).click()
+    expect(guest.locator('body')).to_have_attribute('data-phase','offer')
+    guest.locator('#actions .primary').click()
+    host.click('#draftTrade');expect(guest.locator('#tradeDesk')).to_be_hidden()
+    guest.reload();expect(host.locator('#actions')).to_contain_text('Table paused')
+    expect(host.locator('[data-trade-tile]')).to_have_count(0)
+    guest.click('#resumeTable');host.click('#draftTrade')
+    before=host.locator('#stageLedger .account b').all_text_contents()
+    host.click('#tradeSend')
+    for p in (host,guest):
+        expect(p.locator('body')).to_have_attribute('data-trade','response')
+        expect(p.locator('#tile-12')).to_have_attribute('data-trade-tile','out')
+        assert p.locator('#stageLedger .account b').all_text_contents()==before
+    expect(host.locator('#actions')).to_contain_text('Waiting for Device 1')
+    expect(host.get_by_role('button',name='Accept trade')).to_have_count(0)
+    expect(host.locator('#tradeDesk h3').first).to_have_text('Seat 1 gives')
+    expect(guest.locator('#tradeDesk h3').first).to_have_text('You give')
+    after=guest.locator('#tradeBalances b').all_text_contents()
+    guest.get_by_role('button',name='Accept trade').click()
+    for p in (host,guest):
+        expect(p.locator('#log')).to_contain_text('accepted')
+        expect(p.locator('#tradeDesk')).to_be_hidden()
+        assert p.locator('#stageLedger .account b').all_text_contents()==after
+        expect(p.locator('#tile-12')).to_have_attribute('aria-label',re.compile('Owned by Seat 2'))
     host.click('#setupBtn');host.once('dialog',lambda dialog:dialog.accept());host.click('#leave')
     expect(guest.locator('#reason')).to_contain_text('ended')
     # A host journal created before rules editions existed must use its original map and prices.

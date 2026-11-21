@@ -307,7 +307,6 @@ function acceptMove(r,device,move){
 function networkStep(r){
   r.step?.abort();r.step=new AbortController();
   const {signal}=r.step,seq=r.seq,actor=actingSeat(state),owner=r.owners[actor];
-  if($('contract')&&$('modal').open)$('modal').close();
   render();r.deadline=0;
   if(state.phase==='over')return;
   const deviceName=n=>n<0?'Bot':n===r.device?'This device':n===0?'Host':`Device ${n}`;

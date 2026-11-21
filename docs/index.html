@@ -383,6 +383,7 @@ body[data-plot] :is(#turn,#actions,#stage){display:none!important}
 }
 
 .charter{margin:8px 0 12px;border:1px solid #84968e}.charter legend{font-weight:750}.charter .field[hidden]{display:none}.charter>label:not(.field){display:inline-flex;align-items:center;gap:4px;padding:4px 6px 6px 0}.charter p{margin:6px 0}.charter input[type=number]{width:6em}
+.desk #turn .stakes{border-inline-start:3px solid #e3b960;padding-inline-start:8px;color:#ffedc5;line-height:1.28}.desk #turn .race{color:#e0e9e9;font-variant-numeric:tabular-nums}
 .soundings{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.ocean>.chart{border:1px solid #b1b99085;inset:8px;background:none}.ocean>.chart>.art{display:none}
 .ocean{background:#24464b}.boardfoot{color:#e2d9bf}.boardhead #round{letter-spacing:.04em}
 .treasury>strong{font:750 11px/1.2 system-ui;letter-spacing:.12em;color:#e3cb91;border-right:2px solid #6f705e}
@@ -437,7 +438,7 @@ body[data-plot] :is(#turn,#actions,#stage){display:none!important}
   #stageLedger .portOwner{grid-area:3/1/4/3;justify-self:start;font-size:10px}
 }
 
-/* The last letter stays on the chart; the helm and the real clock keep moving. */
+/* The letter and its filing are presentation, not a phase of play. */
 #dispatchCard{
   --print:#1b3440;--post:#7c3929;--stock:#fff4d9;
   position:relative;isolation:isolate;margin:0 12px 12px;padding:12px 19px 13px;
@@ -452,7 +453,9 @@ body[data-plot] :is(#turn,#actions,#stage){display:none!important}
 .dispatchMast b{font:800 13px/1.15 system-ui,sans-serif;letter-spacing:.13em;text-transform:uppercase}
 #dispatchSerial,#dispatchAddress{font:700 12px/1.3 ui-monospace,monospace}
 #dispatchSerial{color:#514e43}
-#dismissDispatch{margin-left:auto;min-height:32px;padding:3px 8px;background:transparent;color:var(--print);border:1px solid #847f6a;border-radius:2px;font:650 13px/1 system-ui}
+.dispatchFiled{margin-left:auto;color:#504b41;font:650 12px/1.2 system-ui}
+.logLetter{color:#263b3c}.logLetter>*{display:block}.logLetter small{color:#544b39}.logLetter strong{font:700 17px/1.3 Georgia,serif}.logLetter span{font-size:14px}
+#lastLetter:not([hidden]){margin-top:7px;padding:7px 10px;border-left:3px solid #956c40;background:#f4e8cc}
 #dispatchCard .dispatchLetter{display:flow-root;padding:12px 0 11px}
 .dispatchPostage{float:right;width:76px;margin:0 1px 0 14px;color:var(--post);transform:rotate(3deg)}
 #dispatchAddress{color:var(--post);margin:0 0 4px;letter-spacing:.035em;text-transform:uppercase}
@@ -475,13 +478,96 @@ body[data-plot] :is(#turn,#actions,#stage){display:none!important}
 #stage[data-kind=dispatch]:has(#dispatchCard) #stageDetail{display:none}
 .strip #dispatchCard{margin:0 5px 6px;padding:4px 11px 7px;border-top-width:4px}
 .strip #dispatchCard .dispatchMast{gap:7px;padding-bottom:3px}.strip .dispatchMast b{font-size:11px;letter-spacing:.08em}
-.strip #dispatchSerial{font-size:11px}.strip #dismissDispatch{min-height:29px;font-size:12px}
+.strip #dispatchSerial,.strip .dispatchFiled{font-size:11px}
 .strip #dispatchCard .dispatchLetter{padding:7px 0}
 .strip .dispatchPostage{width:50px;margin-left:8px}
 .strip #dispatchAddress{font-size:11px;margin-bottom:2px}
 .strip #dispatchTitle{font-size:24px}.strip #dispatchOrder{font-size:15px;margin-top:3px}
 .strip .dispatchReceipt{gap:2px 9px;padding-top:5px}.strip #dispatchResult{font-size:16px}.strip #dispatchAccount{font-size:13px}
 @media(max-width:360px){.strip .dispatchPostage{width:38px}.strip #dispatchSerial{font-size:10px}}
+
+/* Keep the real board and fleet station in view on both sides of the contract. */
+body[data-trade] :is(#turn,#stage,.instruments,.ocean>.chart),
+body[data-trade=draft] #actions,body[data-trade] .boardfoot span:not(#tradeLegend){display:none!important}
+body[data-trade] .boardfoot{justify-content:center;text-align:center}
+body[data-trade] .desk{--trade-paper:#fff6dd;--trade-ink:#223634;--give:#77420c;--get:#14584d}
+#tradeDesk[hidden],#tradeGuide[hidden]{display:none}
+#tradeDesk{color:var(--trade-ink);text-align:left}
+.tradePaper,#tradeGuide{background:#fff6dd;border:1px solid #aa9971;border-top:4px double #88734e;box-shadow:0 2px 6px #101e2233}
+.tradePaper{padding:14px 15px}
+#tradeDesk h2,#tradeGuide>strong{font:700 clamp(23px,2.1vw,32px)/1.08 Georgia,serif;letter-spacing:-.02em;color:#233c39;margin:2px 0 9px}
+.tradeKicker,#tradeGuide small,.tradeLabel,.tradeLeg h3,.guideLegs b{display:block;font:800 11px/1.3 system-ui;letter-spacing:.085em;text-transform:uppercase}
+.tradeKicker,#tradeGuide small{color:#655431}
+.tradePartners{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:8px 0}
+.tradePartners span{font-size:13px;font-weight:650;margin-right:3px}
+.tradePartners button,.tradeFoot button{min-height:36px;padding:4px 10px;border:1px solid #778980;border-radius:3px;background:#fffdf1;color:#233b38;font:700 14px/1.1 system-ui}
+.tradePartners [aria-pressed=true]{background:#244a45;border-color:#264e48;color:white}
+.tradeLegs,.tradeBalances,.guideLegs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.tradeLeg{min-width:0;padding:8px 9px;background:#fae3c2;border-top:4px solid var(--give)}
+.tradeLeg.in{background:#deeee3;border-color:var(--get)}
+.tradeLeg h3,.guideLegs b{margin:0 0 4px;color:var(--give)}
+.tradeLeg.in h3,.guideLegs div+div b{color:var(--get)}
+.tradeLeg strong{display:block;font:700 19px/1.15 Georgia,serif}
+.tradeLeg small{display:block;font:550 12px/1.2 system-ui;letter-spacing:normal;color:#394942;margin-top:3px}
+.foldTradeHint{display:none}
+.tradeCash{display:flex;align-items:center;justify-content:space-between;gap:3px;margin-top:8px;font:650 12px/1.1 system-ui}
+.tradeCash input{min-width:0;width:54%;height:34px;padding:3px;border:1px solid #756d53;border-radius:2px;background:#fffef6;color:#182a2a;font:700 16px/1.15 system-ui}
+.tradeLabel{margin:13px 0 4px;color:#4e5444}
+.tradeBalances div{display:flex;align-items:baseline;justify-content:space-between;gap:2px;border-block:1px solid #9fa58c;padding:5px 1px}
+.tradeBalances span{font-size:13px}.tradeBalances b{font:750 20px/1.15 system-ui;font-variant-numeric:tabular-nums}
+.tradeDistrict{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 6px;padding:2px 0 5px}
+.tradeDistrict strong{grid-column:span 2;font:700 17px/1.1 Georgia,serif}
+.tradeDistrict span{font:500 13px/1.3 system-ui}.tradeDistrict span b{font-weight:750}
+#tradeDesk p,#tradeGuide p{margin:7px 0 0;font:500 13px/1.35 system-ui;color:#394942}
+#tradeRefits:not(:empty){border-left:3px solid #aa681c;padding-left:7px}
+#tradeDesk #tradeError{color:#553f19}#tradeDesk p:empty{display:none}
+.tradeFoot{display:flex;gap:7px;padding-top:10px}
+.tradeFoot button{min-height:44px}.tradeFoot .primary{background:#ffcc61;color:#242b28;border-color:#9c803a}.tradeFoot .primary:disabled{opacity:.65}
+#tradeGuide{position:relative;max-width:min(88%,510px);text-align:left;padding:17px 22px;color:#223634}
+#tradeGuide>strong{display:block;margin:4px 0 12px}
+.guideLegs div{min-width:0;padding:8px 12px;border-left:3px solid #935815;background:#f6e4c6;font:700 18px/1.2 Georgia,serif}
+.guideLegs div+div{background:#deeee3;border-color:#286352}.guideLegs b{color:#77420c}.guideLegs div+div b{color:#14584d}
+.tradeSeals{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.tradeSeals span{font:700 12px/1.3 system-ui;background:#f4e3a8;color:#554016;padding:3px 7px;border:1px solid #aa914f}
+#tradeGuide .tradeKeys{font-size:12px;color:#4b5c55}
+body[data-trade] .board .tile{outline:0}
+.board .tile[data-trade-tile]:disabled{opacity:1;filter:none;cursor:default}
+.board .tile[data-trade-tile=off],.board .tile[data-trade-tile=locked]{background:#dce1d7;color:#52605b;box-shadow:none}
+.board .tile[data-trade-tile=locked] .tileValue{font-weight:800;color:#583b24}
+.board .tile[data-trade-tile=option],.board .tile[data-trade-tile=rival]{background:#fffcf0;box-shadow:inset 0 0 0 2px #727d66}
+body[data-trade] .board .tile[data-trade-tile=out]{background:#ffdfaa;box-shadow:inset 0 0 0 3px #935815}
+body[data-trade] .board .tile[data-trade-tile=in]{background:#d7f0e2;box-shadow:inset 0 0 0 3px #236352}
+.board .tile[data-trade-tile]:is([data-trade-tile=out],[data-trade-tile=in]) .tileValue{font-weight:850;color:#21392f}
+body[data-trade] #board .tile .tileValue:before{content:none}
+body[data-trade] .board .tile:focus-visible{outline:3px dashed #00588a;outline-offset:-5px}
+body[data-trade] .desk{overflow:auto}
+@media(min-width:801px){
+  body[data-trade] .layout .desk{grid-area:1/2/3/3;border-top-color:#ceb57e}
+}
+@media(max-width:1199px),(max-height:719px){
+  /* The folded board groups the same tile buttons without empty rows. */
+  #tradeDesk .foldTradeHint{display:block;margin:4px 0 7px}
+  body[data-trade] .layout .boardbox .board.route{grid-template:auto-flow minmax(68px,auto) / repeat(auto-fit,minmax(min(100%,96px),1fr))!important;align-content:start;flex:0 0 auto}
+  body[data-trade] .board.route .tile{grid-area:auto!important;min-height:68px}
+  body[data-trade] .board.route:has(.hasOwner) .tile[data-trade-tile=off]:not([data-trade-district]),
+  body[data-trade=response] .board.route .tile[data-trade-tile=locked]{display:none}
+  body[data-trade=response] .board.route .tile[data-trade-tile=out]{order:-2}
+  body[data-trade=response] .board.route .tile[data-trade-tile=in]{order:-1}
+}
+@media(max-width:800px){
+  body[data-trade] .layout{grid-template-rows:0 minmax(0,1fr) auto}
+  body[data-trade] .layout .desk{display:flex;flex-direction:column;max-height:62dvh;overflow:hidden;padding:7px 10px max(8px,env(safe-area-inset-bottom))}
+  body[data-trade] .panelhead{flex:none}
+  #tradeDesk{display:flex;flex-direction:column;min-height:0}
+  .tradePaper{overflow:auto;overscroll-behavior:contain;padding:7px 9px}
+  #tradeDesk h2{font-size:21px;margin:1px 0 5px}
+  .tradePartners{margin:4px 0}.tradePartners button{min-height:34px}
+  .tradeLeg{padding:5px 7px}.tradeLeg strong{font-size:17px}.tradeLabel{margin:7px 0 3px}
+  .tradeCash{margin-top:4px}.tradeBalances div{padding:2px}.tradeBalances b{font-size:17px}
+  .tradeFoot,body[data-trade=response] #actions{flex:none;padding-top:6px;margin:0}
+  body[data-trade] .boardhead{padding-top:6px}
+  body[data-trade] .boardfoot{color:#344841;font-size:12px}
+}
 </style></head>
 <body>
 <header><div class="mast"><span class="seal" aria-hidden="true">⚓</span><strong>Harbor Deeds</strong></div><div class="headright"><span class="live">Local table</span><button id="soundBtn" aria-label="Sound effects" aria-pressed="false">♪ Off</button><button id="prefsBtn" aria-label="Display settings" title="Display settings">⚙<span> Display</span></button><button id="rulesBtn" aria-label="Rulebook">?</button><button id="setupBtn">New table</button></div></header>
@@ -506,18 +592,18 @@ body[data-plot] :is(#turn,#actions,#stage){display:none!important}
 <path d="m161 72 44 1-9 7h-26zm20-3V27l-19 42zm3-1 16 2-16-30zm-3-39 9 2-9 3M5 89q14-3 28 0t28 0m18 4q16-3 29 0t29 0m2-7q13-3 25 0t25 0m16-3q13-3 25 0t24 0M37 33q4-3 8 1 3-5 8-4m136-14q4-3 7 1 3-5 8-4m8 25q4-3 7 1 3-5 8-4"/>
 </g></svg>
 <h2 id="boardName">Inner Harbor</h2><div id="chartStatus"></div></div>
-<div id="plotGuide" hidden></div>
+<div id="plotGuide" hidden></div><div id="tradeGuide" hidden></div>
 <section id="stage" aria-label="Table action"><div class="stageFace">
 <div class="stageCopy" role="status" aria-atomic="true"><div id="stageTag"></div><div id="stageTitle"></div><div id="stageDetail"></div></div>
 <div id="stageProp" aria-hidden="true"></div></div></section>
 <div id="mobileLadder"></div></div><div id="wake" aria-hidden="true"></div></div>
-<div class="boardfoot"><span>↻ &nbsp; Clockwise</span><span>DEED # = owner &nbsp; · &nbsp; Numbered ship = current position</span></div></section>
-<aside><section class="panel desk" aria-label="Current decision"><div class="panelhead"><small id="phaseLabel">TURN DESK</small><span id="controlType"></span></div><div id="turn" aria-live="polite"></div><div id="actions"></div><section id="propertyDesk" aria-label="Manage board spaces" hidden></section></section></aside>
+<div class="boardfoot"><span>↻ &nbsp; Clockwise</span><span>DEED # = owner &nbsp; · &nbsp; Numbered ship = current position</span><span id="tradeLegend" hidden></span></div></section>
+<aside><section class="panel desk" aria-label="Current decision"><div class="panelhead"><small id="phaseLabel">TURN DESK</small><span id="controlType"></span></div><div id="turn" aria-live="polite"></div><section id="tradeDesk" aria-label="Trade terms" hidden></section><div id="actions"></div><section id="propertyDesk" aria-label="Manage board spaces" hidden></section></section></aside>
 <section class="instruments" aria-label="Table inspector">
 <nav class="switcher" aria-label="Game views"><button data-view="board" aria-keyshortcuts="B" title="Inspect a space (B)" aria-pressed="true">Board</button><button data-view="players" aria-keyshortcuts="F" title="Player holdings (F)" aria-pressed="false">Players</button><button data-view="activity" aria-keyshortcuts="L" title="Ship’s log (L)" aria-pressed="false">Activity</button></nav>
 <section id="inspector" aria-label="Selected board space"></section>
 <section class="panel workspace" id="playersView" hidden><h2>Players</h2><p>District holdings · select a deed to inspect</p><div id="register"></div></section>
-<section class="panel workspace" id="activityView" hidden><h2>Ship’s log</h2><p>Latest entry first</p><ol id="log" aria-live="off"></ol></section></section>
+<section class="panel workspace" id="activityView" hidden><h2>Ship’s log</h2><article id="lastLetter" class="logLetter" aria-label="Latest dispatch" hidden></article><p>Latest entry first</p><ol id="log" aria-live="off"></ol></section></section>
 </div></main>
 <dialog id="modal"><div class="sheetbar"><span>Harbor Deeds</span><button aria-label="Close dialog" id="close">×</button></div><div id="sheetLedger" aria-label="All player balances"></div><div id="content"></div></dialog>
 <script id="legacyMaps" type="application/json">{"compact":{"dice":{"count":2,"sides":6},"cash":750,"salary":120,"auction_increment":10,"rounds":18,"notices":[90,-60,120,-80,50],"development":{"policy":"even","set_rent_pct":200,"levels":[{"cost_pct":10,"rent_pct":300},{"cost_pct":15,"rent_pct":380},{"cost_pct":20,"rent_pct":440}]},"tiles":[{"name":"Port Office","kind":"start","mark":"⚓"},{"name":"Rope Walk","kind":"deed","group":"Old Town","price":80,"rent":20},{"name":"Net Loft","kind":"deed","group":"Old Town","price":100,"rent":25},{"name":"Port Notice","kind":"notice","mark":"✉"},{"name":"Salt Row","kind":"deed","group":"Old Town","price":120,"rent":30},{"name":"Beacon Hill","kind":"rest","mark":"☼"},{"name":"Copper Yard","kind":"deed","group":"Foundry","price":140,"rent":35},{"name":"Iron Works","kind":"deed","group":"Foundry","price":160,"rent":40},{"name":"Harbor Dues","kind":"fee","mark":"§","price":80},{"name":"Kiln Street","kind":"deed","group":"Foundry","price":180,"rent":45},{"name":"North Point","kind":"rest","mark":"✥"},{"name":"Market Hall","kind":"deed","group":"Market","price":200,"rent":50},{"name":"Silk Arcade","kind":"deed","group":"Market","price":220,"rent":55},{"name":"Port Notice","kind":"notice","mark":"✉"},{"name":"Pearl Court","kind":"deed","group":"Market","price":240,"rent":60},{"name":"Ferry Dock","kind":"rest","mark":"≈"},{"name":"East Basin","kind":"deed","group":"Marina","price":260,"rent":65},{"name":"Sail Quay","kind":"deed","group":"Marina","price":280,"rent":70},{"name":"Dock Levy","kind":"fee","mark":"§","price":100},{"name":"Crown Pier","kind":"deed","group":"Marina","price":300,"rent":75}]},"outer":{"dice":{"count":2,"sides":6},"cash":750,"salary":168,"auction_increment":10,"rounds":18,"notices":[90,-60,120,-80,50],"development":{"policy":"even","set_rent_pct":200,"levels":[{"cost_pct":7,"rent_pct":300},{"cost_pct":11,"rent_pct":380},{"cost_pct":14,"rent_pct":440}]},"tiles":[{"name":"Port Office","kind":"start","mark":"⚓"},{"name":"Rope Walk","kind":"deed","group":"Old Town","price":80,"rent":20},{"name":"Net Loft","kind":"deed","group":"Old Town","price":100,"rent":25},{"name":"Port Notice","kind":"notice","mark":"✉"},{"name":"Salt Row","kind":"deed","group":"Old Town","price":120,"rent":30},{"name":"Slipway","kind":"deed","group":"Shipyards","price":150,"rent":38},{"name":"Dry Dock","kind":"deed","group":"Shipyards","price":170,"rent":43},{"name":"Beacon Hill","kind":"rest","mark":"☼"},{"name":"Copper Yard","kind":"deed","group":"Foundry","price":140,"rent":35},{"name":"Iron Works","kind":"deed","group":"Foundry","price":160,"rent":40},{"name":"Harbor Dues","kind":"fee","mark":"§","price":80},{"name":"Kiln Street","kind":"deed","group":"Foundry","price":180,"rent":45},{"name":"Spar Yard","kind":"deed","group":"Shipyards","price":190,"rent":48},{"name":"Pilot Station","kind":"rest","mark":"✥"},{"name":"North Point","kind":"rest","mark":"✥"},{"name":"Market Hall","kind":"deed","group":"Market","price":200,"rent":50},{"name":"Silk Arcade","kind":"deed","group":"Market","price":220,"rent":55},{"name":"Port Notice","kind":"notice","mark":"✉"},{"name":"Pearl Court","kind":"deed","group":"Market","price":240,"rent":60},{"name":"Fish Hall","kind":"deed","group":"Exchange","price":190,"rent":48},{"name":"Tea Wharf","kind":"deed","group":"Exchange","price":210,"rent":53},{"name":"Ferry Dock","kind":"rest","mark":"≈"},{"name":"East Basin","kind":"deed","group":"Marina","price":260,"rent":65},{"name":"Sail Quay","kind":"deed","group":"Marina","price":280,"rent":70},{"name":"Dock Levy","kind":"fee","mark":"§","price":100},{"name":"Crown Pier","kind":"deed","group":"Marina","price":300,"rent":75},{"name":"Grain Quay","kind":"deed","group":"Exchange","price":230,"rent":58},{"name":"Port Notice","kind":"notice","mark":"✉"}]},"grand":{"dice":{"count":2,"sides":6},"cash":850,"salary":240,"auction_increment":10,"rounds":26,"notices":[90,-60,120,-80,50],"development":{"policy":"even","set_rent_pct":200,"levels":[{"cost_pct":7,"rent_pct":300},{"cost_pct":11,"rent_pct":380},{"cost_pct":14,"rent_pct":440}]},"tiles":[{"name":"Port Office","kind":"start","mark":"⚓"},{"name":"Rope Walk","kind":"deed","group":"Old Town","price":80,"rent":20},{"name":"Bottle Post","kind":"notice","mark":"✉"},{"name":"Net Loft","kind":"deed","group":"Old Town","price":100,"rent":25},{"name":"Salt Row","kind":"deed","group":"Old Town","price":120,"rent":30},{"name":"Lifeboat Guild","kind":"guild","mark":"✚","cash_offer":25,"cover_offer":75},{"name":"Copper Yard","kind":"deed","group":"Foundry","price":140,"rent":35},{"name":"Signal Tower","kind":"notice","mark":"✉"},{"name":"Iron Works","kind":"deed","group":"Foundry","price":160,"rent":40},{"name":"Kiln Street","kind":"deed","group":"Foundry","price":180,"rent":45},{"name":"Auction House","kind":"exchange","mark":"⚖"},{"name":"Slipway","kind":"deed","group":"Shipyards","price":150,"rent":38},{"name":"Dry Dock","kind":"deed","group":"Shipyards","price":170,"rent":43},{"name":"Hull Survey","kind":"fee","price":65,"mark":"§"},{"name":"Spar Yard","kind":"deed","group":"Shipyards","price":190,"rent":48},{"name":"Cable Office","kind":"notice","mark":"✉"},{"name":"Kelp Farm","kind":"deed","group":"Tidelands","price":160,"rent":40},{"name":"Marsh Cut","kind":"deed","group":"Tidelands","price":180,"rent":45},{"name":"Pilots Guild","kind":"guild","mark":"✚","cash_offer":35,"cover_offer":100},{"name":"Reed Bank","kind":"deed","group":"Tidelands","price":200,"rent":50},{"name":"Beacon Post","kind":"notice","mark":"✉"},{"name":"Market Hall","kind":"deed","group":"Market","price":200,"rent":50},{"name":"Silk Arcade","kind":"deed","group":"Market","price":220,"rent":55},{"name":"Canal Toll","kind":"fee","price":80,"mark":"§"},{"name":"Pearl Court","kind":"deed","group":"Market","price":240,"rent":60},{"name":"Bond Exchange","kind":"exchange","mark":"⚖"},{"name":"Fish Hall","kind":"deed","group":"Exchange","price":190,"rent":48},{"name":"Tea Wharf","kind":"deed","group":"Exchange","price":210,"rent":53},{"name":"Packet Boat","kind":"notice","mark":"✉"},{"name":"Grain Quay","kind":"deed","group":"Exchange","price":230,"rent":58},{"name":"Admiralty Guild","kind":"guild","mark":"✚","cash_offer":40,"cover_offer":120},{"name":"East Basin","kind":"deed","group":"Marina","price":260,"rent":65},{"name":"Sail Quay","kind":"deed","group":"Marina","price":280,"rent":70},{"name":"Dock Levy","kind":"fee","price":100,"mark":"§"},{"name":"Crown Pier","kind":"deed","group":"Marina","price":300,"rent":75},{"name":"Radio Room","kind":"notice","mark":"✉"},{"name":"Glass Strand","kind":"deed","group":"Headlands","price":280,"rent":70},{"name":"Cliff House","kind":"deed","group":"Headlands","price":300,"rent":75},{"name":"Harbor Wire","kind":"notice","mark":"✉"},{"name":"Cape Royal","kind":"deed","group":"Headlands","price":320,"rent":80}],"cards":[{"title":"Mail boat arrives","kind":"cash","amount":70},{"title":"Salvage bounty","kind":"cash","amount":100},{"title":"Fogbound cargo","kind":"cash","amount":-55},{"title":"Broken mooring","kind":"cash","amount":-35},{"title":"Warehouse dividend","kind":"deeds","amount":12},{"title":"Fire inspection","kind":"levels","amount":-15},{"title":"Lantern festival","kind":"levels","amount":20},{"title":"Mutual aid charter","kind":"cover","amount":65}]}}
@@ -579,8 +665,8 @@ body[data-plot] :is(#turn,#actions,#stage){display:none!important}
     "bankrupt":["Declare bankruptcy","Confirm before returning all remaining deeds; remove the debtor’s ship from play.","down"],
     "commission":["Commission works","Stamp the property that receives the project; the ship stays at the works.","build"],
     "skip":["Decline works","Keep the cash instead of commissioning a project.","down"],
-    "propose":["Send proposal","Hand off to recipient","paper"],
-    "accept":["Accept contract","Confirm the exchange","coin"],
+    "propose":["Send proposal","Show the same marked properties and terms from the recipient's side. No assets move yet.","paper"],
+    "accept":["Accept contract","Transfer both legs together; mark any completed districts.","coin"],
     "reject":["Decline contract","Return to proposer","down"],
     "grant":["Take guild grant","Confirm cash payment","coin"],
     "insure":["Choose rent cover","Confirm cover","bell"],
@@ -594,11 +680,11 @@ body[data-plot] :is(#turn,#actions,#stage){display:none!important}
     ["Online setup","Host, join by code, copy invite, assign seats and launch. Guests cannot change the rules."],
     ["Network recovery","Pause on disconnect. Rehost, rejoin, cancel or forget; historical commands must remain silent."],
     ["Bidding","Check presets, exact entry, insufficient cash, timer pause/expiry and final sale."],
-    ["Rent / fee / card","A live dispatch pins the printed instruction and actual effect through the handoff. Distinguish the card from crossing salary, payments to creditors, and the total turn movement. Muted or reduced motion must not hide information."],
+    ["Rent / fee / card","A live dispatch shows the instruction and actual effect through the handoff, then clears itself. Activity keeps the exact receipt, including after rejoin. No acknowledgement, sound or animation is needed to play or understand a draw."],
     ["Victory and debt","Choose net worth at the round limit or last solvent merchant. During an unresolved bill, preview deed or level sales, or explicitly declare bankruptcy even when sale proceeds could cover the bill."],
     ["Guild / exchange / works","Distinguish the visiting ship from the deed under auction or receiving a project; make both sides of each offer explicit."],
     ["Local presentation","Open Display settings, choose the visual pace on this device only. Keep the operating system’s reduced-motion preference and bid clock independent of presentation."],
-    ["Trading","Review both legs. Cancel without a success cue."],
+    ["Trading","Draft on the actual board, not in a separate form. Distinguish your deed, the requested deed, other partners and nontradable spaces without color. Preview both cash balances and both districts before sending or accepting. Declining or cancelling must not transfer assets. See the board-target-preview scenarios."],
     ["Manage deeds / public works","Select the actual deed, not a menu entry. Compare Improve and Sell without leaving the map. Show all engine-quoted candidates, the selected deed, cash afterward and the effect of confirming. Selection, mode switching and cancellation must never issue a game command."],
     ["Audio / motion","Local foley starts after user interaction unless muted. Reduced motion keeps the settled dice, outcome and balance changes without a moving pawn, stamp or ripple. Review with review/motion.py."],
     ["Results / leave","Show winners and scores. Rematch locally or explicitly end the network table."]
@@ -870,6 +956,8 @@ function placeStage(){
 }
 const animations=new Set(), effectTimers=new Set();
 let lastDeltas=[], readThrough=0,voyager=null;
+const dispatchArchive=new Map();
+let dispatchTimeout;
 function maskVoyager(){
   if(!voyager)return;
   const berth=$(`tile-${voyager.tile}`);
@@ -889,7 +977,7 @@ function clearMotion(){
   $('wake').replaceChildren();releaseBerth();stopFoley();
 }
 function resetStage(){
-  clearMotion();lastDeltas=[];$('dispatchCard')?.remove();delete $('stage').dataset.live;delete $('stage').dataset.set;
+  clearMotion();clearTimeout(dispatchTimeout);dispatchArchive.clear();lastDeltas=[];$('dispatchCard')?.remove();delete $('stage').dataset.live;delete $('stage').dataset.set;
 }
 function syncPrefs(){
   const effective=effectivePace();
@@ -959,7 +1047,7 @@ function pinDispatch(receipt){
     card=document.createElement('article');card.id='dispatchCard';
     card.setAttribute('aria-labelledby','dispatchTitle');
     card.innerHTML=`<div class="dispatchMast"><b>Harbor Dispatch</b><span id="dispatchSerial"></span>
-      <button type="button" id="dismissDispatch" aria-label="Dismiss dispatch on this device">Dismiss</button></div>
+      <span class="dispatchFiled">Filed in Activity</span></div>
       <div class="dispatchLetter"><svg class="dispatchPostage" viewBox="0 0 84 68" aria-hidden="true" fill="none" stroke="currentColor">
         <path stroke-width="2" d="M3 3h78v62H3z"/><path d="M6 6h72v56H6zM9 49h66M9 52h66"/>
         <circle cx="54" cy="21" r="7"/><path d="m51 11-2-4m8 4 2-4m4 8 6-4m-5 10 8-1m-15 9 2 4"/>
@@ -968,17 +1056,33 @@ function pinDispatch(receipt){
       </svg><p id="dispatchAddress"></p><h3 id="dispatchTitle"></h3><p id="dispatchOrder"></p></div>
       <div class="dispatchReceipt"><strong id="dispatchResult"></strong><span id="dispatchAccount"></span></div>`;
     $('stage').append(card);
-    $('dismissDispatch').onclick=()=>{
-      const focused=document.activeElement===$('dismissDispatch');
-      card.remove();
-      if(focused)document.querySelector('#actions button:not(:disabled), .switcher [aria-pressed=true]')?.focus({preventScroll:true});
-    };
   }
   card.dataset.ink=receipt.kind;
   for(const key of ['serial','address','title','order','result','account']){
     $(`dispatch${key[0].toUpperCase()+key.slice(1)}`).textContent=receipt[key];
   }
+  // Independent of the next command's motion cleanup and of the real bid clock.
+  clearTimeout(dispatchTimeout);
+  dispatchTimeout=setTimeout(()=>card.remove(),8500);
   return card;
+}
+function recordDispatch(move,before,after){
+  if(move.action!=='roll'||after.last_card==null)return;
+  const receipt=dispatchReceipt(move.actor,before,after);
+  const index=after.events.findIndex((e,i)=>i>=before.events.length&&e.startsWith(receipt.title+':'));
+  if(index!==-1)dispatchArchive.set(index,receipt);
+}
+function renderLog(events){
+  const latest=[...dispatchArchive.keys()].at(-1);
+  const receipt=r=>`<small>${r.serial} · ${r.address}</small><strong>${r.title} · ${r.result}</strong><span>${r.order} ${r.account}</span>`;
+  const featured=$('lastLetter');
+  featured.hidden=latest===undefined;
+  featured.innerHTML=featured.hidden?'':receipt(dispatchArchive.get(latest));
+  $('log').innerHTML=events.map((line,i)=>{
+    const r=dispatchArchive.get(i);
+    if(r&&i!==latest)return `<li class="logLetter">${receipt(r)}</li>`;
+    return `<li>${r?`${r.address} · ${r.title}: ${r.result}`:line.replace(/\bdeed (\d+)\b/gi,(word,k)=>rules.tiles[+k]?.name??word)}</li>`;
+  }).reverse().join('');
 }
 function ledger(s){
   const actor=actingSeat(s);
@@ -1519,7 +1623,6 @@ function acceptMove(r,device,move){
 function networkStep(r){
   r.step?.abort();r.step=new AbortController();
   const {signal}=r.step,seq=r.seq,actor=actingSeat(state),owner=r.owners[actor];
-  if($('contract')&&$('modal').open)$('modal').close();
   render();r.deadline=0;
   if(state.phase==='over')return;
   const deviceName=n=>n<0?'Bot':n===r.device?'This device':n===0?'Host':`Device ${n}`;
@@ -1582,7 +1685,7 @@ function enablePlots(s,send,signal){
   });
   const access={s,send,cells};
   plotAccess=access;
-  $('turn').insertAdjacentHTML('beforeend','<p class="plotHint">◇ Select a marked deed on the board to preview your options.</p>');
+  $('turn').insertAdjacentHTML('beforeend','<p class="plotHint">◇ Select a marked deed for a quote.</p>');
   signal.addEventListener('abort',()=>{if(plotAccess===access)releasePlots()},{once:true});
 }
 function releasePlots(){
@@ -1727,6 +1830,209 @@ function setPlot(i){
   }
 }
 
+// Drafts are local quotes. Pending terms, including on observing devices, come only from Rust.
+let tradeMap=null;
+const tradable=(s,i)=>s.owners[i]!=null&&!s.players[s.owners[i]].out&&!locked(s,rules,i);
+const tradePeers=s=>s.players.flatMap((p,i)=>!p.out&&i!==s.turn?[i]:[]);
+const tradeDeeds=(s,who)=>deeds(s,who).filter(i=>tradable(s,i));
+const blankTrade=(from,to)=>({from,to,give_deed:null,take_deed:null,give_cash:0,take_cash:0});
+function tradeDistricts(s,d){
+  const groups=new Set([d.give_deed,d.take_deed].filter(k=>k!==null).map(k=>rules.tiles[k].group));
+  return Array.from(groups,group=>{
+    const tiles=rules.tiles.flatMap((t,k)=>t.kind==='deed'&&t.group===group?[k]:[]);
+    const seats=[d.from,d.to].map(who=>{
+      const before=tiles.filter(k=>s.owners[k]===who).length;
+      const after=tiles.filter(k=>(k===d.give_deed?d.to:k===d.take_deed?d.from:s.owners[k])===who).length;
+      return {who,before,after};
+    });
+    return {group,total:tiles.length,seats};
+  });
+}
+function suggestTrade(s,peers){
+  const own=tradeDeeds(s,s.turn);
+  let best=blankTrade(s.turn,peers[0]),bestScore=-Infinity,bestMutual=false;
+  for(const to of peers){
+    const other=tradeDeeds(s,to);
+    for(const give of [null,...own])for(const take of [null,...other]){
+      if(give===null&&take===null)continue;
+      const d={...blankTrade(s.turn,to),give_deed:give,take_deed:take};
+      const diff=(rules.tiles[take]?.price??0)-(rules.tiles[give]?.price??0);
+      d.give_cash=Math.min(Math.max(0,diff),s.players[d.from].cash,2147483647-s.players[to].cash);
+      d.take_cash=Math.min(Math.max(0,-diff),s.players[to].cash,2147483647-s.players[d.from].cash);
+      if((give===null&&!d.give_cash)||(take===null&&!d.take_cash))continue;
+      // Price at list (or balance a swap). Prefer finishing sets, then adding to
+      // partial sets. Don't dismantle a complete district for ordinary progress.
+      let completed=0,score=(give===null?2:take===null?1:0)-Math.abs(diff-d.give_cash+d.take_cash)/100;
+      for(const row of tradeDistricts(s,d))for(const {who,before,after} of row.seats){
+        if(after>before)score+=(after===row.total?80:before?12*after/row.total:0)*(who===d.from?1.25:1);
+        if(after>before&&after===row.total)completed++;
+        if(after<before&&before===row.total)score-=50;
+      }
+      const mutual=completed===2;
+      if((mutual&&!bestMutual)||(mutual===bestMutual&&score>bestScore)){
+        bestMutual=mutual;bestScore=score;best=d;
+      }
+    }
+  }
+  return best;
+}
+function tradeProblem(s,d){
+  const own=tradeDeeds(s,d.from),other=tradeDeeds(s,d.to);
+  if(!own.length&&!other.length)return 'No tradable deeds between these seats. Unowned deeds and developed districts cannot be traded.';
+  for(const [who,tiles] of [[d.from,own],[d.to,other]]){
+    if(!tiles.length&&!s.players[who].cash)return `${seat(who)} has no tradable deed or cash to offer.`;
+  }
+  if(d.give_deed===null&&d.take_deed===null)return 'Select at least one deed on the board.';
+  for(const [who,n] of [[d.from,d.give_cash],[d.to,d.take_cash]]){
+    if(!Number.isSafeInteger(n)||n<0)return 'Enter a whole, non-negative cash amount.';
+    if(n>s.players[who].cash)return `${seat(who)} has only ${money(s.players[who].cash)}.`;
+  }
+  if(d.give_cash&&d.take_cash)return 'Put cash on only one side.';
+  if(s.players[d.from].cash-d.give_cash+d.take_cash>2147483647||s.players[d.to].cash-d.take_cash+d.give_cash>2147483647)return 'The receiving balance would exceed the table limit.';
+  if((d.give_deed===null&&!d.give_cash)||(d.take_deed===null&&!d.take_cash))return 'Each side must contribute a deed or cash.';
+  return '';
+}
+function closeTrade(focus=false){
+  if(!tradeMap)return;
+  const {cells,scroll,phase}=tradeMap;
+  tradeMap=null;
+  delete document.body.dataset.trade;
+  for(const {b,label,value} of cells){
+    delete b.dataset.tradeTile;delete b.dataset.tradeDistrict;
+    b.disabled=false;b.removeAttribute('aria-pressed');b.removeAttribute('title');
+    b.setAttribute('aria-label',label);b.querySelector('.tileValue').textContent=value;
+  }
+  for(const id of ['tradeDesk','tradeGuide','tradeLegend']){$(id).hidden=true;$(id).replaceChildren()}
+  $('phaseLabel').textContent=phase;
+  $('boardView').scrollTop=scroll;
+  if(focus)$('draftTrade')?.focus({preventScroll:true});
+}
+function openTrade(s,send=null){
+  closeTrade();closePlots();showView('board');
+  const draft=Boolean(send),peers=tradePeers(s);
+  const deal=draft?suggestTrade(s,peers):{...s.trade};
+  const cells=rules.tiles.map((_,i)=>{
+    const b=$(`tile-${i}`);
+    return {b,label:b.getAttribute('aria-label'),value:b.querySelector('.tileValue').textContent};
+  });
+  const me=draft||(!room?.started?seats[deal.to]==='human':room.owners[deal.to]===room.device);
+  tradeMap={s,deal,draft,cells,edited:false,scroll:$('boardView').scrollTop,phase:$('phaseLabel').textContent};
+  document.body.dataset.trade=draft?'draft':'response';
+  $('phaseLabel').textContent=draft?'TRADE DESK':'TRADE RESPONSE';
+  const who=draft?deal.from:deal.to;
+  const card=(side,key,title)=>`<section class="tradeLeg ${side}"><h3>${title}</h3>
+    <strong id="${side}Asset"></strong><small id="${side}Owner"></small>
+    ${draft?`<label class="tradeCash">Cash ($)<input type="number" step="1" min="0" inputmode="numeric" id="${key}Cash" aria-label="${title}: cash in dollars"></label>`:''}</section>`;
+  const desk=$('tradeDesk');desk.hidden=false;
+  desk.innerHTML=`<div class="tradePaper"><small class="tradeKicker" id="tradeStatus"></small><h2 tabindex="-1" id="tradeTitle">${draft?'Draft a trade':`Offer from ${seat(deal.from)}`}</h2>
+    ${draft?`<div class="tradePartners" role="group" aria-label="Trade with"><span>Trade with</span>${peers.map(i=>`<button data-partner="${i}">${seat(i)}</button>`).join('')}</div><p class="foldTradeHint">Select your deed to give or a rival’s to get. Select again to remove.</p>`:''}
+    <div class="tradeLegs">${card('out','give',me?'You give':`${seat(who)} gives`)}${card('in','take',me?'You get':`${seat(who)} gets`)}</div>
+    <h3 class="tradeLabel">Cash after acceptance</h3><div id="tradeBalances" class="tradeBalances"></div>
+    <h3 class="tradeLabel">Districts after acceptance</h3><div id="tradeImpact"></div>
+    <p id="tradeRefits"></p><p id="tradeError" role="status"></p></div>
+    ${draft?'<div class="tradeFoot"><button id="tradeSend" class="primary">Send proposal</button><button id="tradeCancel">Cancel</button></div>':''}`;
+  if(draft){
+    for(const b of desk.querySelectorAll('[data-partner]'))b.onclick=()=>{
+      const to=Number(b.dataset.partner);if(to===tradeMap.deal.to)return;
+      tradeMap.deal=suggestTrade(s,[to]);tradeMap.edited=false;updateTrade(true);
+    };
+    for(const key of ['give','take'])$(`${key}Cash`).oninput=e=>{
+      const input=e.target;
+      tradeMap.deal[`${key}_cash`]=input.validity.badInput?NaN:input.value===''?0:input.valueAsNumber;
+      tradeMap.edited=true;updateTrade(false);
+    };
+    $('tradeCancel').onclick=()=>closeTrade(true);
+    $('tradeSend').onclick=()=>{
+      const {from,...terms}=tradeMap.deal;
+      if(!tradeProblem(s,tradeMap.deal))send('propose',terms);
+    };
+  }
+  $('tradeGuide').hidden=false;
+  $('tradeLegend').hidden=false;
+  $('tradeLegend').textContent=draft?'◇ Available · ✓ Selected · ↔ Other partner · Locked = developed district':`${seat(who)}’s terms · ✓ GIVE / GET marks the transfer. Deed flags still show current owners.`;
+  updateTrade(true);
+  $('boardView').scrollTop=0;
+  if(draft||me&&!$('modal').open)$('tradeTitle').focus({preventScroll:true});
+}
+function pickTrade(i){
+  const {s,draft,deal:d}=tradeMap;
+  if(!draft||!tradable(s,i))return;
+  const owner=s.owners[i];
+  if(owner!==d.from&&owner!==d.to){
+    d.to=owner;d.take_deed=i;d.take_cash=0;
+    d.give_cash=d.give_deed===null?Math.min(rules.tiles[i].price,s.players[d.from].cash):0;
+  }else{
+    const key=owner===d.from?'give_deed':'take_deed';
+    d[key]=d[key]===i?null:i;
+  }
+  tradeMap.edited=true;updateTrade(true);
+}
+function focusTradeTile(i,dir){
+  const targets=tradeMap.cells.filter(({b})=>!b.disabled).map(({b})=>b);
+  if(targets.length)targets[(targets.indexOf($(`tile-${i}`))+dir+targets.length)%targets.length].focus();
+}
+function tradeKey(e){
+  if(!tradeMap.draft)return;
+  if(e.key==='Escape'){e.preventDefault();closeTrade(true)}
+  else if(e.key.toUpperCase()==='B'&&!e.target.matches('input,textarea,select,[contenteditable=true]')){
+    e.preventDefault();
+    const {deal:d,cells}=tradeMap;
+    (cells[d.take_deed]?.b??cells[d.give_deed]?.b??cells.find(({b})=>!b.disabled)?.b)?.focus();
+  }
+}
+function updateTrade(syncInputs){
+  const {s,deal:d,cells,draft,edited}=tradeMap,viewer=draft?d.from:d.to,peer=draft?d.to:d.from;
+  const keys=draft?['give','take']:['take','give'];
+  const problem=draft?tradeProblem(s,d):'';
+  for(const [j,key] of keys.entries()){
+    const who=key==='give'?d.from:d.to,side=j?'in':'out',k=d[`${key}_deed`],cash=d[`${key}_cash`];
+    $(`${side}Asset`).textContent=summary(k,Number.isFinite(cash)?cash:0)||'Nothing selected';
+    $(`${side}Owner`).textContent=`From ${seat(who)}${k===null?'':` · ${money(rules.tiles[k].price)} list`}`;
+    if(draft){
+      $(`${key}Cash`).max=s.players[who].cash;
+      if(syncInputs)$(`${key}Cash`).value=Number.isFinite(cash)?cash:'';
+    }
+  }
+  const rows=tradeDistricts(s,d);
+  $('tradeBalances').innerHTML=[viewer,peer].map(who=>{
+    const cash=s.players[who].cash,after=cash+(d.take_cash-d.give_cash)*(who===d.from?1:-1);
+    return `<div><span>${seat(who)}</span> <b>${problem?'—':money(after)}</b></div>`;
+  }).join('');
+  $('tradeImpact').innerHTML=rows.length?rows.map(({group,total,seats})=>`<div class="tradeDistrict"><strong>${group}</strong>${(draft?seats:[...seats].reverse()).map(({who,before,after})=>{
+    const mark=before===after?'':after===total?' · Completes set':before===total?' · Breaks set':'';
+    return `<span>${seat(who)}: ${before} → ${after}/${total}<b>${mark}</b></span>`;
+  }).join('')}</div>`).join(''):'<p>No deeds selected.</p>';
+  $('tradeRefits').textContent=[d.give_deed,d.take_deed].filter(k=>k!==null&&s.bonuses?.[k]).map(k=>`${rules.tiles[k].name}: accepting cancels the unused ${money(s.bonuses[k])} refit.`).join(' ');
+  $('tradeError').textContent=problem||`No assets move until ${seat(d.to)} accepts.`;
+  $('tradeStatus').textContent=`${seat(viewer)}’s ${draft?edited?'edited terms':'suggested terms':'decision'}`;
+  if(draft){
+    $('tradeSend').disabled=Boolean(problem);
+    for(const b of $('tradeDesk').querySelectorAll('[data-partner]'))b.setAttribute('aria-pressed',String(+b.dataset.partner===d.to));
+  }
+  for(const [i,{b,label,value}] of cells.entries()){
+    const owner=s.owners[i],out=i===d[`${keys[0]}_deed`],incoming=i===d[`${keys[1]}_deed`];
+    const side=owner===viewer?'Give':owner===peer?'Get':null;
+    const mark=out?'out':incoming?'in':owner===null?'off':locked(s,rules,i)?'locked':!draft?'off':side?'option':'rival';
+    const badge=({out:'✓ GIVE',in:'✓ GET',locked:'Locked',option:`◇ ${side}`,rival:`↔ ${seat(owner)}`})[mark];
+    if(rows.some(row=>row.group===rules.tiles[i].group))b.dataset.tradeDistrict='';else delete b.dataset.tradeDistrict;
+    b.dataset.tradeTile=mark;b.disabled=!draft||!tradable(s,i);
+    if(!b.disabled)b.setAttribute('aria-pressed',String(out||incoming));else b.removeAttribute('aria-pressed');
+    b.querySelector('.tileValue').textContent=badge??value;
+    const hint=out||incoming?`${seat(viewer)} ${out?'gives':'gets'} this deed${draft?'; select again to remove':''}`:
+      mark==='locked'?'Developed district: cannot trade':mark==='rival'?`Choose ${seat(owner)} as partner and request this deed`:
+      mark==='option'?`Select this deed to ${side.toLowerCase()}`:'Not in this offer';
+    b.setAttribute('aria-label',`${label.split('. Inspect space')[0]}. ${hint}.`);b.title=hint;
+  }
+  const assets=keys.map(key=>summary(d[`${key}_deed`],Number.isFinite(d[`${key}_cash`])?d[`${key}_cash`]:0)||'Nothing selected');
+  const seals=rows.flatMap(row=>row.seats.filter(({after,before})=>after===row.total&&after!==before)
+    .map(({who})=>`<span>${row.group} · ${seat(who)} completes set</span>`));
+  $('tradeGuide').innerHTML=`<small>HARBOR DEEDS &nbsp;/&nbsp; ${draft?'CONTRACT DRAFT':'PENDING CONTRACT'}</small><strong>${seat(viewer)}’s side of the deal</strong>
+    <div class="guideLegs"><div><b>GIVE →</b>${assets[0]}</div><div><b>← GET</b>${assets[1]}</div></div>
+    ${seals.length?`<div class="tradeSeals">${seals.join('')}</div>`:''}
+    <p>${draft?'Select your deed to give. Select a rival’s deed to get it. Select again to remove.':'Marked deeds are part of the offer. Ownership has not changed.'}</p>
+    ${draft?'<p class="tradeKeys">B: focus board · ← →: browse · Space: select · Esc: cancel</p>':''}`;
+}
+
 const $ = id => document.getElementById(id);
 const maps = {compact:JSON.parse($('config').textContent),outer:JSON.parse($('outer').textContent),grand:JSON.parse($('grand').textContent)};
 const currentEdition='charter-1',legacyMaps=JSON.parse($('legacyMaps').textContent);
@@ -1747,6 +2053,7 @@ function command(input) {
   const out = engine.dispatch();
   const result = JSON.parse(new TextDecoder().decode(new Uint8Array(engine.memory.buffer, out, engine.length())));
   if (result.error) throw new Error(result.error);
+  recordDispatch(input,state,result);
   return result;
 }
 
@@ -1754,33 +2061,6 @@ const deeds = (s, who) => s.owners.flatMap((owner,i)=>owner===who?[i]:[]);
 function bankTerms(){
   const sale=rules.bank_sale??{rate_pct:50,basis:'list'};
   return `The bank pays ${sale.rate_pct}% of ${sale.basis==='list'?'the printed list price':'the price last paid to the bank'}.`;
-}
-function compose(s, send) {
-  const deeds=(snapshot,who)=>snapshot.owners.flatMap((owner,i)=>owner===who&&!locked(snapshot,rules,i)?[i]:[]);
-  const a=s.turn;
-  const peers=s.players.flatMap((p,i)=>!p.out && i!==a && (deeds(s,i).length||deeds(s,a).length)?[i]:[]);
-  openDialog(`<small>PRIVATE CONTRACT · ${seat(a)}</small><h2>Draft a trade</h2><p>Exchange a deed for cash, another deed, or both. One proposal per turn.</p>
-    <form id="contract"><label class="field">Trade with<select id="partner">${peers.map(i=>`<option value="${i}">${seat(i)}</option>`)}</select></label>
-    <div id="terms"></div>${s.bonuses?.some(Boolean)?'<p>Refits stay with their commissioner: transferring a refitted deed cancels its unused bonus.</p>':''}<p id="tradeError" role="alert"></p><button class="primary">Send proposal</button></form>`);
-  const leg=(who,key,title)=>`<fieldset><legend>${title} · ${seat(who)}</legend><label class="field">Deed<select id="${key}Deed"><option value="">No deed</option>${deeds(s,who).map(i=>`<option value="${i}">${rules.tiles[i].name} · ${money(rules.tiles[i].price)}</option>`)}</select></label><label class="field">Cash ($)<input type="number" step="1" min="0" max="${s.players[who].cash}" id="${key}Cash" value="0" required></label></fieldset>`;
-  const terms=()=>{
-    const other=+$('partner').value;
-    $('terms').innerHTML=leg(a,'give','You offer')+leg(other,'take','You request');
-    const buy=deeds(s,other).length>0, i=deeds(s,buy?other:a)[0];
-    $(buy?'takeDeed':'giveDeed').value=String(i);
-    $(buy?'giveCash':'takeCash').value=Math.min(rules.tiles[i].price,s.players[buy?a:other].cash);
-    $('tradeError').textContent='';
-  };
-  terms();$('partner').onchange=terms;
-  $('contract').onsubmit=e=>{
-    e.preventDefault();
-    const index=id=>$(id).value===''?null:Number($(id).value);
-    const deal={to:+$('partner').value,give_deed:index('giveDeed'),take_deed:index('takeDeed'),give_cash:+$('giveCash').value,take_cash:+$('takeCash').value};
-    if((deal.give_deed===null&&!deal.give_cash)||(deal.take_deed===null&&!deal.take_cash)||(deal.give_cash&&deal.take_cash)){
-      $('tradeError').textContent='Each side must contribute. Put cash on only one side.';return;
-    }
-    $('modal').close();send('propose',deal);
-  };
 }
 function wait(ms,signal) {
   return new Promise(resolve=>{
@@ -1829,8 +2109,8 @@ function bidClock(seconds,signal,onExpiry) {
 const controllers = {
   human: (s, signal) => new Promise(resolve => {
     const actor=actingSeat(s), cash=s.players[actor].cash;
-    const send=(action,extra={})=>{if(plotAccess?.s===s)releasePlots();resolve({action,actor,...extra})};
-    signal.addEventListener('abort',()=>resolve(null),{once:true});
+    const send=(action,extra={})=>{if(tradeMap?.draft)closeTrade();if(plotAccess?.s===s)releasePlots();resolve({action,actor,...extra})};
+    signal.addEventListener('abort',()=>{if(tradeMap?.s===s)closeTrade();resolve(null)},{once:true});
     function button(label,fn,primary=false,disabled=false) {
       const b = document.createElement('button');
       b.textContent = label;
@@ -1844,7 +2124,7 @@ const controllers = {
     }
     if(s.phase==='roll'){
       button('Roll dice',()=>send('roll'),true);
-      if(!s.traded && s.owners.some((o,i)=>o!==null&&!locked(s,rules,i))) button('Draft trade',()=>compose(s,send));
+      if(!s.traded)button('Draft trade',()=>openTrade(s,send)).id='draftTrade';
       if(s.sells?.length||s.builds.length){
         const entry=button('Manage deeds',()=>openPlots());entry.id='manageDeeds';entry.setAttribute('aria-keyshortcuts','I S');
         enablePlots(s,send,signal);
@@ -1952,11 +2232,40 @@ function detail(i) {
   selectSpace(i);if(desktop.matches){showView('board');$('inspector').scrollTop=0}else openDialog(detailHtml(i));
 }
 const summary=(deed,cash)=>[deed===null?'':rules.tiles[deed].name,cash?money(cash):''].filter(Boolean).join(' + ');
+const netWorth=(s,i)=>s.players[i].cash+deeds(s,i).reduce((sum,k)=>sum+rules.tiles[k].price,0);
+const districtTiles=group=>rules.tiles.flatMap((t,i)=>t.kind==='deed'&&t.group===group?[i]:[]);
+function decisionStakes(s,actor,lot){
+  if(s.phase==='offer'||s.phase==='auction'){
+    const t=rules.tiles[lot],siblings=districtTiles(t.group).filter(i=>i!==lot);
+    if(!siblings.length)return '';
+    const who=s.owners[siblings[0]];
+    if(who===null||!siblings.every(i=>s.owners[i]===who))return '';
+    const rent=Math.round(t.rent*rules.development.set_rent_pct/100);
+    return `<p class="stakes"><b>Last ${t.group} deed.</b> If ${seat(who)} gets it, the set is complete. ${t.name} rent: ${money(t.rent)} → ${money(rent)}.</p>`;
+  }
+  if(s.phase!=='roll')return '';
+  const gaps=[...new Set(deeds(s,actor).map(i=>rules.tiles[i].group))].flatMap(group=>{
+    const missing=districtTiles(group).filter(i=>s.owners[i]!==actor);
+    return missing.length===1?[missing[0]]:[];
+  });
+  let race='';
+  if(rules.victory!=='elimination'){
+    const own=netWorth(s,actor), rivals=s.players.flatMap((p,i)=>i!==actor&&!p.out?[{i,total:netWorth(s,i)}]:[]).sort((a,b)=>b.total-a.total);
+    if(rivals.length){
+      const {i,total}=rivals[0];
+      race=`<p class="race">Net worth <b>${money(own)}</b> · ${own===total?'Tied for first':own>total?`Leading by ${money(own-total)}`:`${money(total-own)} behind ${seat(i)}`}</p>`;
+    }
+  }
+  if(!gaps.length)return race;
+  const i=gaps[0],t=rules.tiles[i],who=s.owners[i];
+  return race+`<p class="stakes"><b>One short of ${t.group}.</b> ${t.name} · ${who===null?`Unowned, ${money(t.price)}`:`Held by ${seat(who)}`}.</p>`;
+}
 function facts(entries){
   return `<dl class="facts">${entries.map(([key,v])=>`<div><dt>${key}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
 }
 const debtCreditor=s=>s.debt.creditor===null?'the bank':seat(s.debt.creditor);
 function render() {
+  closeTrade();
   const s = state, a = actingSeat(s), p = s.players[a], t = rules.tiles[s.auction?.tile??s.players[s.turn].pos];
   const phaseNames={roll:'Helm',offer:'Land office',auction:'Auction floor',works:'Public works',guild:'Guild charter',trade:'Trade offer',debt:'Outstanding bill',end:s.last_card!=null?'Harbor dispatch':'Settlement',over:'Final accounts'};
   document.body.dataset.phase=s.phase;
@@ -1973,9 +2282,10 @@ function render() {
       b.className='tile '+(tile.kind==='deed'?'deed':'special');
       b.dataset.kind=tile.kind;
       b.style.setProperty('--band',bands[tile.group] || '#718373');
-      b.onclick=()=>{if(!pickPlot(i))detail(i)};
+      b.onclick=()=>{if(tradeMap)pickTrade(i);else if(!pickPlot(i))detail(i)};
       b.onkeydown=e=>{
         const dir={ArrowLeft:-1,ArrowRight:1}[e.key];if(!dir)return;
+        if(tradeMap){e.preventDefault();focusTradeTile(i,dir);return}
         if(plotDesk){e.preventDefault();stepPlot(dir,true);return}
         if(!desktop.matches)return;
         e.preventDefault();const next=(i+dir+rules.tiles.length)%rules.tiles.length;
@@ -2011,16 +2321,16 @@ function render() {
   if(key!==focusKey){inspected=at;focusKey=key;if(market)$('inspector').scrollTop=0}
   selectSpace(inspected);
   $('mobileLadder').innerHTML=market?curve(at):'';
-  $('log').innerHTML=[...s.events].reverse().map(e=>`<li>${e}</li>`).join('');
+  renderLog(s.events);
   $('actions').replaceChildren();
   if(s.phase==='over'){
-    $('turn').innerHTML=`<h2>${s.winners.map(seat).join(' & ')} ${s.winners.length>1?'tie':'wins'}</h2><p>${s.players.filter(x=>!x.out).length===1?'Last solvent merchant.':`Final net worth after ${s.round} rounds: cash plus printed deed values.`}</p>${facts(s.players.map((player,i)=>[seat(i),player.out?'Bankrupt':money(player.cash+deeds(s,i).reduce((sum,k)=>sum+rules.tiles[k].price,0))]))}`;
+    $('turn').innerHTML=`<h2>${s.winners.map(seat).join(' & ')} ${s.winners.length>1?'tie':'wins'}</h2><p>${s.players.filter(x=>!x.out).length===1?'Last solvent merchant.':`Final net worth after ${s.round} round${s.round===1?'':'s'}: cash plus printed deed values.`}</p>${facts(s.players.map((player,i)=>[seat(i),player.out?'Bankrupt':money(netWorth(s,i))]))}`;
     const b=document.createElement('button'); b.className='primary';b.textContent=room?'Leave table':'Rematch';b.onclick=room?()=>endRoom('You left the table.'):()=>play([...seats],$('board').dataset.map,clockSeconds,rules.development.policy,charterOf(rules)).catch(report);$('actions').append(b);
     return;
   }
   let title, text, stats=[];
   if(s.phase==='roll'){
-    title='Ready to roll';text=`At ${t.name}${p.cover?` · ${money(p.cover)} rent cover`:''}`;
+    title=t.name;text=p.cover?`${money(p.cover)} cover on the next rent bill.`:'';
   }else if(s.phase==='offer'){
     title='Buy or auction?';text=`${t.name} · ${t.group}`;
     stats=[['List price',money(t.price)],['Base rent',money(t.rent)],['After buying',p.cash>=t.price?money(p.cash-t.price):'Short of cash']];
@@ -2037,16 +2347,16 @@ function render() {
   }else if(s.phase==='end'&&s.last_card!=null){
     title=rules.cards[s.last_card].title;text=s.events.slice().reverse().find(line=>line.startsWith(title+':'))??s.events.at(-1);
   }else if(s.phase==='trade'){
-    const d=s.trade;title=`Offer from ${seat(d.from)}`;text=`${seat(d.to)}, review both sides. ${[d.give_deed,d.take_deed].some(k=>k!==null&&s.bonuses?.[k])?'Accepting cancels any unused refit on the transferred deeds.':'Nothing changes hands unless you accept.'}`;
-    stats=[['You receive',summary(d.give_deed,d.give_cash)],['You give',summary(d.take_deed,d.take_cash)]];
+    openTrade(s);title=`Offer from ${seat(s.trade.from)}`;text='';
   }else{
     title=t.name;text=s.events.at(-1);
   }
-  $('turn').innerHTML=`<h2>${title}</h2>${market?'<button id="inspectQuote">Rent &amp; build costs</button>':''}<p>${text}</p>${stats.length?facts(stats):''}`;
+  $('turn').innerHTML=`<h2>${title}</h2>${market?'<button id="inspectQuote">Rent &amp; build costs</button>':''}${text?`<p>${text}</p>`:''}${stats.length?facts(stats):''}${decisionStakes(s,a,at)}`;
   if(market)$('inspectQuote').onclick=()=>detail(at);
-  if(seats[a]==='bot' || s.phase==='end') $('actions').innerHTML=`<small class="waiting">${s.phase==='end'?'Advancing to the next turn…':'Bot is considering the table…'}</small>`;
+  if(seats[a]==='bot' || s.phase==='end') $('actions').innerHTML=`<small class="waiting">${s.phase==='end'?'Next turn…':`${seat(a)} is playing…`}</small>`;
 }
 function initialize(types,map,seconds,seed,policy,edition=currentEdition,charter) {
+  closeTrade();
   const base=(edition==='launch'?legacyMaps:maps)[map];
   rules={...base,development:{...base.development,policy:policy??base.development.policy}};clockSeconds=seconds;
   if(edition===currentEdition&&charter){
@@ -2134,7 +2444,9 @@ $('stageLedger').onclick=e=>{
 };
 document.querySelector('.switcher').onclick=e=>{if(e.target.dataset.view)showView(e.target.dataset.view)};
 document.addEventListener('keydown',e=>{
-  if($('modal').open||e.repeat||e.isComposing||e.altKey||e.ctrlKey||e.metaKey||e.target.matches('input,textarea,select,[contenteditable=true]'))return;
+  if($('modal').open||e.repeat||e.isComposing||e.altKey||e.ctrlKey||e.metaKey)return;
+  if(tradeMap){tradeKey(e);return}
+  if(e.target.matches('input,textarea,select,[contenteditable=true]'))return;
   if(plotDesk&&e.key==='Escape'){e.preventDefault();closePlots(true);return}
   if(!desktop.matches)return;
   const key=e.key.toUpperCase(),view={B:'board',F:'players',L:'activity'}[key];

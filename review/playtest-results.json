@@ -1,0 +1,28 @@
+{
+  "engine": "Rust/WASM",
+  "seed": 1,
+  "identicalRollsAndDraws": 24,
+  "tradeAndBuild": [
+    880,
+    1157,
+    1023
+  ],
+  "tradeAndKeepCash": [
+    910,
+    1157,
+    1023
+  ],
+  "noTradeOrBuild": [
+    920,
+    1210,
+    960
+  ],
+  "shippedBotsGrandHarbor": {
+    "games": 100,
+    "completed": 100,
+    "proposals": 698,
+    "accepted": 698,
+    "declined": 0,
+    "twoDeedOffers": 0
+  }
+}

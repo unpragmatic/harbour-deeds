@@ -13,7 +13,7 @@ function enablePlots(s,send,signal){
   });
   const access={s,send,cells};
   plotAccess=access;
-  $('turn').insertAdjacentHTML('beforeend','<p class="plotHint">◇ Select a marked deed on the board to preview your options.</p>');
+  $('turn').insertAdjacentHTML('beforeend','<p class="plotHint">◇ Select a marked deed for a quote.</p>');
   signal.addEventListener('abort',()=>{if(plotAccess===access)releasePlots()},{once:true});
 }
 function releasePlots(){

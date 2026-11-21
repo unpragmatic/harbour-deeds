@@ -18,6 +18,7 @@ function command(input) {
   const out = engine.dispatch();
   const result = JSON.parse(new TextDecoder().decode(new Uint8Array(engine.memory.buffer, out, engine.length())));
   if (result.error) throw new Error(result.error);
+  recordDispatch(input,state,result);
   return result;
 }
 
@@ -25,33 +26,6 @@ const deeds = (s, who) => s.owners.flatMap((owner,i)=>owner===who?[i]:[]);
 function bankTerms(){
   const sale=rules.bank_sale??{rate_pct:50,basis:'list'};
   return `The bank pays ${sale.rate_pct}% of ${sale.basis==='list'?'the printed list price':'the price last paid to the bank'}.`;
-}
-function compose(s, send) {
-  const deeds=(snapshot,who)=>snapshot.owners.flatMap((owner,i)=>owner===who&&!locked(snapshot,rules,i)?[i]:[]);
-  const a=s.turn;
-  const peers=s.players.flatMap((p,i)=>!p.out && i!==a && (deeds(s,i).length||deeds(s,a).length)?[i]:[]);
-  openDialog(`<small>PRIVATE CONTRACT · ${seat(a)}</small><h2>Draft a trade</h2><p>Exchange a deed for cash, another deed, or both. One proposal per turn.</p>
-    <form id="contract"><label class="field">Trade with<select id="partner">${peers.map(i=>`<option value="${i}">${seat(i)}</option>`)}</select></label>
-    <div id="terms"></div>${s.bonuses?.some(Boolean)?'<p>Refits stay with their commissioner: transferring a refitted deed cancels its unused bonus.</p>':''}<p id="tradeError" role="alert"></p><button class="primary">Send proposal</button></form>`);
-  const leg=(who,key,title)=>`<fieldset><legend>${title} · ${seat(who)}</legend><label class="field">Deed<select id="${key}Deed"><option value="">No deed</option>${deeds(s,who).map(i=>`<option value="${i}">${rules.tiles[i].name} · ${money(rules.tiles[i].price)}</option>`)}</select></label><label class="field">Cash ($)<input type="number" step="1" min="0" max="${s.players[who].cash}" id="${key}Cash" value="0" required></label></fieldset>`;
-  const terms=()=>{
-    const other=+$('partner').value;
-    $('terms').innerHTML=leg(a,'give','You offer')+leg(other,'take','You request');
-    const buy=deeds(s,other).length>0, i=deeds(s,buy?other:a)[0];
-    $(buy?'takeDeed':'giveDeed').value=String(i);
-    $(buy?'giveCash':'takeCash').value=Math.min(rules.tiles[i].price,s.players[buy?a:other].cash);
-    $('tradeError').textContent='';
-  };
-  terms();$('partner').onchange=terms;
-  $('contract').onsubmit=e=>{
-    e.preventDefault();
-    const index=id=>$(id).value===''?null:Number($(id).value);
-    const deal={to:+$('partner').value,give_deed:index('giveDeed'),take_deed:index('takeDeed'),give_cash:+$('giveCash').value,take_cash:+$('takeCash').value};
-    if((deal.give_deed===null&&!deal.give_cash)||(deal.take_deed===null&&!deal.take_cash)||(deal.give_cash&&deal.take_cash)){
-      $('tradeError').textContent='Each side must contribute. Put cash on only one side.';return;
-    }
-    $('modal').close();send('propose',deal);
-  };
 }
 function wait(ms,signal) {
   return new Promise(resolve=>{
@@ -100,8 +74,8 @@ function bidClock(seconds,signal,onExpiry) {
 const controllers = {
   human: (s, signal) => new Promise(resolve => {
     const actor=actingSeat(s), cash=s.players[actor].cash;
-    const send=(action,extra={})=>{if(plotAccess?.s===s)releasePlots();resolve({action,actor,...extra})};
-    signal.addEventListener('abort',()=>resolve(null),{once:true});
+    const send=(action,extra={})=>{if(tradeMap?.draft)closeTrade();if(plotAccess?.s===s)releasePlots();resolve({action,actor,...extra})};
+    signal.addEventListener('abort',()=>{if(tradeMap?.s===s)closeTrade();resolve(null)},{once:true});
     function button(label,fn,primary=false,disabled=false) {
       const b = document.createElement('button');
       b.textContent = label;
@@ -115,7 +89,7 @@ const controllers = {
     }
     if(s.phase==='roll'){
       button('Roll dice',()=>send('roll'),true);
-      if(!s.traded && s.owners.some((o,i)=>o!==null&&!locked(s,rules,i))) button('Draft trade',()=>compose(s,send));
+      if(!s.traded)button('Draft trade',()=>openTrade(s,send)).id='draftTrade';
       if(s.sells?.length||s.builds.length){
         const entry=button('Manage deeds',()=>openPlots());entry.id='manageDeeds';entry.setAttribute('aria-keyshortcuts','I S');
         enablePlots(s,send,signal);
@@ -223,11 +197,40 @@ function detail(i) {
   selectSpace(i);if(desktop.matches){showView('board');$('inspector').scrollTop=0}else openDialog(detailHtml(i));
 }
 const summary=(deed,cash)=>[deed===null?'':rules.tiles[deed].name,cash?money(cash):''].filter(Boolean).join(' + ');
+const netWorth=(s,i)=>s.players[i].cash+deeds(s,i).reduce((sum,k)=>sum+rules.tiles[k].price,0);
+const districtTiles=group=>rules.tiles.flatMap((t,i)=>t.kind==='deed'&&t.group===group?[i]:[]);
+function decisionStakes(s,actor,lot){
+  if(s.phase==='offer'||s.phase==='auction'){
+    const t=rules.tiles[lot],siblings=districtTiles(t.group).filter(i=>i!==lot);
+    if(!siblings.length)return '';
+    const who=s.owners[siblings[0]];
+    if(who===null||!siblings.every(i=>s.owners[i]===who))return '';
+    const rent=Math.round(t.rent*rules.development.set_rent_pct/100);
+    return `<p class="stakes"><b>Last ${t.group} deed.</b> If ${seat(who)} gets it, the set is complete. ${t.name} rent: ${money(t.rent)} → ${money(rent)}.</p>`;
+  }
+  if(s.phase!=='roll')return '';
+  const gaps=[...new Set(deeds(s,actor).map(i=>rules.tiles[i].group))].flatMap(group=>{
+    const missing=districtTiles(group).filter(i=>s.owners[i]!==actor);
+    return missing.length===1?[missing[0]]:[];
+  });
+  let race='';
+  if(rules.victory!=='elimination'){
+    const own=netWorth(s,actor), rivals=s.players.flatMap((p,i)=>i!==actor&&!p.out?[{i,total:netWorth(s,i)}]:[]).sort((a,b)=>b.total-a.total);
+    if(rivals.length){
+      const {i,total}=rivals[0];
+      race=`<p class="race">Net worth <b>${money(own)}</b> · ${own===total?'Tied for first':own>total?`Leading by ${money(own-total)}`:`${money(total-own)} behind ${seat(i)}`}</p>`;
+    }
+  }
+  if(!gaps.length)return race;
+  const i=gaps[0],t=rules.tiles[i],who=s.owners[i];
+  return race+`<p class="stakes"><b>One short of ${t.group}.</b> ${t.name} · ${who===null?`Unowned, ${money(t.price)}`:`Held by ${seat(who)}`}.</p>`;
+}
 function facts(entries){
   return `<dl class="facts">${entries.map(([key,v])=>`<div><dt>${key}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
 }
 const debtCreditor=s=>s.debt.creditor===null?'the bank':seat(s.debt.creditor);
 function render() {
+  closeTrade();
   const s = state, a = actingSeat(s), p = s.players[a], t = rules.tiles[s.auction?.tile??s.players[s.turn].pos];
   const phaseNames={roll:'Helm',offer:'Land office',auction:'Auction floor',works:'Public works',guild:'Guild charter',trade:'Trade offer',debt:'Outstanding bill',end:s.last_card!=null?'Harbor dispatch':'Settlement',over:'Final accounts'};
   document.body.dataset.phase=s.phase;
@@ -244,9 +247,10 @@ function render() {
       b.className='tile '+(tile.kind==='deed'?'deed':'special');
       b.dataset.kind=tile.kind;
       b.style.setProperty('--band',bands[tile.group] || '#718373');
-      b.onclick=()=>{if(!pickPlot(i))detail(i)};
+      b.onclick=()=>{if(tradeMap)pickTrade(i);else if(!pickPlot(i))detail(i)};
       b.onkeydown=e=>{
         const dir={ArrowLeft:-1,ArrowRight:1}[e.key];if(!dir)return;
+        if(tradeMap){e.preventDefault();focusTradeTile(i,dir);return}
         if(plotDesk){e.preventDefault();stepPlot(dir,true);return}
         if(!desktop.matches)return;
         e.preventDefault();const next=(i+dir+rules.tiles.length)%rules.tiles.length;
@@ -282,16 +286,16 @@ function render() {
   if(key!==focusKey){inspected=at;focusKey=key;if(market)$('inspector').scrollTop=0}
   selectSpace(inspected);
   $('mobileLadder').innerHTML=market?curve(at):'';
-  $('log').innerHTML=[...s.events].reverse().map(e=>`<li>${e}</li>`).join('');
+  renderLog(s.events);
   $('actions').replaceChildren();
   if(s.phase==='over'){
-    $('turn').innerHTML=`<h2>${s.winners.map(seat).join(' & ')} ${s.winners.length>1?'tie':'wins'}</h2><p>${s.players.filter(x=>!x.out).length===1?'Last solvent merchant.':`Final net worth after ${s.round} rounds: cash plus printed deed values.`}</p>${facts(s.players.map((player,i)=>[seat(i),player.out?'Bankrupt':money(player.cash+deeds(s,i).reduce((sum,k)=>sum+rules.tiles[k].price,0))]))}`;
+    $('turn').innerHTML=`<h2>${s.winners.map(seat).join(' & ')} ${s.winners.length>1?'tie':'wins'}</h2><p>${s.players.filter(x=>!x.out).length===1?'Last solvent merchant.':`Final net worth after ${s.round} round${s.round===1?'':'s'}: cash plus printed deed values.`}</p>${facts(s.players.map((player,i)=>[seat(i),player.out?'Bankrupt':money(netWorth(s,i))]))}`;
     const b=document.createElement('button'); b.className='primary';b.textContent=room?'Leave table':'Rematch';b.onclick=room?()=>endRoom('You left the table.'):()=>play([...seats],$('board').dataset.map,clockSeconds,rules.development.policy,charterOf(rules)).catch(report);$('actions').append(b);
     return;
   }
   let title, text, stats=[];
   if(s.phase==='roll'){
-    title='Ready to roll';text=`At ${t.name}${p.cover?` · ${money(p.cover)} rent cover`:''}`;
+    title=t.name;text=p.cover?`${money(p.cover)} cover on the next rent bill.`:'';
   }else if(s.phase==='offer'){
     title='Buy or auction?';text=`${t.name} · ${t.group}`;
     stats=[['List price',money(t.price)],['Base rent',money(t.rent)],['After buying',p.cash>=t.price?money(p.cash-t.price):'Short of cash']];
@@ -308,16 +312,16 @@ function render() {
   }else if(s.phase==='end'&&s.last_card!=null){
     title=rules.cards[s.last_card].title;text=s.events.slice().reverse().find(line=>line.startsWith(title+':'))??s.events.at(-1);
   }else if(s.phase==='trade'){
-    const d=s.trade;title=`Offer from ${seat(d.from)}`;text=`${seat(d.to)}, review both sides. ${[d.give_deed,d.take_deed].some(k=>k!==null&&s.bonuses?.[k])?'Accepting cancels any unused refit on the transferred deeds.':'Nothing changes hands unless you accept.'}`;
-    stats=[['You receive',summary(d.give_deed,d.give_cash)],['You give',summary(d.take_deed,d.take_cash)]];
+    openTrade(s);title=`Offer from ${seat(s.trade.from)}`;text='';
   }else{
     title=t.name;text=s.events.at(-1);
   }
-  $('turn').innerHTML=`<h2>${title}</h2>${market?'<button id="inspectQuote">Rent &amp; build costs</button>':''}<p>${text}</p>${stats.length?facts(stats):''}`;
+  $('turn').innerHTML=`<h2>${title}</h2>${market?'<button id="inspectQuote">Rent &amp; build costs</button>':''}${text?`<p>${text}</p>`:''}${stats.length?facts(stats):''}${decisionStakes(s,a,at)}`;
   if(market)$('inspectQuote').onclick=()=>detail(at);
-  if(seats[a]==='bot' || s.phase==='end') $('actions').innerHTML=`<small class="waiting">${s.phase==='end'?'Advancing to the next turn…':'Bot is considering the table…'}</small>`;
+  if(seats[a]==='bot' || s.phase==='end') $('actions').innerHTML=`<small class="waiting">${s.phase==='end'?'Next turn…':`${seat(a)} is playing…`}</small>`;
 }
 function initialize(types,map,seconds,seed,policy,edition=currentEdition,charter) {
+  closeTrade();
   const base=(edition==='launch'?legacyMaps:maps)[map];
   rules={...base,development:{...base.development,policy:policy??base.development.policy}};clockSeconds=seconds;
   if(edition===currentEdition&&charter){
@@ -405,7 +409,9 @@ $('stageLedger').onclick=e=>{
 };
 document.querySelector('.switcher').onclick=e=>{if(e.target.dataset.view)showView(e.target.dataset.view)};
 document.addEventListener('keydown',e=>{
-  if($('modal').open||e.repeat||e.isComposing||e.altKey||e.ctrlKey||e.metaKey||e.target.matches('input,textarea,select,[contenteditable=true]'))return;
+  if($('modal').open||e.repeat||e.isComposing||e.altKey||e.ctrlKey||e.metaKey)return;
+  if(tradeMap){tradeKey(e);return}
+  if(e.target.matches('input,textarea,select,[contenteditable=true]'))return;
   if(plotDesk&&e.key==='Escape'){e.preventDefault();closePlots(true);return}
   if(!desktop.matches)return;
   const key=e.key.toUpperCase(),view={B:'board',F:'players',L:'activity'}[key];

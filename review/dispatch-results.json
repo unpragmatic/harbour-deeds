@@ -2,13 +2,14 @@
   "observed": {
     "read-dispatch": 0,
     "read-dispatch-phone": 0,
-    "dismiss-dispatch": 1
+    "file-dispatch": 0,
+    "recall-dispatch": 1
   },
   "desktop": {
-    "firstVisibleMs": 146,
-    "nextRollReadyMs": 979,
-    "continuouslyObservedMs": 6016,
-    "frames": 358,
+    "firstVisibleMs": 180,
+    "nextRollReadyMs": 967,
+    "continuouslyObservedMs": 6017,
+    "frames": 362,
     "misses": 0,
     "animated": true,
     "peak": 0.101,
@@ -26,12 +27,13 @@
       "Pay $55 at the port office.",
       "Paid $55",
       "Port salary +$240 · Cash $240 → $425"
-    ]
+    ],
+    "recallClicks": 1
   },
   "phone": {
-    "firstVisibleMs": 13,
+    "firstVisibleMs": 12,
     "nextRollReadyMs": 963,
-    "continuouslyObservedMs": 6017,
+    "continuouslyObservedMs": 6016,
     "frames": 362,
     "misses": 0,
     "animated": false,
@@ -50,7 +52,8 @@
       "Carry $65 against your next rent. Keep any higher cover.",
       "$65 cover in force",
       "Cash $850 → $850"
-    ]
+    ],
+    "recallClicks": 1
   },
   "accounting": {
     "owned-deeds": {
@@ -125,9 +128,10 @@
     }
   },
   "online": {
-    "guestHandoffMs": 940,
-    "privateDismissal": true,
+    "guestHandoffMs": 930,
+    "automaticFiling": true,
     "liveCuesPerDevice": 1,
-    "rejoinCues": 0
+    "rejoinCues": 0,
+    "archiveOnRejoin": true
   }
 }
