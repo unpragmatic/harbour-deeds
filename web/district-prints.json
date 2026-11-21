@@ -6,5 +6,15 @@
   "Market": {"code":"MK","motif":"Awning","stock":"#b9bfec","ink":"#3f416c","width":12,"path":"M0 1v3a6 6 0 0 0 12 0V1M0 1h12"},
   "Exchange": {"code":"EX","motif":"Lattice","stock":"#b5d3e2","ink":"#2a4d64","width":14,"path":"m0 6 7-5 7 5-7 5z"},
   "Marina": {"code":"MA","motif":"Waves","stock":"#9dd2c6","ink":"#21564d","width":18,"path":"M0 4q4.5-4 9 0t9 0M0 10q4.5-4 9 0t9 0"},
-  "Headlands": {"code":"HL","motif":"Ridgeline","stock":"#dbbe9e","ink":"#543c2b","width":18,"path":"M-1 11 7 2l5 6 3-3 5 6"}
+  "Headlands": {"code":"HL","motif":"Ridgeline","stock":"#dbbe9e","ink":"#543c2b","width":18,"path":"M-1 11 7 2l5 6 3-3 5 6"},
+  "Airports": {"code":"AP","motif":"Runway","stock":"#c3d6e0","ink":"#263d58","width":16,"path":"M1 0v12m14-12v12M8 1v6"},
+  "Brazil": {"code":"BR","motif":"Tesserae","stock":"#e7bea9","ink":"#643c32","width":14,"path":"M1 2h5v5H1zM8 6h5v5H8z"},
+  "Israel": {"code":"IL","motif":"Terraces","stock":"#b9dbe6","ink":"#244d62","width":16,"path":"M0 10h6V6h5V2h5"},
+  "Italy": {"code":"IT","motif":"Arcades","stock":"#e8c1d9","ink":"#643956","width":12,"path":"M1 12V6a5 5 0 0 1 10 0v6"},
+  "Germany": {"code":"DE","motif":"Crossbeams","stock":"#f2cd96","ink":"#5e422c","width":14,"path":"M0 0l14 12M14 0L0 12M0 0v12"},
+  "China": {"code":"CN","motif":"Lozenges","stock":"#eaaea7","ink":"#66322f","width":12,"path":"m6 1 4 5-4 5-4-5z"},
+  "France": {"code":"FR","motif":"Chevron","stock":"#eee0a1","ink":"#574c25","width":18,"path":"m0 1 9 6 9-6M0 6l9 6 9-6"},
+  "United Kingdom": {"code":"GB","motif":"Mullions","stock":"#bdd4b6","ink":"#304d39","width":16,"path":"M2 0v12m8-12v12M0 4h16"},
+  "United States": {"code":"US","motif":"Steeples","stock":"#b8c2e0","ink":"#384566","width":14,"path":"M1 12V6h3V3h3V0h1v3h3v3h2v6"},
+  "Companies": {"code":"CO","motif":"Current","stock":"#d4d1c5","ink":"#44453e","width":14,"path":"M0 8h4l3-6v8l3-5h4"}
 }

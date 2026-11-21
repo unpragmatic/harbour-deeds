@@ -11,38 +11,24 @@ subprocess.run(["cargo", "build", "--locked", "--release", "--target",
 web = root / "web"
 wasm = root / "target/wasm32-unknown-unknown/release/harbor_deeds.wasm"
 html = (web / "index.html").read_text()
-base = json.loads((web / "rules.json").read_text())
-outer = json.loads((web / "outer-harbor.json").read_text())
-adds = {row["after"]: row["tiles"] for row in outer["inserts"]}
-expanded = dict(base, salary=outer["salary"], tiles=[
-    space for t in base["tiles"] for space in [t, *adds.get(t["name"], [])]
-])
-expanded["development"] = dict(base["development"], levels=[
-    dict(level, cost_pct=cost) for level, cost in
-    zip(base["development"]["levels"], outer["development_cost_pct"], strict=True)
-])
-grand=dict(expanded, **json.loads((web/"grand-harbor.json").read_text()))
-prints=json.loads((web/'district-prints.json').read_text())
-groups={t['group'] for board in (base,expanded,grand) for t in board['tiles'] if t['kind']=='deed'}
-if groups!=prints.keys() or any(len({p[key] for p in prints.values()})!=len(prints) for key in ('code','path')):
-    raise ValueError('Give every shipped district a distinct print and code in web/district-prints.json')
+bundle = json.loads(subprocess.check_output(["node", "board-catalog.mjs"], cwd=root))
+prints = bundle["prints"]
+def embedded(value):
+    return json.dumps(value, separators=(",", ":")).replace("<", "\\u003c")
+
 print_css=[]
 for p in prints.values():
-    if not re.fullmatch('[A-Z]{2}',p['code']):raise ValueError('District codes must be two capital letters')
     svg=f'<svg xmlns="http://www.w3.org/2000/svg" width="{p["width"]}" height="12"><path d="{p["path"]}" fill="none" stroke="{p["ink"]}" stroke-width="2"/></svg>'
     print_css.append(f'[data-print="{p["code"]}"]{{--stock:{p["stock"]};--ink:{p["ink"]};--engraving:url("data:image/svg+xml,{quote(svg,safe="")}")}}')
-for marker, value in {
+parts = {
     "/*STYLE*/": "\n".join((web / name).read_text() for name in ["style.css","table.css","workspace.css","bridge.css","dispatch.css","trade.css","districts.css"])+"\n"+"\n".join(print_css),
-    "__PRINT_CODES__": json.dumps({g:p['code'] for g,p in prints.items()}),
+    "__PRINT_CODES__": embedded({g:p['code'] for g,p in prints.items()}),
     "__CHART__": (web/"harbor-chart.svg").read_text(),
-    "__RULES__": (web / "rules.json").read_text(),
-    "__OUTER__": json.dumps(expanded),
-    "__LEGACY__": (web/"edition-launch.json").read_text(),
-    "__GRAND__": json.dumps(grand),
+    "__BOARD_CATALOG__": embedded(bundle["catalog"]),
     "__WASM__": base64.b64encode(wasm.read_bytes()).decode(),
     "/*APP*/": "const uxInventory="+(web/"interactions.json").read_text()+";\n"+"\n".join((web / name).read_text() for name in ["strategy.mjs","foley.js","feedback.js","room.js","property-desk.js","trade.js","app.js"]),
-}.items():
-    html = html.replace(marker, value)
+}
+html = re.sub("|".join(map(re.escape, parts)), lambda m: parts[m[0]], html)
 core=(root/'src/lib.rs').read_text()
 commands = re.search(r'enum Command \{(.*?)\n\}', core, re.S)[1]
 variants = {s.lower() for s in re.findall(r'^    (\w+)\s*[\({]', commands, re.M)}

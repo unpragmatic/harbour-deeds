@@ -1,0 +1,28 @@
+{
+  "edition": "boards-1",
+  "defaultBoard": "grand",
+  "boards": [
+    {
+      "id": "grand", "label": "Grand Harbor", "file": "grand-harbor.json", "extends": "outer",
+      "layout": {"rows":9, "columns":13, "start":"bottom-left", "direction":"clockwise", "density":"dense", "foldColumns":8}
+    },
+    {
+      "id": "compact", "label": "Inner Harbor", "file": "rules.json",
+      "layout": {"rows":6, "columns":6, "start":"bottom-left", "direction":"clockwise", "density":"spacious", "foldColumns":8}
+    },
+    {
+      "id": "outer", "label": "Outer Harbor", "file": "outer-harbor.json", "extends": "compact",
+      "layout": {"rows":7, "columns":9, "start":"bottom-left", "direction":"clockwise", "density":"regular", "foldColumns":8}
+    },
+    {
+      "id": "richup", "label": "RichUp Classic", "file": "richup-classic.json",
+      "layout": {"rows":11, "columns":11, "start":"top-left", "direction":"clockwise", "density":"dense", "foldColumns":8}
+    }
+  ],
+  "history": {
+    "launch":      {"file":"edition-launch.json",  "metadata":"edition-boards.json", "charter":false},
+    "dockworks-1": {"file":"edition-charter.json", "metadata":"edition-boards.json", "charter":false},
+    "charter-1":   {"file":"edition-charter.json", "metadata":"edition-boards.json", "charter":true},
+    "airports-1":  {"file":"edition-airports.json","metadata":"edition-boards.json", "charter":true}
+  }
+}

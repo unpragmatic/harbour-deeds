@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
+from board_fixture import edit_rules
 
 root=Path(__file__).resolve().parent
 survey=json.loads((root/'clicks.json').read_text())
@@ -23,14 +24,14 @@ with sync_playwright() as pw:
           }''')
         html=(root.parent/'dist/index.html').read_text()
         if mode=='expensive':
-            base=(root.parent/'web/rules.json').read_text()
-            costly=json.loads(base);costly['development']['levels'][0]['cost_pct']=5000
-            html=html.replace(f'id="config" type="application/json">{base}',f'id="config" type="application/json">{json.dumps(costly)}')
+            def expensive(fixture):
+                fixture['development']['levels'][0]['cost_pct']=5000
+            html=edit_rules(html,'compact',expensive)
         p.route('http://harbor.test/',lambda r:r.fulfill(body=html,content_type='text/html'))
         p.goto('http://harbor.test/')
         p.click('#setupBtn');p.locator('#advanced summary').click()
-        p.select_option('#policy',mode if mode in ('even','district','free') else 'even')
         p.select_option('#map','compact');p.select_option('#clock','0')
+        p.select_option('#policy',mode if mode in ('even','district','free') else 'even')
         p.select_option('#seat-1','human');p.select_option('#seat-2','off');p.click('#start')
         for _ in range(250):
             phase=p.locator('body').get_attribute('data-phase')
@@ -44,7 +45,7 @@ with sync_playwright() as pw:
                 p.get_by_role('button',name=name,exact=True).click()
             else:raise AssertionError(phase)
         s=p.evaluate('snapshot');assert s['builds']
-        tiles=p.evaluate('JSON.parse(document.getElementById("config").textContent).tiles')
+        tiles=p.evaluate('JSON.parse(document.getElementById("boardCatalog").textContent).boards.compact.rules.tiles')
         project=s['builds'][0];member=(project['tiles'][1] if mode=='district' else s['builds'][1]['tile'])
         cash=s['players'][s['turn']]['cash'];initial=p.evaluate('commits')
         def seen(selector):

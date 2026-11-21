@@ -2,8 +2,9 @@
 import assert from 'node:assert/strict';
 import {boards, score, send} from './economy-fixture.mjs';
 import {actingSeat, botMove} from '../web/strategy.mjs';
+import {readFileSync} from 'node:fs';
 
-const rules={...boards.grand,rounds:8};
+const rules={...JSON.parse(readFileSync(new URL('../web/edition-charter.json',import.meta.url))).grand,rounds:8};
 const id=name=>{
   const i=rules.tiles.findIndex(t=>t.name===name);
   assert.notEqual(i,-1,name);return i;

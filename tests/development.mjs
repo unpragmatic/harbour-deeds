@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import {boards,oldCurve,send} from './economy-fixture.mjs';
 import {botMove} from '../web/strategy.mjs';
 
-for(const [id,rules] of Object.entries({...boards,grandOldCurve:oldCurve})){
+// These benchmarks compare the Harbor percentage curves, not fixed-price development tables.
+for(const [id,rules] of Object.entries({compact:boards.compact,outer:boards.outer,grand:boards.grand,grandOldCurve:oldCurve})){
   const ratios=rules.development.levels.map(()=>[]);
   for(const t of rules.tiles.filter(t=>t.kind==='deed')){
     let rent=Math.round(t.rent*rules.development.set_rent_pct/100),prev=0;

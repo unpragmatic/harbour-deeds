@@ -10,8 +10,10 @@
   "commands": {
     "start":["Start or rematch","Fresh board; no startup fanfare","quiet"],
     "roll":["Roll and land","Dice tumble to their actual faces; the numbered ship traces its route. The destination and net cash change stay on the table.","dice"],
+    "bail":["Pay bail","Show the debit and release; the next seat may play.","coin"],
+    "pardon":["Use a pardon","File the held card and release the detained seat.","paper"],
     "buy":["Purchase a deed","Deed seal lands, tile receives an ink stamp, buyer’s balance shows the debit.","coin"],
-    "pass":["Open bidding","Announce the auction","gavel"],
+    "pass":["Decline a deed","Announce the auction or leave the deed on the market, according to the board.","gavel"],
     "bid":["Raise bid","Confirm the accepted amount","bid"],
     "withdraw":["Withdraw or expire","Bidder leaves the lot, or gavel closes with winner and actual price. No sale has a separate result.","down"],
     "build":["Develop property","Hammer strikes; every improved tile gets its level stamp, with cost and new rent or district scope on the table.","build"],
@@ -28,6 +30,7 @@
     "end":["Advance turn","Ordinary transitions are quiet; final scores get a cadence","quiet"]
   },
   "surfaces": [
+    ["Draw-space catalog","One selection shows every possible outcome from this space's own deck. Inspection must not draw a card, reveal shuffled order or change the turn."],
     ["Inspect / browse","Select a tile with pointer or keyboard; check focus vs landing, name, cost and owner."],
     ["Players / activity / rules","Desktop keeps the board and command dock visible. Switch the right instrument, inspect a named holding or return to the offered lot. Phone switches views."],
     ["Treasury","Check every seat without a click, scroll, or hover on all instruments and inside game sheets. For path costs, budgets and contrast evidence see review/clicks.json and review/desktop.py."],

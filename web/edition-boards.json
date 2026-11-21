@@ -1,0 +1,5 @@
+{
+  "compact": {"label":"Inner Harbor", "layout":{"rows":6, "columns":6, "start":"bottom-left", "direction":"clockwise", "density":"spacious", "foldColumns":8}},
+  "outer":   {"label":"Outer Harbor", "layout":{"rows":7, "columns":9, "start":"bottom-left", "direction":"clockwise", "density":"regular", "foldColumns":8}},
+  "grand":   {"label":"Grand Harbor", "layout":{"rows":9, "columns":13, "start":"bottom-left", "direction":"clockwise", "density":"dense", "foldColumns":8}}
+}

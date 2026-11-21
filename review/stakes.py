@@ -9,7 +9,7 @@ release = (review.parent/'dist/index.html').read_text()
 anchor = "engine=(await WebAssembly.instantiate(bytes)).instance.exports;"
 fixture = """
 window.revisit=moves=>{
-  session?.abort();initialize(['human','bot','bot'],'grand',0,1,'even',currentEdition,
+  session?.abort();initialize(['human','bot','bot'],'grand',0,1,'even','charter-1',
     {victory:'net_worth',rounds:8,deeds:false,improvements:false});
   const journal={seq:0};
   for(const m of moves)replay(journal,m);

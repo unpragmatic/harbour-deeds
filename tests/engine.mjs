@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {botMove} from '../web/strategy.mjs';
+import {boards} from './economy-fixture.mjs';
 
-const rules=JSON.parse(readFileSync(new URL('../web/rules.json',import.meta.url)));
+const rules=boards.compact;
 const wasm=new URL('../target/wasm32-unknown-unknown/release/harbor_deeds.wasm',import.meta.url);
 const {instance:{exports:e}}=await WebAssembly.instantiate(readFileSync(wasm));
 function send(command){
@@ -33,9 +34,9 @@ const board={...rules,cash:100,salary:0,
 function start(seats=2,config=board){
   return act('start',undefined,{rules:config,seats,seed:10});
 }
-const grand={...rules,...JSON.parse(readFileSync(new URL('../web/grand-harbor.json',import.meta.url)))};
+const grand=boards.grand;
 test('configurable dice and a reproducible deck exhausted before reshuffling',()=>{
-  const config={...grand,dice:{count:3,sides:4},rounds:80,cash:10000,tiles:Array(16).fill({kind:'notice'})};
+  const config={...grand,network_fares:{},dice:{count:3,sides:4},rounds:80,cash:10000,tiles:Array(16).fill({kind:'notice'})};
   function draws(seed){
     let s=act('start',undefined,{rules:config,seats:2,seed});const cards=[];
     for(let i=0;i<16;i++){
@@ -48,7 +49,7 @@ test('configurable dice and a reproducible deck exhausted before reshuffling',()
   for(const k of [0,8])assert.equal(new Set(seq.slice(k,k+8)).size,8);
 });
 test('exchange auctions another deed; guild cover pays the landlord once',()=>{
-  const config={...grand,tiles:Array.from({length:16},(_,i)=>i===2?{kind:'exchange'}:i===7?{kind:'guild',cash_offer:3,cover_offer:60}:{kind:'deed',price:20,rent:80,group:'x'})};
+  const config={...grand,network_fares:{},tiles:Array.from({length:16},(_,i)=>i===2?{kind:'exchange'}:i===7?{kind:'guild',cash_offer:3,cover_offer:60}:{kind:'deed',price:20,rent:80,group:'x'})};
   start(2,config);let s=act('roll',0);assert.equal(s.auction.tile,3);assert.equal(s.players[0].pos,2);
   act('bid',0,{amount:10});s=act('withdraw',1);assert.equal(s.owners[3],0);
   act('end',0);s=act('roll',1);assert.equal(s.phase,'guild');illegal('insure',0);s=act('insure',1);assert.equal(s.players[1].cover,60);

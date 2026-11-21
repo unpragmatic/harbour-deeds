@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 from playwright.sync_api import sync_playwright,expect
+from board_fixture import edit_rules
 
 root=Path(__file__).resolve().parent
 release=(root.parent/'dist/index.html').read_text()
@@ -15,12 +16,13 @@ with sync_playwright() as pw:
         p.add_init_script(f'crypto.getRandomValues=a=>(a[0]={seed},a);window.clicks=0;addEventListener("click", e=>{{if(e.isTrusted)window.clicks++}},true)')
         html=release
         if debt:
-            base=(root.parent/'web/rules.json').read_text();fixture=json.loads(base);fixture['cash']=200
-            if ending=='salvage':
-                fixture['tiles'][6]['group']='Pilotage'
-                for t in fixture['tiles']:
-                    if t['kind']=='fee':t['price']=35
-            html=html.replace(f'id="config" type="application/json">{base}',f'id="config" type="application/json">{json.dumps(fixture)}')
+            def adjust(fixture):
+                fixture['cash']=200
+                if ending=='salvage':
+                    fixture['tiles'][6]['group']='Pilotage'
+                    for t in fixture['tiles']:
+                        if t['kind']=='fee':t['price']=35
+            html=edit_rules(html,'compact',adjust)
         p.route('http://harbor.test/',lambda r:r.fulfill(body=html,content_type='text/html'))
         p.goto('http://harbor.test/');p.click('#setupBtn');p.locator('#advanced summary').click()
         p.select_option('#map','compact');p.select_option('#seat-1','human');p.select_option('#seat-2','off')

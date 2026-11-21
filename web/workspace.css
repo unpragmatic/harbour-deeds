@@ -53,8 +53,8 @@ dialog[open]{display:flex;flex-direction:column}#content{overflow:auto;min-heigh
 }
 @media(min-width:1120px){
   .layout .boardbox:has(.board.route){display:flex;flex-direction:column}
-  .layout .boardbox .board.route{flex:1;min-height:230px;grid-template:auto-flow minmax(47px,1fr) / repeat(8,minmax(0,1fr))!important}
-  .board.route .tile,.board.route[data-map=grand] .tile{grid-row:var(--fold-row)!important;grid-column:var(--fold-col)!important;min-height:0;padding:7px 2px 2px}
+  .layout .boardbox .board.route{flex:1;min-height:230px;grid-template:auto-flow minmax(47px,1fr) / repeat(var(--fold-columns),minmax(0,1fr))!important}
+  .board.route .tile,.board.route[data-density=dense] .tile{grid-row:var(--fold-row)!important;grid-column:var(--fold-col)!important;min-height:0;padding:7px 2px 2px}
   .board.route .station{display:block;position:absolute;left:3px;top:6px;font:650 10px/1 ui-monospace,monospace;color:#344756}
   .board.route .tile strong{padding-inline:7px}
   .boardbox:has(.board.route) .boardfoot span:first-child{font-size:0}
@@ -72,7 +72,7 @@ dialog[open]{display:flex;flex-direction:column}#content{overflow:auto;min-heigh
 }
 
 /* The helm is for committing the next move; the chart is for following the last one. */
-.board .tile[data-kind=works],.board[data-map=grand] .tile[data-kind=works]{color:#173e4b;background:repeating-linear-gradient(135deg,#d5ebee 0 7px,#e6f4f3 7px 10px)}
+.board .tile[data-kind=works],.board[data-density=dense] .tile[data-kind=works]{color:#173e4b;background:repeating-linear-gradient(135deg,#d5ebee 0 7px,#e6f4f3 7px 10px)}
 #saleQuote .facts{display:flex;gap:12px}
 #commissionQuote .facts{display:flex;gap:10px}
 #saleQuote+.primary,#commissionQuote+.primary{margin-right:5px}

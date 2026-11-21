@@ -35,7 +35,7 @@
 .inkStamp{position:absolute;opacity:0;white-space:nowrap;color:#672e1d;background:#fff0bd;border:3px double currentColor;padding:2px 6px;box-shadow:1px 3px 4px #172f2940;font:900 14px/1.1 system-ui;letter-spacing:.04em}
 .account em.credit{color:#a7f1bc}
 .board .tile{gap:1px}
-.board .tile strong,.board[data-map=grand] .tile strong{font:bold clamp(13px,1.1vw,17px)/1.07 Georgia,serif}
+.board .tile strong,.board[data-density=dense] .tile strong{font:bold clamp(13px,1.1vw,17px)/1.07 Georgia,serif}
 .board .tile .tileValue{font:730 13px/1.05 system-ui;color:#263e35;letter-spacing:-.025em}
 .board .tile.special .tileValue{font-size:12px}
 .board .tile.deed:before{height:5px}
@@ -56,17 +56,17 @@
 }
 .desk #actions button:not(:disabled):active{transform:translateY(2px);box-shadow:inset 0 2px 3px #0004}
 @media(min-width:1200px) and (min-height:941px){
-  .layout .boardbox:has(.board[data-map=grand]){grid-template-rows:auto minmax(720px,1fr) auto}
-  .board[data-map=grand]{width:100%;min-height:720px}
-  .board[data-map=grand] .tile:has(.berth){gap:0;padding:5px 2px 2px}
-  .board[data-map=grand] .tile:has(.berth) strong{font-size:clamp(13px,1vw,15px)}
+  .layout .boardbox:has(.board[data-density=dense]){grid-template-rows:auto minmax(720px,1fr) auto}
+  .board[data-density=dense]{width:100%;min-height:720px}
+  .board[data-density=dense] .tile:has(.berth){gap:0;padding:5px 2px 2px}
+  .board[data-density=dense] .tile:has(.berth) strong{font-size:clamp(13px,1vw,15px)}
 }
 /* When eleven perimeter cells would force small print, display the same route as a chart in movement order. */
 .layout .boardbox:has(.board.route){display:block}
 .layout .boardbox[hidden]{display:none!important}
 .layout .boardbox .board.route{display:grid;width:100%;height:auto;max-height:none;min-height:0;aspect-ratio:auto;grid-template:auto / repeat(auto-fit,minmax(min(100%,100px),1fr))!important}
-.board.route .tile,.board.route[data-map=grand] .tile{grid-area:auto!important;min-height:74px;padding:7px 3px 4px}
-.board.route .tile strong,.board.route[data-map=grand] .tile strong{font:700 15px/1.08 Georgia,serif}
+.board.route .tile,.board.route[data-density=dense] .tile{grid-area:auto!important;min-height:74px;padding:7px 3px 4px}
+.board.route .tile strong,.board.route[data-density=dense] .tile strong{font:700 15px/1.08 Georgia,serif}
 .board.route .ocean{display:none}
 @media(max-width:800px){.board.route .ocean:has(#mobileLadder:not(:empty)){display:block;grid-area:auto / 1 / auto / -1!important;order:-1}.board.route .ocean>.chart{display:none}}
 #stage.strip{position:sticky;top:0;width:100%;z-index:6;border:1px solid #cfb274;box-shadow:0 2px 5px #21392f40}

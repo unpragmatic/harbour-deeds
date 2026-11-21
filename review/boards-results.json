@@ -1,0 +1,17 @@
+{
+  "observed": {
+    "read-network": 1,
+    "inspect-treasure": 1,
+    "read-utility": 1,
+    "inspect-surprise-phone": 1,
+    "second-airport": 0,
+    "sell-airport": 1,
+    "trade-airport": 0
+  },
+  "ownerContrast": [
+    7.37,
+    7.09,
+    7.19,
+    7.99
+  ]
+}

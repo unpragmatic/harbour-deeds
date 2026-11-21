@@ -67,7 +67,15 @@ with contextlib.ExitStack() as stack:
         p.goto(f'http://127.0.0.1:{http.server_port}/')
         p.click('#setupBtn')
         assert p.locator('#clock').input_value() == '5'
-    host.click('#host')
+    # Local and host forms reset all board-owned settings, but not the human clock.
+    host.locator('#advanced summary').click()
+    host.select_option('#policy','free');host.select_option('#clock','15')
+    host.select_option('#map','richup')
+    assert host.locator('#policy').input_value()=='even' and host.locator('#clock').input_value()=='15'
+    assert host.locator('#victory').input_value()=='elimination' and host.locator('#roundLimit').input_value()=='30'
+    assert host.locator('#debtDeeds').is_checked() and host.locator('#debtLevels').is_checked()
+    host.click('#start');expect(host.locator('#boardName')).to_have_text('RichUp Classic')
+    host.click('#setupBtn');host.click('#host')
     code = host.locator('#tableCode').inner_text()
     assert len(code) == 6
     for i, p in enumerate([guest, other], start=1):
@@ -77,6 +85,9 @@ with contextlib.ExitStack() as stack:
         expect(p.locator('#roomInfo')).to_contain_text(f'Device {i}', timeout=18000)
     capture(guest.locator('#modal'), 'guest-wait.png')
     host.select_option('#map', 'outer')
+    assert host.locator('#victory').input_value()=='net_worth' and host.locator('#roundLimit').input_value()=='18'
+    assert not host.locator('#debtDeeds').is_checked() and not host.locator('#debtLevels').is_checked()
+    host.select_option('#clock','5')
     host.select_option('#victory','elimination');host.check('#debtDeeds');host.check('#debtLevels')
     host.select_option('#owner0', '1')
     host.select_option('#owner1', '1')
@@ -209,6 +220,33 @@ with contextlib.ExitStack() as stack:
         expect(p.locator('#tile-12')).to_have_attribute('aria-label',re.compile('Owned by Seat 2'))
     host.click('#setupBtn');host.once('dialog',lambda dialog:dialog.accept());host.click('#leave')
     expect(guest.locator('#reason')).to_contain_text('ended')
+    # The host can start the standalone board without hand-entering its charter.
+    host.click('#retry');host.click('#host');code=host.locator('#tableCode').inner_text()
+    host.select_option('#policy','district');host.select_option('#map','richup')
+    guest.click('#retry');guest.click('#join');guest.fill('#code',code);guest.locator('#joinForm button').click()
+    expect(guest.locator('#roomInfo')).to_contain_text('Device 1')
+    # Enrollment redraws the lobby. Both board defaults and subsequent overrides survive.
+    expect(host.locator('#policy')).to_have_value('even')
+    host.select_option('#owner1','1');host.click('#launch')
+    for p in (host,guest):
+        expect(p.locator('#boardName')).to_have_text('RichUp Classic')
+        expect(p.locator('#round')).to_contain_text('LAST SHIP STANDING')
+        expect(p.locator('.tile')).to_have_count(40)
+    config=host.evaluate("JSON.parse(localStorage.getItem('harbor-deeds.table.v2')).config")
+    assert config['map']=='richup' and config['policy']=='even'
+    assert config['charter']=={'victory':'elimination','rounds':30,'deeds':True,'improvements':True}
+    host.click('#setupBtn');host.once('dialog',lambda dialog:dialog.accept());host.click('#leave')
+    expect(guest.locator('#reason')).to_contain_text('ended')
+    # A current map ID is invalid in any edition whose snapshot did not include it.
+    for edition in (None,'dockworks-1','charter-1','airports-1'):
+        invalid={**config}
+        if edition:invalid['edition']=edition
+        else:del invalid['edition']
+        if edition in (None,'dockworks-1'):del invalid['charter']
+        host.evaluate("""([code,config])=>localStorage.setItem('harbor-deeds.table.v2',JSON.stringify({
+          role:'host',code,config,keys:{1:'e'.repeat(64)},remaining:0,journal:[]}))""",[code,invalid])
+        host.reload();host.click('#resumeTable')
+        expect(host.locator('#reason')).to_contain_text('Invalid host settings')
     # A host journal created before rules editions existed must use its original map and prices.
     host.evaluate("""code=>localStorage.setItem('harbor-deeds.table.v2',JSON.stringify({
       role:'host',code,config:{owners:[0,1],seconds:5,map:'grand',seed:1,policy:'even'},

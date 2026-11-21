@@ -74,26 +74,29 @@ function stepPlot(dir,focus=false){
 function plotImpact(s,mode,i,q){
   const t=rules.tiles[i],cash=s.players[s.turn].cash;
   const group=rules.tiles.flatMap((x,k)=>x.kind==='deed'&&x.group===t.group?[k]:[]);
+  const fares=faresFor(t.group),owned=group.filter(k=>s.owners[k]===s.turn);
+  const lostFare=fares&&owned.length>1?` Remaining ${t.group}: ${rateLabel(t.group,fares[owned.length-1])} → ${rateLabel(t.group,fares[owned.length-2])} per landing.`:'';
+  const income=utilityFor(t.group)?rateLabel(t.group,fares[owned.length-1]):money(s.rents[i]);
   if(s.phase==='debt'){
     const level=mode==='salvage',affected=level?q.tiles:[i],complete=group.every(k=>s.owners[k]===s.turn);
     const payout=q.price,due=s.debt.remaining,surplus=cash+payout-due;
     return {metrics:[['Proceeds',money(payout)],['Still due',money(Math.max(0,-surplus))],['Cash after',money(Math.max(0,surplus))]],
-      note:level?`Remove one level from ${affected.map(k=>rules.tiles[k].name).join(', ')}. ${t.name} rent: ${money(s.rents[i])} → ${money(lowerRent(s,i))}.`:`${t.name} returns to market; lose ${money(s.rents[i])} next rent.${complete?' Breaks the set.':''}`,
+      note:level?`Remove one level from ${affected.map(k=>rules.tiles[k].name).join(', ')}. ${t.name} rent: ${money(s.rents[i])} → ${money(lowerRent(s,i))}.`:`${t.name} returns to market; lose ${income} next rent.${fares?lostFare:complete?' Breaks the set.':''}`,
       detail:`${money(Math.min(due,payout))} goes to ${debtCreditor(s)}. ${surplus>=0?'This clears the bill.':'More liquidation is needed.'}`,
-      scope:level?affected:complete?group:[i],button:`${level?'Sell level':'Sell deed'} · ${money(payout)}`};
+      scope:level?affected:fares?owned:complete?group:[i],button:`${level?'Sell level':'Sell deed'} · ${money(payout)}`};
   }
   if(mode==='sell'){
     const complete=group.every(k=>s.owners[k]===s.turn);
-    return {metrics:[['Bank pays','+'+money(q.price)],['Cash after',money(cash+q.price)],['Rent forfeited',money(s.rents[i])]],
-      note:`Returns to market.${complete?' Breaks the set: remaining deeds lose their set rent.':''}${s.bonuses?.[i]?' The unused refit is lost.':''}`,
-      detail:bankTerms(),scope:complete?group:[i],button:`Sell for ${money(q.price)}`};
+    return {metrics:[['Bank pays','+'+money(q.price)],['Cash after',money(cash+q.price)],['Rent forfeited',income]],
+      note:`Returns to market.${fares?lostFare:complete?(rules.development.set_rent_pct===100?' Breaks the set: building is no longer available.':' Breaks the set: remaining deeds lose their set rent.'):''}${s.bonuses?.[i]?' The unused refit is lost.':''}`,
+      detail:bankTerms(),scope:fares?owned:complete?group:[i],button:`Sell for ${money(q.price)}`};
   }
   const short=q.cost>cash,after=short?`${money(q.cost-cash)} short`:money(cash-q.cost);
   if(mode==='commission')return {metrics:[['Fee now',money(q.cost)],['Cash after',after],['Next rent',`${money(s.rents[i])} → ${money(s.rents[i]+q.gain)}`]],
     note:`+${money(q.gain)} once: gain ${money(q.gain-q.cost)} net if collected in full; lose ${money(q.cost)} if unused.`,
     detail:'No full set required. This is not a permanent level.',scope:[i],button:`Refit for ${money(q.cost)}`};
   const d=rules.development,affected=plotMembers(q);
-  const next=k=>Math.round(rules.tiles[k].rent*d.levels[s.levels[k]].rent_pct/100);
+  const next=k=>tierRent(rules,k,s.levels[k]+1);
   const current=k=>s.rents[k]-(s.bonuses?.[k]??0);
   const gains=affected.map(k=>next(k)-current(k));
   const range=(nums,format)=>{const lo=Math.min(...nums),hi=Math.max(...nums);return lo===hi?format(lo):`${format(lo)}–${format(hi)}`};
@@ -104,15 +107,15 @@ function plotImpact(s,mode,i,q){
     detail:`Level ${s.levels[i]} → ${s.levels[i]+1}. ${rules.victory==='elimination'?'No round limit.':`Up to ${rolls} rival rolls left.`} No final score premium.${s.bonuses?.[i]?' Permanent rents shown; the one-use refit remains.':''}`,scope:s.locked[i]?affected:group,button:`Build for ${money(q.cost)}`};
 }
 function lowerRent(s,k){
-  const lv=s.levels[k]-1,d=rules.development;
-  return Math.round(rules.tiles[k].rent*(lv?d.levels[lv-1].rent_pct:d.set_rent_pct)/100)+(s.bonuses?.[k]??0);
+  return tierRent(rules,k,s.levels[k]-1)+(s.bonuses?.[k]??0);
 }
 function districtPreview(s,mode,i,q,scope){
   if(scope.length<2)return '';
   return `<table class="plotScope"><caption>${rules.tiles[i].group} · rent you collect after confirming</caption><thead><tr><th>Space</th><th>Now</th><th>After</th></tr></thead><tbody>${scope.map(k=>{
-    const t=rules.tiles[k],bonus=s.bonuses?.[k]??0,before=s.rents[k];
-    const after=mode==='sell'?(k===i?0:t.rent+bonus):mode==='salvage'?lowerRent(s,k):q.tiles.includes(k)?Math.round(t.rent*rules.development.levels[s.levels[k]].rent_pct/100)+bonus:before;
-    return `<tr><th>${t.name}</th><td>${money(before)}</td><td>${before===after?'Unchanged':money(after)}</td></tr>`;
+    const t=rules.tiles[k],bonus=s.bonuses?.[k]??0,before=utilityFor(t.group)?utilityFor(t.group)[scope.length-1]:s.rents[k];
+    const fares=faresFor(t.group);
+    const after=mode==='sell'?(k===i?0:fares?fareAt(fares,scope.length-1):t.rent+bonus):mode==='salvage'?lowerRent(s,k):q.tiles.includes(k)?tierRent(rules,k,s.levels[k]+1)+bonus:before;
+    return `<tr><th>${t.name}</th><td>${rateLabel(t.group,before)}</td><td>${before===after?'Unchanged':rateLabel(t.group,after)}</td></tr>`;
   }).join('')}</tbody></table>`;
 }
 function setPlot(i){

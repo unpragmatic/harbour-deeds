@@ -1,6 +1,8 @@
 {
   "method": "Desktop mouse paths from the named starting state. Count each deliberate activation, including opening a native select and picking an option (2). Typing, waiting, automatic resolution, and site navigation are excluded and named where relevant. Reading at 0 means no click, hover, scroll, or keyboard shortcut. Decisions with several participants count each participant’s clicks. Repeated bids and edits add their own costs. Budgets are ceilings, not an instruction to remove safeguards.",
   "criteria": [
+    {"id":"deck-inspection","name":"Read the deck without drawing","rule":"A single selection on desktop or phone lists only the chosen space's public deck and explains each outcome, including movement, bills and detention. Inspection must not reveal the future, consume a card, or advance the game.","interactions":["space"],"scenarios":["inspect-treasure","inspect-surprise-phone"]},
+    {"id":"network-stakes","name":"Every network member reprices","rule":"Before buying a second airport, show the fare the buyer would collect at each airport. A bank sale or trade must preview the rate change on retained deeds, not just the price of the selected deed. Show a utility as a dice multiplier, never a guaranteed cash amount.","interactions":["space","stakes","sellSheet","plotRead","tradeTerms"],"scenarios":["read-network","read-utility","second-airport","sell-airport","trade-airport"]},
     {"id":"ownership-mark","name":"One ownership mark per deed","rule":"A single horizontal mark must say both who owns the deed and how much of its district that seat owns. A complete set replaces the fraction, not the space around it. Unowned deeds have no mark. Keep ships and selection separate. Check a split district, a proposed swap, the accepted swap and a sale that breaks just one set. The same information must work without color, hovering or opening a panel.","interactions":["titleHolder","setRead"],"scenarios":["split-owner","read-full-set","release-title","rival-berth"]},
     {"id":"district-identity","name":"Read a district from the whole deed","rule":"District identity belongs to the tile face, not its header. With color and the top third excluded, the middle and lower face must still carry the district’s recognizable print. Names and values must remain legible on that print. Check every shipped map and the folded phone board, including intervening service spaces. Ownership and trade selections must not erase the print. A complete set must be readable without opening a portfolio, and its mark must disappear when the set breaks.","interactions":["districtRead","setRead"],"scenarios":["match-print","header-free","match-print-phone","read-full-set","trade-print"]},
     {"id":"decision-stakes","name":"Show why this decision matters now","rule":"When a deed is one player's last missing district member, an offer or auction must name that player and the rent at stake before the commitment, even if it is a rival. Before rolling, identify an almost complete district's missing deed and owner without a portfolio lookup. Show the real net-worth gap on a scored table; cash is not the score.","interactions":["stakes","race"],"scenarios":["chase","block","price-out"]},
@@ -58,6 +60,8 @@
     ],
     "Roll, auction and resolve": [
       ["roll","Human seat before roll","Roll dice (R)",1],
+      ["bail","Detained seat before rolling","Pay the displayed bail and give up this turn",1],
+      ["pardon","Detained seat holding a release card","Redeem the card instead of paying bail",1],
       ["buy","Affordable offer","Buy at list price",1],
       ["pass","Deed offered","Start open auction",1],
       ["bid","Your bid, within budget","Place minimum or jump preset",1],
@@ -126,6 +130,13 @@
     ]
   },
   "scenarios": [
+    ["inspect-treasure","Classic board in play on desktop","Select Treasure to read its 17 possible instructions without drawing","space",1],
+    ["inspect-surprise-phone","Classic board in play on a phone","Tap Surprise to read its own 17 possible instructions without drawing","space",1],
+    ["read-network","Grand Harbor board before rolling","Inspect an airport and compare its full network fare ladder","space",1],
+    ["read-utility","Classic board before rolling","Inspect a company and read its one- and two-deed dice multipliers","space",1],
+    ["second-airport","An offer for a second airport","Read what this purchase does to the fare at both deeds before buying","stakes",0],
+    ["sell-airport","Seat owns two airports before rolling","Select one on the board and see the surviving airport's lower fare without selling","sellSheet plotRead",1],
+    ["trade-airport","A draft gives one of a pair of airports to a seat with none","Read the retained and acquired fares before proposing","tradeTerms",0],
     ["match-print","Monochrome desktop perimeter and district key","Match every deed to its named district on each shipped map","districtRead",0],
     ["header-free","Color and the top third of each desktop deed excluded","Distinguish every district from the engraving that remains around its name and amount","districtRead",0],
     ["match-print-phone","Folded phone board with the first two rows in view","Recognize the Old Town deeds on either side of Bottle Post","districtRead",0],

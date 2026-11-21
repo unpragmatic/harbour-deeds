@@ -16,7 +16,7 @@ anchor='engine=(await WebAssembly.instantiate(bytes)).instance.exports;'
 assert html.count(anchor)==1
 html=html.replace(anchor,anchor+'''
 window.printTable=(map,moves)=>{
-  session?.abort();initialize(['human','human','human'],map,0,1,'even',currentEdition,
+  session?.abort();initialize(['human','human','human'],map,0,1,'even',moves.length?'charter-1':currentEdition,
     {victory:'net_worth',rounds:8,deeds:false,improvements:false});
   const journal={seq:0};for(const m of moves)replay(journal,m);render();
   session=new AbortController();if(state.phase==='roll')controllers.human(state,session.signal);
@@ -91,14 +91,15 @@ with sync_playwright() as pw:
 
     def print_pairs(tiles,mono):
         color=Image.open(BytesIO(p.screenshot())).convert('RGB')
-        plate=Image.new('RGB',(4*166,2*95),'#302d29')
+        groups=list(dict.fromkeys(t['group'] for t in tiles if t['kind']=='deed'))
+        plate=Image.new('RGB',(3*166,((len(groups)+2)//3)*95),'#302d29')
         def capture(img,selector,cut_header=False):
             r=p.locator(selector).bounding_box()
             return img.crop((round(r['x']),round(r['y']+r['height']/3*cut_header),
                              round(r['x']+r['width']),round(r['y']+r['height'])))
-        for j,g in enumerate(prints):
+        for j,g in enumerate(groups):
             a,b,*_= [i for i,t in enumerate(tiles) if t.get('group')==g]
-            x,y=j%4*166+8,j//4*95+4
+            x,y=j%3*166+8,j//3*95+4
             left=capture(color,f'#tile-{a}')
             right=capture(mono,f'#tile-{b}',True)
             plate.paste(left,(x,y));plate.paste(right,(x+75,y+left.height-right.height))
@@ -128,7 +129,7 @@ with sync_playwright() as pw:
         return row
 
     monochrome(True)
-    for board in ('compact','outer','grand'):
+    for board in sorted((b['id'] for b in json.loads((root/'web/boards.json').read_text())['boards']),key=lambda b:b=='grand'):
         tiles=table(board)
         images=photos()
         visible('#printKey>div')

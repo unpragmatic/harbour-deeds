@@ -63,7 +63,7 @@ def audit_game():
         'bus.connect(audio.destination);': 'window.auditMeter=audio.createAnalyser();bus.connect(auditMeter);',
         'engine=(await WebAssembly.instantiate(bytes)).instance.exports;': '''
           window.readJournalCard=({seed,steps,short})=>{
-            session?.abort();initialize(['human','human'],'grand',0,seed);
+            session?.abort();initialize(['human','human'],'grand',0,seed,undefined,'charter-1');
             if(short){
               rules={...rules,cash:short==='debt'?160:20,liquidation:{...rules.liquidation,deeds:short==='debt'}};
               state=command({action:'start',seed,seats:2,rules});
@@ -108,7 +108,7 @@ def read_at_table(browser, game, out, phone):
     if not phone:
         # Eight actual human turns, with ordinary automatic ends. Seat 1's
         # next roll crosses Port Office and draws a charge at Bottle Post.
-        for buy in [True, True, True, True, True, False, False, True]:
+        for buy in [True, True, True, True, True, False, True, True]:
             roll.click()
             if buy:
                 p.get_by_role('button', name='Buy · $', exact=False).click()
@@ -122,7 +122,7 @@ def read_at_table(browser, game, out, phone):
     assert result['text'] == [title, 'To Seat 1 · Bottle Post',
                               'Carry $65 against your next rent. Keep any higher cover.' if phone else 'Pay $55 at the port office.',
                               '$65 cover in force' if phone else 'Paid $55',
-                              'Cash $850 → $850' if phone else 'Port salary +$240 · Cash $240 → $425'], result
+                              'Cash $850 → $850' if phone else 'Port salary +$240 · Cash $160 → $345'], result
     p.screenshot(path=out/('dispatch-phone.png' if phone else 'dispatch-desktop.png'))
     # The next roll is available with the card still up. Filing it needs
     # no housekeeping and must not silently shift focus/change the game.

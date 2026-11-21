@@ -2,10 +2,11 @@ import {readFileSync} from 'node:fs';
 import {botMove} from '../web/strategy.mjs';
 
 // Count player commands, not automatic engine transitions, animation frames or form keystrokes.
-const legacy=Boolean(process.argv[3])&&process.argv[3]!=='outer';
 const page=readFileSync(process.argv[2]||'dist/index.html','utf8');
 const data=id=>page.match(new RegExp(`<script id="${id}"[^>]*>([^<]+)</script>`))[1];
-const rules=JSON.parse(data(process.argv[3]==='outer'?'outer':'config'));
+const catalog=page.includes('<script id="boardCatalog"')?JSON.parse(data('boardCatalog')):null;
+const legacy=!catalog&&Boolean(process.argv[3])&&process.argv[3]!=='outer';
+const rules=catalog?catalog.boards[process.argv[3]??'compact'].rules:JSON.parse(data(process.argv[3]==='outer'?'outer':'config'));
 const {instance:{exports:e}}=await WebAssembly.instantiate(Buffer.from(data('binary'),'base64'));
 function send(c){
   const b=Buffer.from(JSON.stringify(c)), p=e.reserve(b.length);

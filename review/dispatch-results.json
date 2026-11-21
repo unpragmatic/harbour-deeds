@@ -6,10 +6,10 @@
     "recall-dispatch": 1
   },
   "desktop": {
-    "firstVisibleMs": 160,
-    "nextRollReadyMs": 1018,
+    "firstVisibleMs": 147,
+    "nextRollReadyMs": 980,
     "continuouslyObservedMs": 6016,
-    "frames": 353,
+    "frames": 362,
     "misses": 0,
     "animated": true,
     "peak": 0.101,
@@ -26,14 +26,14 @@
       "To Seat 1 · Bottle Post",
       "Pay $55 at the port office.",
       "Paid $55",
-      "Port salary +$240 · Cash $240 → $425"
+      "Port salary +$240 · Cash $160 → $345"
     ],
     "recallClicks": 1
   },
   "phone": {
-    "firstVisibleMs": 16,
-    "nextRollReadyMs": 976,
-    "continuouslyObservedMs": 6010,
+    "firstVisibleMs": 14,
+    "nextRollReadyMs": 978,
+    "continuouslyObservedMs": 6014,
     "frames": 362,
     "misses": 0,
     "animated": false,
@@ -128,7 +128,7 @@
     }
   },
   "online": {
-    "guestHandoffMs": 919,
+    "guestHandoffMs": 932,
     "automaticFiling": true,
     "liveCuesPerDevice": 1,
     "rejoinCues": 0,

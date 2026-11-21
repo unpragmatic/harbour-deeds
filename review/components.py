@@ -33,10 +33,10 @@ sections = {
         ('recovery', 'Interrupted table', 'Distinguish a paused network table from a completed match. A returning device needs a recovery action, not a fresh local game.'),
     ],
     'Navigate and inspect': [
-        ('district-pairs','Eight districts without their headers','For each district: a full deed on the left, a different member on the right with color and the top third removed. These are enlarged crops of the actual board, not drawings of the intended tile.'),
+        ('district-pairs','Districts without their headers','For each Grand Harbor district: a full deed on the left, a different member on the right with color and the top third removed. These are enlarged crops of the actual board, not drawings of the intended tile.'),
         ('ownership-changes','Split → complete → sold','The same three Shipyards deeds, top to bottom. Before the swap Seat 1 owns two and Seat 3 one. After acceptance, all three marks read S1 SET. Selling Spar Yard removes its mark and the two remaining deeds return to S1 2/3.'),
         ('district-sets','Two owners, two complete sets','Shipyards is marked S1 SET; Exchange is S3 SET. Grain Quay belongs to Seat 3 even with Ship 1 visiting. The inspector groups district deeds by their current holder.'),
-        ('district-grayscale','Follow the printed faces','All 24 Grand Harbor deeds carry their engraving across the board space. Bottle Post interrupts the brickwork of Old Town with a dark envelope face: a draw, not a deed.'),
+        ('district-grayscale','Follow the printed faces','All 27 Grand Harbor deeds carry their engraving across the board space. Bottle Post interrupts the brickwork of Old Town with a dark envelope face: a draw, not a deed.'),
         ('district-phone','Full names on the folded route','Three Old Town deeds share the same brickwork and full district name. The deed title sits directly on the print; a small plain ticket keeps the price distinct. No legend lookup or tap is required.'),
         ('crowded-space', 'Four visitors on an improved deed', 'Density fixture: one ownership mark above the name, four numbered ships below the rent. The inspector keeps the development ladder.'),
         ('grand-harbor', 'Grand Harbor circuit', 'The 40-space circuit distinguishes guilds, dispatches, exchanges, fees and deed districts. Inspect a space to read its effect.'),
@@ -118,7 +118,7 @@ out.append('<p><b>What still takes effort:</b> from Manage deeds, choosing a non
            'Leaving an active network match costs three: the last confirmation protects every device. '
            'Budgets measure effort, not enjoyment; they are not human playtest results.</p>')
 obs=results['observed'].copy()
-for file in ('property-results.json','charter-results.json','dispatch-results.json','stakes-results.json','trade-results.json','district-results.json'):
+for file in ('property-results.json','charter-results.json','dispatch-results.json','stakes-results.json','trade-results.json','district-results.json','boards-results.json'):
     obs.update(json.loads((root/file).read_text())['observed'])
 criteria=survey['criteria']
 for c in criteria:
@@ -146,6 +146,8 @@ out.append('</section><section id="contrast"><h2>Palette and measured contrast</
            'Ratios use rendered CSS pairs for flat surfaces. For tile titles, the review hides only the lettering and measures the worst pixel behind each name on Grand Harbor. This is not a whole-app accessibility certification. '
            'The guardrails are 4.5:1 for sampled text and 3:1 for the focus outline.</p>')
 out.append(table(['Surface','Foreground','Background','Measured','Minimum'],[[name,v['fg'],v['bg'],f"{v['ratio']:.2f}:1",f"{v['minimum']}:1"] for name,v in results['contrast'].items()])+'</section>')
+owner_contrast=json.loads((root/'boards-results.json').read_text())['ownerContrast']
+out.append('<p>White owner lettering against each rendered seat-colored title band: '+', '.join(f'Seat {i}: {n:.2f}:1' for i,n in enumerate(owner_contrast,1))+'.</p>')
 out.append('<section id="motion"><h2>Watch a turn, with sound</h2><p>An actual local game: Seat 1 rolls, opens Copper Yard to bids, and wins it for $10 when Seat 2 withdraws. The rattling dice, bid and closing gavel are recorded from the game.</p><video controls playsinline preload="metadata" style="width:100%;max-width:900px" aria-label="Roll, bidding and settlement with the game audio" src="./table-in-motion.webm"></video></section>')
 inventory=json.loads((root.parent/'web/interactions.json').read_text())
 out.append('<section id="inventory"><h2>Interaction review checklist</h2><details><summary>Visual priorities, commands and non-game interactions</summary><h3>Space identifiers</h3><dl>')

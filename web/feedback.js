@@ -97,22 +97,43 @@ function plate(tag,title,detail,prop,kind){
   $('stage').dataset.kind=kind;$('stageTag').textContent=tag;$('stageTitle').textContent=title;
   $('stageDetail').textContent=detail;$('stageProp').innerHTML=prop;
 }
+function cardInstruction(c,units){
+  if(c.deck){
+    if(c.kind==='each')return `${c.amount<0?'Pay':'Collect'} ${money(Math.abs(c.amount))} ${c.amount<0?'to':'from'} each other active seat.`;
+    if(c.kind==='repairs')return `Pay ${money(c.house)} per house or ${money(c.hotel)} per hotel.`;
+    if(c.kind==='pardon')return 'Keep this card. Use it instead of paying bail on a prison turn.';
+    if(c.kind==='prison')return `Go directly to ${rules.tiles[rules.tiles[c.entry].move_to].name}. No Start payment.`;
+    if(c.kind==='advance')return `Move to ${rules.tiles[c.target].name}.${c.salary?' Collect the applicable Start payment if crossed.':''}`;
+    if(c.kind==='nearest')return `Advance to the next deed in ${c.group}. Resolve that landing.`;
+    if(c.kind==='steps')return `Move ${c.steps<0?'back':'forward'} ${Math.abs(c.steps)} spaces. Resolve that landing.`;
+  }
+  const amount=money(Math.abs(c.amount)),verb=c.amount<0?'Pay':'Collect';
+  if(c.kind==='cover')return `Carry ${amount} against your next rent. Keep any higher cover.`;
+  const unit=c.kind==='deeds'?'owned deed':c.kind==='levels'?'permanent level':null;
+  return unit?`${verb} ${amount} per ${unit}${units==null?'':` × ${units}`}.`:`${verb} ${amount} ${c.amount<0?'at':'from'} the port office.`;
+}
+const hasDraw=s=>s.last_card!=null||Boolean(s.card_receipt?.draws.length);
+function namedReceipt(a,s,draw){
+  const c=rules.named_cards[draw.card];
+  return {deck:c.deck,title:c.title,order:cardInstruction(c),result:draw.result,
+    account:`Cash ${money(draw.before)} → ${money(draw.after)}`,
+    kind:draw.after<draw.before?'charge':draw.after>draw.before?'award':'cover',
+    address:`To ${seat(a)} · ${rules.tiles[draw.source].name}`,serial:`${c.deck} / Round ${s.round}`};
+}
 // A receipt is frozen at the draw. In particular, a later default can return the
 // player's deeds, and their net cash change can include one or more laps of salary.
 function dispatchReceipt(a,b,s){
+  if(s.card_receipt?.draws.length)return namedReceipt(a,s,s.card_receipt.draws.at(-1));
   const c=rules.cards[s.last_card],from=b.players[a],to=s.players[a];
   const owned=deeds(b,a),levels=owned.reduce((n,i)=>n+b.levels[i],0);
   const laps=Math.floor((from.pos+s.dice.reduce((n,d)=>n+d,0))/rules.tiles.length);
   const salary=laps*rules.salary,cash=to.cash-from.cash-salary;
   const units=c.kind==='deeds'?owned.length:c.kind==='levels'?levels:1;
-  const bill=c.amount*units,amount=money(Math.abs(c.amount)),verb=c.amount<0?'Pay':'Collect';
-  let order,result;
+  const bill=c.amount*units;
+  let order=cardInstruction(c,units),result;
   if(c.kind==='cover'){
-    order=`Carry ${amount} against your next rent. Keep any higher cover.`;
     result=`${money(to.cover)} cover ${to.cover===from.cover?'retained':'in force'}`;
   }else{
-    const unit=c.kind==='deeds'?'owned deed':c.kind==='levels'?'permanent level':null;
-    order=unit?`${verb} ${amount} per ${unit} × ${units}.`:`${verb} ${amount} ${c.amount<0?'at':'from'} the port office.`;
     if(c.kind==='levels'&&owned.some(i=>b.bonuses?.[i]))order+=' Temporary refits do not count.';
     result=c.amount<0?`Paid ${money(Math.abs(cash))}`:`Received ${money(cash)}`;
     if(cash!==bill)result+=` of ${money(Math.abs(bill))}`;
@@ -140,6 +161,7 @@ function pinDispatch(receipt){
     $('stage').append(card);
   }
   card.dataset.ink=receipt.kind;
+  card.querySelector('.dispatchMast b').textContent=receipt.deck??'Harbor Dispatch';
   for(const key of ['serial','address','title','order','result','account']){
     $(`dispatch${key[0].toUpperCase()+key.slice(1)}`).textContent=receipt[key];
   }
@@ -149,6 +171,10 @@ function pinDispatch(receipt){
   return card;
 }
 function recordDispatch(move,before,after){
+  if(move.action==='roll'&&after.card_receipt?.draws.length){
+    for(const draw of after.card_receipt.draws)dispatchArchive.set(draw.event,namedReceipt(move.actor,after,draw));
+    return;
+  }
   if(move.action!=='roll'||after.last_card==null)return;
   const receipt=dispatchReceipt(move.actor,before,after);
   const index=after.events.findIndex((e,i)=>i>=before.events.length&&e.startsWith(receipt.title+':'));
@@ -170,7 +196,7 @@ function ledger(s){
   const actor=actingSeat(s);
   const rows=s.players.map((p,i)=>{
     const diff=lastDeltas[i]||0,t=rules.tiles[p.pos],owner=s.owners[p.pos];
-    const location=p.out?'Out of play':t.name,tenure=p.out?'':t.kind!=='deed'?'Port space':owner===null?'Unowned':`Deed: ${seat(owner)}`;
+    const location=p.out?'Out of play':t.name,tenure=p.out?'':p.in_prison?`Detained · ${p.skip_turns}`:p.skip_turns?`Away · ${p.skip_turns}`:p.pardons?'Pardon held':t.kind!=='deed'?'Port space':owner===null?'Unowned':`Deed: ${seat(owner)}`;
     const berth=p.out?`<span class="shipLocation">${location}</span>`:`<button type="button" class="shipLocation" data-locate="${i}" aria-label="Locate ${seat(i)} at ${location}" title="Locate ${seat(i)} on the board">${location}</button>`;
     return `<div class="account ${actor===i&&s.phase!=='over'?'acting':''}" style="--seat:${colors[i]}" aria-label="${seat(i)}: ${p.out?'bankrupt':money(p.cash)}, ${location}. ${tenure}${diff?', change '+signed(diff):''}"><span class="seatDisc">${i+1}</span><span class="seatName">${seat(i)}</span><b>${p.out?'Out':money(p.cash)}</b>${diff?`<em class="${diff>0?'credit':'debit'}">${signed(diff)}</em>`:''}${berth}<span class="portOwner">${tenure}</span></div>`;
   }).join('');
@@ -200,10 +226,10 @@ function outcome(m,b,s){
     detail=s.players.filter(p=>!p.out).length===1?'Last solvent merchant':'Cash and printed deed values settled';prop='final';cue='final';kind='final';targets=[];
   }else if(action==='roll'){
     tag=`${who} rolled ${dieTotal}`;title=tile.name;prop='dice';
-    if(tile.kind==='deed')detail=s.owners[pos]===null?`For sale · ${money(tile.price)}`:s.owners[pos]===a?'Your own deed':`Rent to ${seat(s.owners[pos])} · ${money(b.rents[pos])}`;
-    else detail=({guild:'Guild charter · cash or cover',works:s.commissions?.length?'Public works · commission a deed or skip':'Public works · no eligible project',fee:`Harbor dues · ${money(tile.price??0)}`,start:'Port salary',rest:'Safe harbor',notice:'Port notice',
+    if(tile.kind==='deed')detail=s.owners[pos]===null?`For sale · ${money(tile.price)}`:s.owners[pos]===a?'Your own deed':`Rent to ${seat(s.owners[pos])} · ${money(utilityFor(tile.group)?s.rents[pos]:b.rents[pos])}`;
+    else detail=({guild:'Guild charter · cash or cover',works:s.commissions?.length?'Public works · commission a deed or skip':'Public works · no eligible project',fee:tile.cash_tax_pct!=null?`${tile.cash_tax_pct}% cash tax`:`Harbor dues · ${money(tile.price??0)}`,start:'Start payment',rest:s.players[a].in_prison?'Detained':s.players[a].skip_turns?'On vacation':'Just visiting',notice:'Port notice',
       exchange:s.auction?`Auction: ${rules.tiles[s.auction.tile].name}`:'All deeds owned'})[tile.kind];
-    if(s.last_card!=null){detail='Dispatch delivered';kind='dispatch'}
+    if(hasDraw(s)){detail='Card delivered';kind='dispatch'}
     else{
       if(delta)detail+=` · Net ${signed(delta)}`;
       if(s.players[a].cover!==b.players[a].cover&&!s.players[a].out)detail+=` · Cover ${money(s.players[a].cover)}`;
@@ -213,9 +239,11 @@ function outcome(m,b,s){
     const winner=s.owners[lot];tag='Auction closed';title=winner==null?'No sale':`Sold · ${money(action==='bid'?m.amount:b.auction.high_bid)}`;
     detail=`${tile.name} · ${winner==null?'Still on the market':seat(winner)+' takes the deed'}`;kind='sold';prop='gavel';cue=winner==null?'noSale':'sold';
   }else if(action==='pass'||action==='bid'||action==='withdraw'){
-    tag=action==='pass'?'Auction opened':action==='bid'?'High bid':'Bidder out';
+    tag=action==='pass'?(s.auction?'Auction opened':'Purchase declined'):action==='bid'?'High bid':'Bidder out';
     title=action==='pass'?tile.name:action==='bid'?money(m.amount):`${who} withdrew`;
-    detail=action==='pass'?`Bidding starts at ${money(rules.auction_increment)}`:`${tile.name} · ${action==='bid'?who+' leads':seat(s.auction.actor)+' to bid'}`;prop='gavel';
+    detail=action==='pass'?(s.auction?`Bidding starts at ${money(rules.auction_increment)}`:'The deed stays on the market.'):`${tile.name} · ${action==='bid'?who+' leads':seat(s.auction.actor)+' to bid'}`;prop='gavel';
+  }else if(action==='bail'||action==='pardon'){
+    tag='Prison release';title=action==='pardon'?'Pardon redeemed':`Bail paid · ${money(-delta)}`;detail=`${who} is free next turn.`;
   }else if(action==='buy'){
     tag='Deed recorded';title=tile.name;detail=`${who} paid ${money(-delta)} · Rent ${money(s.rents[lot])}`;prop='deed';cue='file';
   }else if(action==='sell'){
@@ -308,16 +336,23 @@ function cast(fast){
 function sail(move,b,s,fast,dispatch){
   const start=b.players[move.actor].pos,end=s.players[move.actor].pos;
   const total=s.dice.reduce((x,y)=>x+y,0),delay=fast?85:1000,travel=fast?490:Math.min(1530,550+95*total);
+  const rolled=(start+total)%rules.tiles.length;
+  const noWalk=b.players[move.actor].in_prison&&s.dice[0]!==s.dice[1];
+  if(noWalk){impact($(`tile-${end}`),delay,'','dock');foley('dice');return}
+  const direct=s.players[move.actor].in_prison&&!hasDraw(s)&&rules.tiles[rolled].move_to!==end;
+  const route=direct?[start,end]:Array.from({length:total+1},(_,k)=>(start+k)%rules.tiles.length);
+  if(route.at(-1)!==end)route.push(end);
+  const lastStep=route.length-1;
   const dockAt=delay+travel,settle=fast?145:325;
   followTile(fast?end:start);
   const wake=$('wake'),base=wake.getBoundingClientRect(),view=$('boardView'),initialScroll=view.scrollTop;
   const frames=[],seen=new Map(),sample=Math.ceil(total/16);
-  const timeAt=k=>fast||!k||k===total?k/total:(k+.4)/(total+1.1);
+  const timeAt=k=>fast||!k||k===lastStep?k/lastStep:(k+.4)/(lastStep+1.1);
   let prev;
   // Engine dice are bounded (8d32). Keep every visited berth, even on multi-lap rolls;
   // measure each tile only once and leave at most sixteen wakes per journey.
-  for(let k=0;k<=total;k++){
-    const at=(start+k)%rules.tiles.length,el=$(`tile-${at}`);
+  for(let k=0;k<=lastStep;k++){
+    const at=route[k],el=$(`tile-${at}`);
     if(!seen.has(at))seen.set(at,tilePoint(el,base));
     const p=seen.get(at),offset=timeAt(k),transform=`translate(${p.x}px,${p.y}px)`;
     const jump=prev&&(Math.abs(p.x-prev.x)>p.w*1.65||Math.abs(p.y-prev.y)>p.h*1.65);
@@ -364,7 +399,7 @@ function liveFeedback(move,before,after){
   $('stage').dataset.live=move.action;plate(event.tag,event.title,event.detail,event.prop,event.kind);ledger(after);
   // last_card survives non-roll commands, including end; never print from render,
   // a state-only reconnect or historical replay. A final draw still has a receipt.
-  const card=move.action==='roll'&&after.last_card!=null?pinDispatch(dispatchReceipt(move.actor,before,after)):null;
+  const card=move.action==='roll'&&hasDraw(after)?pinDispatch(dispatchReceipt(move.actor,before,after)):null;
   if(document.hidden||$('modal').open)return;
   const rolling=move.action==='roll'&&event.kind!=='final';
   if(effectivePace()==='reduced'||$('boardView').hidden||!$('stage').animate){

@@ -168,7 +168,9 @@ function updateTrade(syncInputs){
   }).join('');
   $('tradeImpact').innerHTML=rows.length?rows.map(({group,total,seats})=>`<div class="tradeDistrict"><strong>${group}</strong>${(draft?seats:[...seats].reverse()).map(({who,before,after})=>{
     const mark=before===after?'':after===total?' · Completes set':before===total?' · Breaks set':'';
-    return `<span>${seat(who)}: ${before} → ${after}/${total}<b>${mark}</b></span>`;
+    const fares=faresFor(group);
+    const rate=fares&&before!==after?`<br>${utilityFor(group)?'Rent':'Fare'}: ${rateLabel(group,fareAt(fares,before))} → ${rateLabel(group,fareAt(fares,after))}`:'';
+    return `<span>${seat(who)}: ${before} → ${after}/${total}<b>${mark}</b>${rate}</span>`;
   }).join('')}</div>`).join(''):'<p>No deeds selected.</p>';
   $('tradeRefits').textContent=[d.give_deed,d.take_deed].filter(k=>k!==null&&s.bonuses?.[k]).map(k=>`${rules.tiles[k].name}: accepting cancels the unused ${money(s.bonuses[k])} refit.`).join(' ');
   $('tradeError').textContent=problem||`No assets move until ${seat(d.to)} accepts.`;

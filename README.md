@@ -10,18 +10,22 @@ Requires stable Rust (1.80+), Python 3, and Node 20+ for tests.
 rustup target add wasm32-unknown-unknown
 npm ci
 python3 build.py
-node --test tests/engine.mjs
+node --test tests/engine.mjs tests/airports.mjs tests/richup.mjs tests/board-registry.mjs
 ```
 
 `dist/index.html` embeds the compiled Rust engine, board data, and UI. Local play works offline. The PeerJS client is loaded from the same origin only when connecting devices. Copy `dist/` contents to `docs/` and publish from `main` → `/docs` in GitHub Pages.
 
 ## Design and scope
 
-`src/lib.rs` owns the seeded RNG, legal turns, ownership, cash transfers, bankruptcy and scoring. `web/rules.json` supplies the base board and economy; `web/outer-harbor.json` supplies the larger circuit's additions and salary override.
+`src/lib.rs` owns the seeded RNG, legal turns, ownership, cash transfers, bankruptcy and scoring. Choose a board under **New table → Custom local table → Board**, or in the host lobby. Both menus use [`web/boards.json`](web/boards.json). Each entry names its rules file, optional parent, grid dimensions, starting corner and direction. The same catalog feeds the static build, simulations and UI; a board does not need a corresponding switch statement. `web/rules.json` is Inner Harbor; Outer and Grand inherit and override Harbor data. [`web/richup-classic.json`](web/richup-classic.json) is a standalone ruleset, not a reskin or a Harbor patch. Change the data and rebuild to publish; the build embeds it so local play needs no network fetch.
+
+**[Play RichUp Classic](https://unpragmatic.github.io/harbour-deeds/?board=richup).** The 40 clockwise spaces start at the upper left. The 22 city deeds specify their individual purchase prices, five build costs and six rents rather than using a global percentage curve. Four airports pay $25/$50/$100/$200; the two companies charge 4× or 10× the landing roll. Treasure and Surprise have separate 17-card stacks. Select a draw space to see its complete public list; inspecting it neither draws a card nor shows what comes next.
+
+The factual reference is a [captured Classic game state](https://github.com/cjtsolutions/richup-benchmark/blob/6d964238470da8729c214a765709b91bac10b67f/tests/sample_game_state.json). Salary, rounded cash tax, utility multipliers, deck cycling, doubles, bail and pardon behavior were cross-checked against the player build archived alongside it. The preset uses the captured room’s $1,500 opening cash, even building, no doubled base rent and no auctions on declined deeds. The board and deed ledgers map one-to-one; card wording and artwork are original. This is **not server or full rules parity**: seats use Harbor controllers and trade negotiation, the standard Harbor liquidation desk handles debt, and unpaid off-turn group-card charges settle at that seat’s next turn. Teams, mortgages, and online RichUp rooms are not implemented. Changing victory or development in setup is a house rule.
 
 Each seat selects a controller implementing `(snapshot, abortSignal) => Promise<command>`. The host routes the decision to the turn owner, current auction bidder, or trade recipient. All commands go to the same WASM handler.
 
-**Across devices:** Choose **New table → Host online**. Copy the six-character code; guests enter it under **New table → Join online**. The host chooses the victory and bankruptcy rules, board, bid clock and seat assignments. A single device may operate several seats.
+**Across devices:** Choose **New table → Host online**. Copy the six-character code; guests enter it under **New table → Join online**. Choose the board first: switching boards loads its development policy, victory mode, round limit and emergency-sale permissions without changing the bid clock or seats. The host can override those defaults, then start the game. Guests and rejoining devices use the saved board, rules edition and host settings. A single device may operate several seats.
 
 **Recover a network match:** Reopen the site in the same browser profile. The original host chooses **Rehost table** to restore the same code and match; guests choose **Rejoin table** to reclaim their seats. Both actions are also accessible under **New table**. The match and auction clock pause until assigned devices reconnect. Confirming **Leave table** ends the match; a reload does not. Recovery stores one in-progress table per browser and site, not a cloud backup. Clearing site data or losing the original host profile prevents rehosting; another device cannot take over as host.
 
@@ -103,7 +107,7 @@ The original policy almost always bought and manually ended every turn. Removing
 The browser review exercised opening, offer, auction, bidder handoff, settlement, trade draft, recipient review and final scoring. Mobile now puts the active decision before the board; image inspection caught a clipped bottom row, fixed with bounded grid tracks. [View the captured decision screens](review/state-review.png). `review/screens.py` regenerates the captures using Python Playwright, Pillow and Chrome after a build.
 ## Board size and bid clocks
 
-**Grand Harbor** is the default: 40 spaces, eight three-deed districts and 26 rounds. With two six-sided dice the mean move is seven spaces, so a player travels about 4.55 circuits in 26 rolls. The $240 salary keeps salary per space at $6, equal to the shorter boards. Inner Harbor (20 spaces) and Outer Harbor (28) remain available with their original 18-round games.
+**Grand Harbor** is the default: 40 spaces, eight buildable districts, a three-airport network and 26 rounds. Each $180 airport pays $25, $55 or $100 per rival landing according to how many airports its owner holds. Buying, trading or selling one reprices every retained airport; these deeds take no improvements or refits. With two six-sided dice the mean move is seven spaces, so a player travels about 4.55 circuits in 26 rolls. The $240 salary keeps salary per space at $6, equal to the shorter boards. Inner Harbor (20 spaces) and Outer Harbor (28) retain their original 18-round games.
 
 Designer controls are in `web/grand-harbor.json`, not in a player-facing rules editor. Set `dice.count` and `dice.sides`, circuit order, deed economics, guild payouts, or the `cards` list before building. Card kinds are `cash` (flat signed payment), `deeds` (per owned deed), `levels` (per installed level), and `cover` (insurance limit). Duplicate an entry for more copies. Rust shuffles the deck with the match RNG, draws without replacement and reshuffles after exhaustion. Identical seeds, rules and commands reproduce draws and rolls. Classic boards keep their original notice draws for old journals.
 

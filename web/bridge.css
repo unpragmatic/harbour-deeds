@@ -40,8 +40,8 @@
   .ocean #stageProp>svg{width:63px;height:63px}.ocean #stageTitle{font-size:clamp(28px,3vw,44px)}
 }
 @media(min-width:1200px) and (min-height:720px){
-  .board[data-map=compact] .tile .berth{height:30px}
-  .board[data-map=compact] .tile .berth .token{width:45px;height:30px;flex-basis:45px}
+  .board[data-density=spacious] .tile .berth{height:30px}
+  .board[data-density=spacious] .tile .berth .token{width:45px;height:30px;flex-basis:45px}
 }
 @media(max-width:800px){
   #stageLedger .account{grid-template:auto auto auto / 19px minmax(0,1fr);padding:3px 5px 4px 7px;column-gap:2px;row-gap:0}

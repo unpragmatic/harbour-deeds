@@ -1,8 +1,14 @@
 const $ = id => document.getElementById(id);
-const maps = {compact:JSON.parse($('config').textContent),outer:JSON.parse($('outer').textContent),grand:JSON.parse($('grand').textContent)};
-const currentEdition='charter-1',legacyMaps=JSON.parse($('legacyMaps').textContent);
+const catalog=JSON.parse($('boardCatalog').textContent),currentEdition=catalog.edition;
+function boardFor(edition,map){
+  if(typeof edition!=='string'||typeof map!=='string')return null;
+  const boards=edition===currentEdition?catalog.boards:
+    Object.hasOwn(catalog.history,edition)?catalog.history[edition].boards:null;
+  return boards&&Object.hasOwn(boards,map)?boards[map]:null;
+}
+const usesCharter=edition=>edition===currentEdition||catalog.history[edition]?.charter===true;
 const DEFAULT_CLOCK=5;
-let rules=maps.compact, clockSeconds=DEFAULT_CLOCK;
+let activeBoard=catalog.boards[catalog.defaultBoard],rules=activeBoard.rules,clockSeconds=DEFAULT_CLOCK;
 const colors = ['#9a321f','#006458','#76500b','#53468d'];
 const printCodes=JSON.parse($('printCodes').textContent);
 const printCode=group=>printCodes[group]??group.slice(0,2).toUpperCase();
@@ -10,6 +16,10 @@ const swatch=group=>`<i class="engraving" data-print="${printCode(group)}" aria-
 const portSeal={start:'ship',notice:'card',guild:'cover',works:'build',exchange:'gavel',fee:'coin',rest:'mooring'};
 const money = n => '$' + n.toLocaleString('en-US');
 const seat = n => `Seat ${n + 1}`;
+const utilityFor=group=>rules.utility_multipliers?.[group];
+const faresFor=group=>rules.network_fares?.[group]??utilityFor(group);
+const fareAt=(fares,n)=>n?fares[n-1]:0;
+const rateLabel=(group,rate)=>utilityFor(group)?`${rate}× dice`:money(rate);
 let engine, state, seats, session;
 let inspected=0, focusKey='';
 const desktop=matchMedia('(min-width:801px)');
@@ -92,6 +102,10 @@ const controllers = {
     }
     if(s.phase==='roll'){
       button('Roll dice',()=>send('roll'),true);
+      if(s.players[actor].in_prison){
+        if(rules.bail_cost!=null)button(`Pay bail · ${money(rules.bail_cost)}`,()=>send('bail'),false,cash<rules.bail_cost);
+        if(s.players[actor].pardons)button('Use pardon',()=>send('pardon'));
+      }
       if(!s.traded)button('Draft trade',()=>openTrade(s,send)).id='draftTrade';
       if(s.sells?.length||s.builds.length){
         const entry=button('Manage deeds',()=>openPlots());entry.id='manageDeeds';entry.setAttribute('aria-keyshortcuts','I S');
@@ -108,7 +122,7 @@ const controllers = {
     }else if(s.phase==='offer'){
       const cost=rules.tiles[s.players[actor].pos].price;
       button(`Buy · ${money(cost)}`,()=>send('buy'),true,cash<cost);
-      button('Start auction',()=>send('pass'));
+      button(rules.auction_declined===false?'Pass':'Start auction',()=>send('pass'));
     }else if(s.phase==='auction'){
       const min=s.auction.high_bid+rules.auction_increment;
       const inTime=clockSeconds&&!room?bidClock(clockSeconds,signal,()=>send('withdraw')):()=>true;
@@ -140,17 +154,6 @@ const controllers = {
   bot: async (s, signal) => {await wait(presentationWait(850),signal);return botMove(s,rules)}
 };
 
-function boardSize(){
-  const n=rules.tiles.length,cols=Math.round(n*.32);
-  return [n/2+2-cols,cols];
-}
-function boardPosition(i) {
-  const [rows,cols]=boardSize(),up=rows-1,across=up+cols-1,down=across+rows-1;
-  if(i<=up)return [rows-i,1];
-  if(i<=across)return [1,i-up+1];
-  if(i<=down)return [i-across+1,cols];
-  return [rows,cols-(i-down)];
-}
 function openDialog(html) {
   $('content').innerHTML = html;
   if (!$('modal').open) $('modal').showModal();
@@ -160,28 +163,42 @@ function openDialog(html) {
 }
 function curve(i) {
   const t=rules.tiles[i],d=rules.development,all=d.policy==='district';
+  const fares=faresFor(t.group);
+  if(fares){
+    const owner=state.owners[i],count=owner===null?0:districtTiles(t.group).filter(k=>state.owners[k]===owner).length;
+    const utility=utilityFor(t.group);
+    return `<div class="curve fareTable"><table><caption>${utility?'Utility rent':'Network fares'} · ${t.group}</caption><thead><tr><th>Deeds held</th><th>Per rival landing</th></tr></thead><tbody>${fares.map((fare,j)=>`<tr${count===j+1?' class="currentTier"':''}><th>${j+1}${count===j+1?' · now':''}</th><td>${rateLabel(t.group,fare)}</td></tr>`).join('')}</tbody></table><small>${utility?'Multiply the landing roll by the rate shown.':'The same fare applies at each network deed you own.'} No construction or refits.</small></div>`;
+  }
   const members=all?rules.tiles.flatMap((x,k)=>x.kind==='deed'&&x.group===t.group?[k]:[]):[i];
   const range=a=>{const lo=Math.min(...a),hi=Math.max(...a);return lo===hi?money(lo):`${money(lo)}–${money(hi)}`};
-  const rent=(k,pct)=>Math.round(rules.tiles[k].rent*pct/100);
-  const permanent=state.rents[i]-(state.bonuses?.[i]??0);
+  const rent=(k,row)=>row?tierRent(rules,k,row-1):rules.tiles[k].rent;
+  const full=state.owners[i]!=null&&districtTiles(t.group).every(k=>state.owners[k]===state.owners[i]);
   const resale=state.owners[i]===null&&rules.bank_sale?` ${bankTerms()}`:'';
-  const rows=[['Base',null,100],['Set',null,d.set_rent_pct],...d.levels.map((l,n)=>[`L${n+1}`,l.cost_pct,l.rent_pct])];
-  return `<div class="curve"><table><caption>${all?`${t.group} · whole district`:'Deed development'}</caption><thead><tr><th>Tier</th><th>Build</th><th>Rent</th><th>Gain / hit</th></tr></thead><tbody>${rows.map(([name,cost,pct],j)=>{
-    const active=j===0?state.owners[i]===null||permanent===t.rent:state.owners[i]!==null&&state.levels[i]===j-1&&permanent===rent(i,pct);
-    return `<tr${active?' class="currentTier"':''}><th>${name}</th><td>${cost===null?'—':money(members.reduce((v,k)=>v+Math.round(rules.tiles[k].price*cost/100),0))}</td><td>${range(members.map(k=>rent(k,pct)))}</td><td>${j?'+'+range(members.map(k=>rent(k,pct)-rent(k,rows[j-1][2]))):'—'}</td></tr>`;
+  const rows=['Base','Set',...d.levels.map((l,n)=>l.label??`L${n+1}`)];
+  return `<div class="curve"><table><caption>${all?`${t.group} · whole district`:'Deed development'}</caption><thead><tr><th>Tier</th><th>Build</th><th>Rent</th><th>Gain / hit</th></tr></thead><tbody>${rows.map((name,j)=>{
+    const active=j===0?!full:full&&state.levels[i]===j-1;
+    return `<tr${active?' class="currentTier"':''}><th>${name}</th><td>${j<2?'—':money(members.reduce((v,k)=>v+tierCost(rules,k,j-2),0))}</td><td>${range(members.map(k=>rent(k,j)))}</td><td>${j?'+'+range(members.map(k=>rent(k,j)-rent(k,j-1))):'—'}</td></tr>`;
   }).join('')}</tbody></table><small>${all?'Build cost covers all deeds. Rent is per landing.':'Build is the one-time cost. Rent is per paying landing.'}${resale}</small></div>`;
+}
+function deckGuide(t){
+  const cards=t.deck?rules.named_cards.filter(c=>c.deck===t.deck):rules.cards;
+  const named=Boolean(cards?.length);
+  const entries=named?cards.map(c=>[c.title,cardInstruction(c)]):rules.notices.map(n=>[n<0?'Port charge':'Port award',`${n<0?'Pay':'Collect'} ${money(Math.abs(n))}.`]);
+  // The reference is public rules data, never the live shuffled deck.
+  return `<section class="deckGuide"><h3>${named?'Possible cards':'Possible notices'}</h3><p>${t.deck?`${entries.length} ${t.deck} cards. The shuffled stack cycles; held pardons sit out.`:named?`${entries.length} cards in the full deck. Drawn without replacement, then reshuffled.`:'One outcome is picked independently on each landing.'}</p><dl>${entries.map(([name,order])=>`<div><dt>${name}</dt><dd>${order}</dd></div>`).join('')}</dl></section>`;
 }
 function detailHtml(i) {
   const t = rules.tiles[i], owner = state.owners[i];
+  const network=Boolean(faresFor(t.group));
   const info = {
     deed:`${t.group} district. Price ${money(t.price ?? 0)}; rent ${money(t.rent ?? 0)}. Double rent for a complete district.`,
-    start:`Collect ${money(rules.salary)} each time you pass or land here.`,
-    fee:`Pay ${money(t.price ?? 0)} to the port authority.`,
+    start:rules.salary_land!=null?`Collect ${money(rules.salary)} for passing or ${money(rules.salary_land)} for landing here, not both.`:`Collect ${money(rules.salary)} each time you pass or land here.`,
+    fee:t.cash_tax_pct!=null?`Pay ${t.cash_tax_pct}% of your cash, rounded to the nearest dollar.`:`Pay ${money(t.price ?? 0)} to the bank.`,
     notice:rules.cards?'Draw a Harbor Dispatch. All cards are drawn once before the deck is reshuffled.':'Draw a port notice for a cash award or unexpected bill.',
     guild:`Take ${money(t.cash_offer??0)} now or guard your next rent payment up to ${money(t.cover_offer??0)}. Cover does not stack; the larger policy survives.`,
     exchange:'Open bidding on the next unowned deed clockwise. Your ship stays here. If no deeds remain, the exchange closes.',
     works:'Commission a one-use rent bonus on an eligible deed, without completing a color set. Pay now; a rival must visit before the match ends for it to pay off.',
-    rest:'A safe harbor. No payment is due here.'
+    rest:t.move_to!=null?`Go directly to ${rules.tiles[t.move_to].name}. No Start payment. Detained for up to ${t.skip_turns} turns.`:t.skip_turns?`Skip ${t.skip_turns} turn. No payment is due.`:rules.prison_entry!=null&&i===rules.tiles[rules.prison_entry].move_to?'Just visiting on an ordinary landing. If detained: roll doubles to leave, wait out the term, pay bail or use a pardon.':'A safe harbor. No payment is due here.'
   };
   const max=rules.development.levels.length,level=state.levels[i];
   const group=districtTiles(t.group);
@@ -195,7 +212,14 @@ function detailHtml(i) {
     const names=group.filter(k=>state.owners[k]===who).map(k=>rules.tiles[k].name);
     return `${who===null?'Unowned':seat(who)}: ${names.join(' · ')}`;
   }).join('<br>')}</p>`:'';
-  return `<small class="plate">SPACE ${String(i).padStart(2,'0')} / ${t.kind==='deed'?`${swatch(t.group)} ${t.group}`:'Port services'}</small><h2>${t.name}</h2>${t.kind==='deed'?`<p>${owner===null?'On the market':`Owned by ${seat(owner)}`} · Level ${level}/${max}</p>${facts([['List price',money(t.price)],['Current rent',money(state.rents[i])],...(q?[['Bank offer',money(q.price)]]:[])])}${bonus?`<p>Refitted: next rent includes a one-use ${money(bonus)} bonus.</p>`:''}${curve(i)}${roster}<p>${status}${locked(state,rules,i)?' No sale or trade while this district is developed.':''}</p>`:`<p>${info[t.kind]}</p>`}${visitors.length?`<p>Visiting: ${visitors.join(', ')}</p>`:''}`;
+  const title=owner===null?'On the market':`Owned by ${seat(owner)}`;
+  const utility=utilityFor(t.group);
+  const body=t.kind==='deed'?`<p>${title} · ${utility?'Utility':network?'Network deed':`Level ${level}/${max}`}</p>
+    ${facts([['List price',money(t.price)],[utility?'Rent formula':network?'Current fare':'Current rent',utility?rateLabel(t.group,utility[owner==null?0:have-1]):money(state.rents[i])],...(q?[['Bank offer',money(q.price)]]:[])])}
+    ${bonus?`<p>Refitted: next rent includes a one-use ${money(bonus)} bonus.</p>`:''}${curve(i)}${roster}
+    ${network?'':`<p>${status}${locked(state,rules,i)?' No sale or trade while this district is developed.':''}</p>`}`:
+    t.kind==='notice'?deckGuide(t):`<p>${info[t.kind]}</p>`;
+  return `<small class="plate">SPACE ${String(i).padStart(2,'0')} / ${t.kind==='deed'?`${swatch(t.group)} ${t.group}`:'Port services'}</small><h2>${t.name}</h2>${body}${visitors.length?`<p>Visiting: ${visitors.join(', ')}</p>`:''}`;
 }
 function selectSpace(i){
   inspected=i;$('inspector').innerHTML=detailHtml(i);
@@ -210,11 +234,16 @@ const districtTiles=group=>rules.tiles.flatMap((t,i)=>t.kind==='deed'&&t.group==
 function decisionStakes(s,actor,lot){
   if(s.phase==='offer'||s.phase==='auction'){
     const t=rules.tiles[lot],siblings=districtTiles(t.group).filter(i=>i!==lot);
+    const fares=faresFor(t.group);
+    if(fares){
+      const n=siblings.filter(i=>s.owners[i]===actor).length;
+      return `<p class="stakes"><b>If ${seat(actor)} takes ${t.name}:</b> ${n+1}/${fares.length} ${t.group} · ${rateLabel(t.group,fares[n])} per rival landing${n?` at each, up from ${rateLabel(t.group,fares[n-1])}`:''}.</p>`;
+    }
     if(!siblings.length)return '';
     const who=s.owners[siblings[0]];
     if(who===null||!siblings.every(i=>s.owners[i]===who))return '';
     const rent=Math.round(t.rent*rules.development.set_rent_pct/100);
-    return `<p class="stakes"><b>Last ${t.group} deed.</b> If ${seat(who)} gets it, the set is complete. ${t.name} rent: ${money(t.rent)} → ${money(rent)}.</p>`;
+    return `<p class="stakes"><b>Last ${t.group} deed.</b> If ${seat(who)} gets it, the set is complete. ${rent===t.rent?'Construction unlocks; base rent stays '+money(rent):`${t.name} rent: ${money(t.rent)} → ${money(rent)}`}.</p>`;
   }
   if(s.phase!=='roll')return '';
   const gaps=[...new Set(deeds(s,actor).map(i=>rules.tiles[i].group))].flatMap(group=>{
@@ -240,7 +269,7 @@ const debtCreditor=s=>s.debt.creditor===null?'the bank':seat(s.debt.creditor);
 function render() {
   closeTrade();
   const s = state, a = actingSeat(s), p = s.players[a], t = rules.tiles[s.auction?.tile??s.players[s.turn].pos];
-  const phaseNames={roll:'Helm',offer:'Land office',auction:'Auction floor',works:'Public works',guild:'Guild charter',trade:'Trade offer',debt:'Outstanding bill',end:s.last_card!=null?'Harbor dispatch':'Settlement',over:'Final accounts'};
+  const phaseNames={roll:'Helm',offer:'Land office',auction:'Auction floor',works:'Public works',guild:'Guild charter',trade:'Trade offer',debt:'Outstanding bill',end:hasDraw(s)?'Card drawn':'Settlement',over:'Final accounts'};
   document.body.dataset.phase=s.phase;
   $('phaseLabel').textContent=phaseNames[s.phase].toUpperCase();
   $('controlType').textContent=s.phase==='over'?'TABLE CLOSED':`${seat(a)} · ${seats[a]==='bot'?'Bot':'Local'}`;
@@ -256,7 +285,7 @@ function render() {
     let b = $(`tile-${i}`);
     if (!b) {
       b = document.createElement('button'); b.id=`tile-${i}`;
-      const [row,col] = boardPosition(i);
+      const [row,col] = activeBoard.layout.positions[i];
       b.style.gridArea=`${row} / ${col}`;
       b.className='tile '+(tile.kind==='deed'?'deed':'special');
       b.dataset.kind=tile.kind;
@@ -275,18 +304,20 @@ function render() {
     b.classList.toggle('landing',s.phase!=='over'&&i===s.players[s.turn].pos);
     b.classList.remove('located');
     const here=s.players.flatMap((player,j)=>player.pos===i&&!player.out?[j]:[]);
-    const owner=s.owners[i],value=owner!==null?`Rent ${money(s.rents[i])}`:tile.kind==='fee'?`−${money(tile.price)}`:tile.price?money(tile.price):({start:'Salary',notice:'Draw',guild:'Choose',exchange:'Auction',works:'Commission',rest:'Rest'})[tile.kind];
+    const owner=s.owners[i],mult=utilityFor(tile.group),value=owner!==null?(mult?rateLabel(tile.group,mult[districts.get(tile.group).counts[owner]-1]):`${faresFor(tile.group)?'Fare':'Rent'} ${money(s.rents[i])}`):tile.kind==='fee'?(tile.cash_tax_pct!=null?`−${tile.cash_tax_pct}% cash`:`−${money(tile.price)}`):tile.price?money(tile.price):({start:'Salary',notice:'Draw',guild:'Choose',exchange:'Auction',works:'Commission',rest:tile.move_to!=null?'Relocate':tile.skip_turns?'Skip turn':'Visit'})[tile.kind];
     const deed=tile.kind==='deed',district=deed?districts.get(tile.group):null;
     const held=owner===null?0:district.counts[owner],full=owner!==null&&held===district.size;
-    const mark=owner===null?'':`<span class="ownerMark${full?' complete':''}" style="--seat:${colors[owner]}"><b>S${owner+1}</b> <span>${full?'SET':`${held}/${district.size}`}</span></span>`;
+    if(owner!==null)b.style.setProperty('--owner-ink',colors[owner]);else b.style.removeProperty('--owner-ink');
+    const mark=owner===null?'':`<span class="ownerMark${full?' complete':''}"><b>S${owner+1}</b> <span>${full?'SET':`${held}/${district.size}`}</span></span>`;
     const markers=here.map(j=>`<span class="token${j===s.turn?' arrived':''}" data-ship="${j}" style="--seat:${colors[j]}" aria-hidden="true">${shipPiece(j,here.length>2)}</span>`).join('');
     b.classList.toggle('hasOwner',owner!==null);b.classList.toggle('fleetHere',here.length>0);
-    b.style.setProperty('--fold-row',1+Math.floor(i/8));b.style.setProperty('--fold-col',Math.floor(i/8)%2?8-i%8:1+i%8);
+    const span=activeBoard.layout.foldColumns,foldRow=Math.floor(i/span);
+    b.style.setProperty('--fold-row',1+foldRow);b.style.setProperty('--fold-col',foldRow%2?span-i%span:1+i%span);
     const face=deed?`<span class="deedFace" aria-hidden="true"></span>
       <span class="deedHead" aria-hidden="true"><span class="districtMark"><span class="printCode">${printCode(tile.group)}</span><span class="printName">${tile.group}</span></span>${mark}</span>`:
       `<span class="portSeal" aria-hidden="true">${icon(portSeal[tile.kind])}</span>`;
-    b.innerHTML=`${face}<span class="station" aria-hidden="true">${String(i).padStart(2,'0')} ${Math.floor(i/8)%2?'←':'→'}</span><span class="${deed?'deedLabel':'portLabel'}"><strong>${tile.name}</strong><span class="tileValue">${value}</span></span>${markers?`<span class="berth" data-ships="${here.length}">${markers}</span>`:''}`;
-    const title=owner!==null?`Owned by ${seat(owner)}, level ${s.levels[i]}. ${held} of ${district.size} ${tile.group} deeds`:(deed?'Unowned':'');
+    b.innerHTML=`${face}<span class="station" aria-hidden="true">${String(i).padStart(2,'0')} ${foldRow%2?'←':'→'}</span><span class="${deed?'deedLabel':'portLabel'}"><strong>${tile.name}</strong><span class="tileValue">${value}</span></span>${markers?`<span class="berth" data-ships="${here.length}">${markers}</span>`:''}`;
+    const title=owner!==null?`Owned by ${seat(owner)}${faresFor(tile.group)?'':`, level ${s.levels[i]}`}. ${held} of ${district.size} ${tile.group} deeds`:(deed?'Unowned':'');
     b.setAttribute('aria-label',[tile.name,tile.group||tile.kind,value,title,full?`Complete ${tile.group} set`:'',here.length?'Occupied by '+here.map(seat).join(', '):'','Inspect space'].filter(Boolean).join('. '));
   }
   $('register').innerHTML=s.players.map((player,i)=>{
@@ -315,13 +346,13 @@ function render() {
   }
   let title, text, stats=[];
   if(s.phase==='roll'){
-    title=t.name;text=p.cover?`${money(p.cover)} cover on the next rent bill.`:'';
+    title=t.name;text=p.in_prison?`Detained · ${p.skip_turns} attempt${p.skip_turns===1?'':'s'} left. Doubles release you and move. Bail or a pardon ends this turn.`:p.cover?`${money(p.cover)} cover on the next rent bill.`:'';
   }else if(s.phase==='offer'){
-    title='Buy or auction?';text=`${t.name} · ${t.group}`;
-    stats=[['List price',money(t.price)],['Base rent',money(t.rent)],['After buying',p.cash>=t.price?money(p.cash-t.price):'Short of cash']];
+    title=rules.auction_declined===false?'Buy or pass?':'Buy or auction?';text=`${t.name} · ${t.group}`;
+    stats=[['List price',money(t.price)],[utilityFor(t.group)?'One utility':faresFor(t.group)?'Single fare':'Base rent',rateLabel(t.group,utilityFor(t.group)?.[0]??t.rent)],['After buying',p.cash>=t.price?money(p.cash-t.price):'Short of cash']];
   }else if(s.phase==='auction'){
     title='Raise or withdraw?';text=`${t.name} · ${s.auction.leader===null?'No bids yet':seat(s.auction.leader)+' leads'}`;
-    stats=[['High bid',money(s.auction.high_bid)],['Your cash',money(p.cash)],['List / rent',`${money(t.price)} / ${money(t.rent)}`]];
+    stats=[['High bid',money(s.auction.high_bid)],['Your cash',money(p.cash)],['List / rent',`${money(t.price)} / ${rateLabel(t.group,utilityFor(t.group)?.[0]??t.rent)}`]];
   }else if(s.phase==='debt'){
     title='Raise cash or declare bankruptcy';text=`${seat(s.debt.debtor)} owes ${debtCreditor(s)}. Sales pay this bill first; you keep any surplus.`;
     stats=[['Bill',money(s.debt.amount)],['Already paid',money(s.debt.paid)],['Still due',money(s.debt.remaining)]];
@@ -329,6 +360,8 @@ function render() {
     title='Refit or pass?';text=`${t.name} · Pay for a one-use rent bonus. No visitor, no payoff.`;
   }else if(s.phase==='guild'){
     title=t.name;text=`Cash now, or protection on your next rent bill? Current cover: ${money(p.cover)}.`;
+  }else if(s.phase==='end'&&s.card_receipt?.draws.length){
+    const last=s.card_receipt.draws.at(-1);title=rules.named_cards[last.card].title;text=last.result;
   }else if(s.phase==='end'&&s.last_card!=null){
     title=rules.cards[s.last_card].title;text=s.events.slice().reverse().find(line=>line.startsWith(title+':'))??s.events.at(-1);
   }else if(s.phase==='trade'){
@@ -336,38 +369,44 @@ function render() {
   }else{
     title=t.name;text=s.events.at(-1);
   }
-  $('turn').innerHTML=`<h2>${title}</h2>${market?'<button id="inspectQuote">Rent &amp; build costs</button>':''}${text?`<p>${text}</p>`:''}${stats.length?facts(stats):''}${decisionStakes(s,a,at)}`;
+  $('turn').innerHTML=`<h2>${title}</h2>${market?`<button id="inspectQuote">${faresFor(t.group)?'Network fares':'Rent &amp; build costs'}</button>`:''}${text?`<p>${text}</p>`:''}${stats.length?facts(stats):''}${decisionStakes(s,a,at)}`;
   if(market)$('inspectQuote').onclick=()=>detail(at);
   if(seats[a]==='bot' || s.phase==='end') $('actions').innerHTML=`<small class="waiting">${s.phase==='end'?'Next turn…':`${seat(a)} is playing…`}</small>`;
 }
 function initialize(types,map,seconds,seed,policy,edition=currentEdition,charter) {
+  const boardSpec=boardFor(edition,map);
+  if(!boardSpec)throw Error('Unknown board for this rules edition');
   closeTrade();
-  const base=(edition==='launch'?legacyMaps:maps)[map];
+  activeBoard=boardSpec;
+  const base=boardSpec.rules;
   rules={...base,development:{...base.development,policy:policy??base.development.policy}};clockSeconds=seconds;
-  if(edition===currentEdition&&charter){
+  if(usesCharter(edition)&&charter){
     if(!validCharter(charter))throw Error('Invalid victory or liquidation settings');
     rules={...rules,rounds:charter.rounds,victory:charter.victory,liquidation:{...rules.liquidation,deeds:charter.deeds,improvements:charter.improvements}};
-  }else if(edition!==currentEdition){
+  }else if(!usesCharter(edition)){
     rules={...rules,victory:'net_worth',liquidation:{deeds:false,improvements:false,improvement_rate_pct:50}};
   }
   resetStage();
   focusKey='';inspected=0;
-  const [rows,cols]=boardSize();
+  const {rows,columns:cols,density,direction,foldColumns}=boardSpec.layout;
   const board=$('board');
   board.querySelectorAll('.tile').forEach(tile=>tile.remove());
-  board.style.gridTemplate=`repeat(${rows},minmax(0,1fr)) / repeat(${cols},minmax(0,1fr))`;
+  // An occupied deed needs room for its title band, price and visiting ships.
+  board.style.gridTemplate=`repeat(${rows},minmax(min-content,1fr)) / repeat(${cols},minmax(0,1fr))`;
   board.querySelector('.ocean').style.gridArea=`2 / 2 / ${rows} / ${cols}`;
-  board.dataset.map=map;
+  board.dataset.map=map;board.dataset.density=density;
+  board.style.setProperty('--fold-columns',foldColumns);
+  $('routeDirection').textContent=direction==='clockwise'?'↻  Clockwise':'↺  Counterclockwise';
   $('printKey').innerHTML=[...new Set(rules.tiles.filter(t=>t.kind==='deed').map(t=>t.group))].map(g=>
     `<div>${swatch(g)}<b>${printCode(g)}</b> ${g}</div>`).join('');
   placeStage();
-  const mapName={grand:'Grand Harbor',outer:'Outer Harbor',compact:'Inner Harbor'}[map];
+  const mapName=boardSpec.label;
   $('boardName').textContent=mapName;$('mapTitle').textContent=`${mapName} · ${rules.tiles.length} spaces · ${rules.dice?.count??2}d${rules.dice?.sides??6}`;
   showView('board');
   seats=types;
   state=command({action:'start',rules,seats:types.length,seed});
 }
-async function play(types,map='grand',seconds=DEFAULT_CLOCK,policy=rules.development.policy,charter) {
+async function play(types,map=catalog.defaultBoard,seconds=DEFAULT_CLOCK,policy,charter) {
   session?.abort(); session=new AbortController(); const {signal}=session;
   initialize(types,map,seconds,crypto.getRandomValues(new Uint32Array(1))[0],policy,currentEdition,charter);
   render();
@@ -387,27 +426,42 @@ async function play(types,map='grand',seconds=DEFAULT_CLOCK,policy=rules.develop
 function report(err){$('actions').replaceChildren();$('turn').textContent=`Game unavailable: ${err.message}`;console.error(err)}
 const charterOf=r=>({victory:r.victory??'net_worth',rounds:r.rounds,deeds:r.liquidation?.deeds??false,improvements:r.liquidation?.improvements??false});
 const validCharter=c=>c&&['net_worth','elimination'].includes(c.victory)&&Number.isSafeInteger(c.rounds)&&c.rounds>=1&&c.rounds<=200&&typeof c.deeds==='boolean'&&typeof c.improvements==='boolean';
-function charterControls(initial,onChange=()=>{}){
-  const c={...initial};
+function boardControls(initial,onChange=()=>{}){
+  const map=$('map');
+  for(const [id,b] of Object.entries(catalog.boards))
+    map.add(new Option(`${b.label} · ${b.rules.tiles.length} spaces`,id));
+  map.value=initial.map;
+  $('clock').value=String(initial.seconds);
+  const chosen=()=>({map:map.value,policy:$('policy').value,seconds:Number($('clock').value),
+    charter:{victory:$('victory').value,rounds:$('roundLimit').valueAsNumber,deeds:$('debtDeeds').checked,improvements:$('debtLevels').checked}});
   const changed=()=>{
-    c.victory=$('victory').value;c.rounds=$('roundLimit').valueAsNumber;c.deeds=$('debtDeeds').checked;c.improvements=$('debtLevels').checked;
-    $('roundField').hidden=c.victory==='elimination';onChange({...c});
+    $('roundField').hidden=$('victory').value==='elimination';onChange(chosen());
   };
-  $('victory').value=c.victory;$('roundLimit').value=c.rounds;$('debtDeeds').checked=c.deeds;$('debtLevels').checked=c.improvements;
-  $('victory').onchange=changed;$('roundLimit').oninput=changed;$('debtDeeds').onchange=changed;$('debtLevels').onchange=changed;changed();
-  $('map').addEventListener('change',()=>{$('roundLimit').value=maps[$('map').value].rounds;changed()});
+  const selectBoard=({policy,charter}={})=>{
+    const base=catalog.boards[map.value].rules,c=charter??charterOf(base);
+    $('policy').value=policy??base.development.policy;
+    $('victory').value=c.victory;$('roundLimit').value=c.rounds;$('debtDeeds').checked=c.deeds;$('debtLevels').checked=c.improvements;
+    changed();
+  };
+  map.onchange=()=>selectBoard();
+  for(const id of ['policy','clock','victory','debtDeeds','debtLevels'])$(id).onchange=changed;
+  $('roundLimit').oninput=changed;
+  selectBoard(initial);
   return ()=>{
-    if(c.victory==='elimination'&&!$('roundLimit').validity.valid){$('roundLimit').value=maps[$('map').value].rounds;changed()}
-    if(!validCharter(c)){$('roundLimit').reportValidity();return null}
-    return {...c};
+    if($('victory').value==='elimination'&&!$('roundLimit').validity.valid){
+      $('roundLimit').value=catalog.boards[map.value].rules.rounds;changed();
+    }
+    const choice=chosen();
+    if(!validCharter(choice.charter)){$('roundLimit').reportValidity();return null}
+    return choice;
   };
 }
 function settings(){
-  return `<fieldset class="charter"><legend>Victory &amp; bankruptcy</legend><label class="field">Win by<select id="victory"><option value="net_worth">Net worth at round limit</option><option value="elimination">Last solvent merchant</option></select></label>
+  return `<label class="field">Board<select id="map"></select></label>
+    <fieldset class="charter"><legend>Victory &amp; bankruptcy</legend><label class="field">Win by<select id="victory"><option value="net_worth">Net worth at round limit</option><option value="elimination">Last solvent merchant</option></select></label>
     <label class="field" id="roundField">Round limit<input type="number" id="roundLimit" min="1" max="200" step="1" required></label>
     <p>To cover a bill, allow the debtor to sell:</p><label><input id="debtDeeds" type="checkbox"> Undeveloped deeds</label><label><input id="debtLevels" type="checkbox"> Improvement levels</label></fieldset>
-    <label class="field">Improvements<select id="policy">${[['even','Even building'],['free','Unrestricted'],['district','Whole district']].map(([v,n])=>`<option value="${v}" ${rules.development.policy===v?'selected':''}>${n}</option>`).join('')}</select></label>
-    <label class="field">Board<select id="map"><option value="grand">Grand Harbor · 40 spaces</option><option value="compact">Inner Harbor · 20 spaces</option><option value="outer">Outer Harbor · 28 spaces</option></select></label>
+    <label class="field">Improvements<select id="policy"><option value="even">Even building</option><option value="free">Unrestricted</option><option value="district">Whole district</option></select></label>
     <label class="field">Human bid clock<select id="clock"><option value="5" selected>5 seconds</option><option value="0">Untimed</option><option value="15">15 seconds</option><option value="30">30 seconds</option></select></label>`;
 }
 function showView(name){
@@ -453,19 +507,18 @@ function setup(){
   const quick=types=>{$('modal').close();play(types,$('board').dataset.map,clockSeconds,rules.development.policy,charterOf(rules)).catch(report)};
   $('solo').onclick=()=>quick(['human','bot','bot']);$('passPlay').onclick=()=>quick(['human','human']);
   $('host').onclick=hostRoom;$('join').onclick=()=>roomMenu(true);
-  $('map').value=$('board').dataset.map;$('clock').value=String(clockSeconds);
-  const chosen=charterControls(charterOf(rules));
+  const chosen=boardControls({map:$('board').dataset.map,seconds:clockSeconds,policy:rules.development.policy,charter:charterOf(rules)});
   $('start').onclick=()=>{
     const types=[0,1,2,3].map(i=>$(`seat-${i}`).value).filter(v=>v!=='off');
-    const map=$('map').value,seconds=Number($('clock').value);
-    const policy=$('policy').value,charter=chosen();if(!charter)return;
+    const choice=chosen();if(!choice)return;
+    const {map,seconds,policy,charter}=choice;
     $('modal').close();play(types,map,seconds,policy,charter).catch(report);
   };
 }
 $('setupBtn').onclick=setup;
 $('close').onclick=()=>$('modal').close();
 $('modal').setAttribute('aria-label','Table information');
-$('rulesBtn').onclick=()=>openDialog(`<h2>The rulebook</h2><h3>How to win this table</h3><p>${rules.victory==='elimination'?'Be the last solvent merchant. There is no round limit.':`Have the most cash plus printed deed value after ${rules.rounds} rounds, or be the last solvent merchant. Equal net worth shares the win.`}</p><p>Start with ${money(rules.cash)}. Passing Port Office pays ${money(rules.salary)}. Paying a bill down to exactly $0 is safe.</p><h3>Debt &amp; bankruptcy</h3><p>${rules.liquidation?.deeds||rules.liquidation?.improvements?`Cash goes to the creditor first. To cover the shortfall you may sell ${[rules.liquidation.deeds?'undeveloped deeds':'',rules.liquidation.improvements?`improvement levels at ${rules.liquidation.improvement_rate_pct}% of their build cost`:'' ].filter(Boolean).join(' and ')}. You can instead declare bankruptcy even if a sale would save you. With no permitted assets left, bankruptcy is automatic.`:'Emergency sales are disabled. An unpaid bill eliminates the debtor and returns their deeds to the bank.'}</p><h3>Buy or auction</h3><p>Buy at list price or auction the deed to all players. Raise by at least ${money(rules.auction_increment)} or withdraw. No bids leaves the deed on the market.</p><h3>Negotiate before rolling</h3><p>Once per turn, propose a deed sale or swap. Either side may add cash; the other merchant can accept or decline.</p>`);
+$('rulesBtn').onclick=()=>openDialog(`<h2>The rulebook</h2><h3>How to win this table</h3><p>${rules.victory==='elimination'?'Be the last solvent merchant. There is no round limit.':`Have the most cash plus printed deed value after ${rules.rounds} rounds, or be the last solvent merchant. Equal net worth shares the win.`}</p><p>Start with ${money(rules.cash)}. Passing ${rules.tiles[0].name} pays ${money(rules.salary)}${rules.salary_land!=null?`; landing there pays ${money(rules.salary_land)} instead`:''}. Paying a bill down to exactly $0 is safe.</p><h3>Debt &amp; bankruptcy</h3><p>${rules.liquidation?.deeds||rules.liquidation?.improvements?`Cash goes to the creditor first. To cover the shortfall you may sell ${[rules.liquidation.deeds?'undeveloped deeds':'',rules.liquidation.improvements?`improvement levels at ${rules.liquidation.improvement_rate_pct}% of their build cost`:'' ].filter(Boolean).join(' and ')}. You can instead declare bankruptcy even if a sale would save you. With no permitted assets left, bankruptcy is automatic.`:'Emergency sales are disabled. An unpaid bill eliminates the debtor and returns their deeds to the bank.'}</p><h3>Buy or pass</h3><p>${rules.auction_declined===false?'Buy at list price or leave the deed on the market. No auction opens.':`Buy at list price or auction the deed to all players. Raise by at least ${money(rules.auction_increment)} or withdraw. No bids leaves the deed on the market.`}</p>${rules.doubles_limit?`<h3>Doubles</h3><p>Roll again on doubles. ${rules.doubles_limit} consecutive doubles send you to prison; doubles that free you do not earn another roll.</p>`:''}<h3>Negotiate before rolling</h3><p>Once per turn, propose a deed sale or swap. Either side may add cash; the other merchant can accept or decline.</p>`);
 try {
   initFeedback();
   $('rulesBtn').addEventListener('click',()=>{
@@ -475,5 +528,7 @@ try {
   });
   const bytes=Uint8Array.from(atob($('binary').textContent),c=>c.charCodeAt(0));
   engine=(await WebAssembly.instantiate(bytes)).instance.exports;
-  const initialGame=play(['human','bot','bot']);promptSavedTable();await initialGame;
+  const requested=new URLSearchParams(location.search).get('board');
+  if(requested!==null&&!boardFor(currentEdition,requested))throw Error('Unknown board. Open the game without the board parameter to choose a table.');
+  const initialGame=play(['human','bot','bot'],requested??catalog.defaultBoard);promptSavedTable();await initialGame;
 } catch(err){report(err)}

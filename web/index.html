@@ -3,20 +3,20 @@
 <body>
 <header><div class="mast"><span class="seal" aria-hidden="true">⚓</span><strong>Harbor Deeds</strong></div><div class="headright"><span class="live">Local table</span><button id="soundBtn" aria-label="Sound effects" aria-pressed="false">♪ Off</button><button id="prefsBtn" aria-label="Display settings" title="Display settings">⚙<span> Display</span></button><button id="rulesBtn" aria-label="Rulebook">?</button><button id="setupBtn">New table</button></div></header>
 <main><section class="treasury" aria-label="All player balances and ship positions"><strong>Fleet<br>station</strong><div id="stageLedger"></div></section>
-<div class="layout"><section class="boardbox" id="boardView" aria-label="Game board"><div class="boardhead"><strong id="mapTitle">Inner Harbor</strong><small id="round"></small></div><div class="board" id="board">
+<div class="layout"><section class="boardbox" id="boardView" aria-label="Game board"><div class="boardhead"><strong id="mapTitle"></strong><small id="round"></small></div><div class="board" id="board">
 <div class="ocean">__CHART__<div class="chart"><small class="atlasMark">PORT AUTHORITY · HYDROGRAPHIC SURVEY</small>
 <svg viewBox="0 0 260 100" class="art" role="img" aria-label="An engraved lighthouse overlooking a sailing ship">
 <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 <path d="M12 79q29 1 43-8t37-3l11-6 28 3 19 9 23 4m-145 5 35-2 22-4 30 1m-56-3 19-4 15 1m5-4 18 2 12 4m-27-12 5-44h14l5 46m-19-42 14 3m-15 10 16 4m-17 6 18 5m-18 7 19 5M99 19h23v-3H99zm4-4V8h16v7m-17-7 9-7 9 7zm8 1v6m4-6v6m-2 47v-6h4v7"/>
 <path d="m161 72 44 1-9 7h-26zm20-3V27l-19 42zm3-1 16 2-16-30zm-3-39 9 2-9 3M5 89q14-3 28 0t28 0m18 4q16-3 29 0t29 0m2-7q13-3 25 0t25 0m16-3q13-3 25 0t24 0M37 33q4-3 8 1 3-5 8-4m136-14q4-3 7 1 3-5 8-4m8 25q4-3 7 1 3-5 8-4"/>
 </g></svg>
-<h2 id="boardName">Inner Harbor</h2><div id="chartStatus"></div></div>
+<h2 id="boardName"></h2><div id="chartStatus"></div></div>
 <div id="plotGuide" hidden></div><div id="tradeGuide" hidden></div>
 <section id="stage" aria-label="Table action"><div class="stageFace">
 <div class="stageCopy" role="status" aria-atomic="true"><div id="stageTag"></div><div id="stageTitle"></div><div id="stageDetail"></div></div>
 <div id="stageProp" aria-hidden="true"></div></div></section>
 <div id="mobileLadder"></div></div><div id="wake" aria-hidden="true"></div></div>
-<div class="boardfoot"><span>↻ &nbsp; Clockwise</span><span>S1 2/3 = Seat 1 owns two of three · SET = full district · Ship = visitor</span><span id="tradeLegend" hidden></span><div id="printKey" aria-label="District key"></div></div></section>
+<div class="boardfoot"><span id="routeDirection"></span><span>S1 2/3 = Seat 1 owns two of three · SET = full district · Ship = visitor</span><span id="tradeLegend" hidden></span><div id="printKey" aria-label="District key"></div></div></section>
 <aside><section class="panel desk" aria-label="Current decision"><div class="panelhead"><small id="phaseLabel">TURN DESK</small><span id="controlType"></span></div><div id="turn" aria-live="polite"></div><section id="tradeDesk" aria-label="Trade terms" hidden></section><div id="actions"></div><section id="propertyDesk" aria-label="Manage board spaces" hidden></section></section></aside>
 <section class="instruments" aria-label="Table inspector">
 <nav class="switcher" aria-label="Game views"><button data-view="board" aria-keyshortcuts="B" title="Inspect a space (B)" aria-pressed="true">Board</button><button data-view="players" aria-keyshortcuts="F" title="Player holdings (F)" aria-pressed="false">Players</button><button data-view="activity" aria-keyshortcuts="L" title="Ship’s log (L)" aria-pressed="false">Activity</button></nav>
@@ -25,5 +25,5 @@
 <section class="panel workspace" id="activityView" hidden><h2>Ship’s log</h2><article id="lastLetter" class="logLetter" aria-label="Latest dispatch" hidden></article><p>Latest entry first</p><ol id="log" aria-live="off"></ol></section></section>
 </div></main>
 <dialog id="modal"><div class="sheetbar"><span>Harbor Deeds</span><button aria-label="Close dialog" id="close">×</button></div><div id="sheetLedger" aria-label="All player balances"></div><div id="content"></div></dialog>
-<script id="printCodes" type="application/json">__PRINT_CODES__</script><script id="legacyMaps" type="application/json">__LEGACY__</script>
-<script id="grand" type="application/json">__GRAND__</script><script id="config" type="application/json">__RULES__</script><script id="outer" type="application/json">__OUTER__</script><script id="binary" type="application/octet-stream">__WASM__</script><script type="module">/*APP*/</script></body></html>
+<script id="printCodes" type="application/json">__PRINT_CODES__</script><script id="boardCatalog" type="application/json">__BOARD_CATALOG__</script>
+<script id="binary" type="application/octet-stream">__WASM__</script><script type="module">/*APP*/</script></body></html>
