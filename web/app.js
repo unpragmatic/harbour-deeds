@@ -345,8 +345,13 @@ function render() {
     return;
   }
   let title, text, stats=[];
+  const repeatRoll=s.doubles_in_row>0&&!s.players[s.turn].out;
   if(s.phase==='roll'){
     title=t.name;text=p.in_prison?`Detained · ${p.skip_turns} attempt${p.skip_turns===1?'':'s'} left. Doubles release you and move. Bail or a pardon ends this turn.`:p.cover?`${money(p.cover)} cover on the next rent bill.`:'';
+    if(repeatRoll){
+      title=`Roll again · ${t.name}`;
+      text=[`${seat(a)} rolled doubles.`,s.doubles_in_row+1===rules.doubles_limit?'Another double sends you to prison.':'',text].filter(Boolean).join(' ');
+    }
   }else if(s.phase==='offer'){
     title=rules.auction_declined===false?'Buy or pass?':'Buy or auction?';text=`${t.name} · ${t.group}`;
     stats=[['List price',money(t.price)],[utilityFor(t.group)?'One utility':faresFor(t.group)?'Single fare':'Base rent',rateLabel(t.group,utilityFor(t.group)?.[0]??t.rent)],['After buying',p.cash>=t.price?money(p.cash-t.price):'Short of cash']];
@@ -371,7 +376,7 @@ function render() {
   }
   $('turn').innerHTML=`<h2>${title}</h2>${market?`<button id="inspectQuote">${faresFor(t.group)?'Network fares':'Rent &amp; build costs'}</button>`:''}${text?`<p>${text}</p>`:''}${stats.length?facts(stats):''}${decisionStakes(s,a,at)}`;
   if(market)$('inspectQuote').onclick=()=>detail(at);
-  if(seats[a]==='bot' || s.phase==='end') $('actions').innerHTML=`<small class="waiting">${s.phase==='end'?'Next turn…':`${seat(a)} is playing…`}</small>`;
+  if(seats[a]==='bot' || s.phase==='end') $('actions').innerHTML=`<small class="waiting">${s.phase!=='end'?`${seat(a)} is playing…`:repeatRoll?`Doubles · ${seat(a)} rolls again`:'Next turn…'}</small>`;
 }
 function initialize(types,map,seconds,seed,policy,edition=currentEdition,charter) {
   const boardSpec=boardFor(edition,map);

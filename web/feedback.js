@@ -215,6 +215,8 @@ function syncStage(s){
     s.phase==='roll'?`${seat(s.turn)} to roll · ${rules.dice?.count??2} dice`:s.events.at(-1)||context[s.phase],
     icon(s.phase==='auction'?'gavel':s.phase==='over'?'final':'ship'),'ready');
 }
+const rolledDoubles=s=>s.dice.length===2&&s.dice[0]===s.dice[1];
+const reachedDoublesLimit=(b,s)=>!b.players[b.turn].in_prison&&rolledDoubles(s)&&(b.doubles_in_row??0)+1===rules.doubles_limit;
 function outcome(m,b,s){
   const a=m.actor,dieTotal=s.dice.reduce((x,y)=>x+y,0),pos=s.players[a].pos;
   const delta=s.players[a].cash-b.players[a].cash, lot=b.auction?.tile??m.tile??pos;
@@ -231,10 +233,13 @@ function outcome(m,b,s){
       exchange:s.auction?`Auction: ${rules.tiles[s.auction.tile].name}`:'All deeds owned'})[tile.kind];
     if(hasDraw(s)){detail='Card delivered';kind='dispatch'}
     else{
+      if(b.players[a].in_prison&&!rolledDoubles(s))detail=s.events.at(-1);
+      else if(reachedDoublesLimit(b,s))detail=`${rules.doubles_limit} consecutive doubles · Sent to prison`;
       if(delta)detail+=` · Net ${signed(delta)}`;
       if(s.players[a].cover!==b.players[a].cover&&!s.players[a].out)detail+=` · Cover ${money(s.players[a].cover)}`;
       if(s.players[a].out)detail+=' · Bankrupt';
     }
+    if(b.players[a].in_prison&&rolledDoubles(s)&&!s.players[a].in_prison)detail=`Released on doubles · ${detail}`;
   }else if(b.auction&&!s.auction){
     const winner=s.owners[lot];tag='Auction closed';title=winner==null?'No sale':`Sold · ${money(action==='bid'?m.amount:b.auction.high_bid)}`;
     detail=`${tile.name} · ${winner==null?'Still on the market':seat(winner)+' takes the deed'}`;kind='sold';prop='gavel';cue=winner==null?'noSale':'sold';
@@ -336,10 +341,9 @@ function cast(fast){
 function sail(move,b,s,fast,dispatch){
   const start=b.players[move.actor].pos,end=s.players[move.actor].pos;
   const total=s.dice.reduce((x,y)=>x+y,0),delay=fast?85:1000,travel=fast?490:Math.min(1530,550+95*total);
-  const rolled=(start+total)%rules.tiles.length;
-  const noWalk=b.players[move.actor].in_prison&&s.dice[0]!==s.dice[1];
+  const noWalk=b.players[move.actor].in_prison&&!rolledDoubles(s);
   if(noWalk){impact($(`tile-${end}`),delay,'','dock');foley('dice');return}
-  const direct=s.players[move.actor].in_prison&&!hasDraw(s)&&rules.tiles[rolled].move_to!==end;
+  const direct=reachedDoublesLimit(b,s);
   const route=direct?[start,end]:Array.from({length:total+1},(_,k)=>(start+k)%rules.tiles.length);
   if(route.at(-1)!==end)route.push(end);
   const lastStep=route.length-1;
