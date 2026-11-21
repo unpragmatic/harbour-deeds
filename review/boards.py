@@ -9,6 +9,17 @@ anchor='engine=(await WebAssembly.instantiate(bytes)).instance.exports;'
 assert html.count(anchor)==1
 html=html.replace(anchor,anchor+'''
 window.snapshot=()=>JSON.stringify(state);
+window.companyDispatch=()=>{
+  session?.abort();initialize(['bot','bot','bot'],'richup',0,1);
+  for(let i=0;i<100;i++){
+    const before=state,m=botMove(state,rules);state=command(m);
+    if(m.action==='roll'&&state.card_receipt?.draws.some(d=>rules.named_cards[d.card].title==='Company inspection')&&state.owners[state.players[m.actor].pos]!=null){
+      render();liveFeedback(m,before,state);
+      return [state.card_receipt.draws.at(-1).before,state.players[m.actor].cash];
+    }
+  }
+  throw Error('Seed did not exercise a card-directed company bill');
+};
 window.networkPreview=(offer)=>{
   session?.abort();initialize(['human','human'],'grand',0,451);
   const step=(action,actor)=>state=command({action,actor});
@@ -127,6 +138,18 @@ with sync_playwright() as pw:
     roll.click()
     expect(p.locator('#stageDetail')).to_contain_text('Rent to Seat 1 · roll 7 × 10 = $70')
     expect(p.locator('#stageLedger .account').nth(1).locator('em')).to_have_text('−$70')
+    for width,height in [(1366,768),(390,844)]:
+        p.set_viewport_size({'width':width,'height':height})
+        before,after=p.evaluate('companyDispatch()')
+        assert before-after==60
+        result=p.locator('#dispatchResult')
+        expect(result).to_be_visible()
+        expect(result).to_be_in_viewport()
+        expect(result).to_contain_text('Rent to Seat 3 · roll 6 × 10 = $60')
+        expect(p.locator('#dispatchAccount')).to_have_text(f'Cash ${before:,} → ${after:,}')
+        p.click('[data-view=activity]')
+        expect(p.locator('#lastLetter')).to_be_visible()
+        expect(p.locator('#lastLetter')).to_contain_text('roll 6 × 10 = $60')
     assert not errors,errors
     (root/'review/boards-results.json').write_text(json.dumps({'observed':seen,'ownerContrast':[round(s['ratio'],2) for s in samples]},indent=2)+'\n')
     browser.close()

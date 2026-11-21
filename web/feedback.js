@@ -114,10 +114,13 @@ function cardInstruction(c,units){
 }
 const hasDraw=s=>s.last_card!=null||Boolean(s.card_receipt?.draws.length);
 function namedReceipt(a,s,draw){
-  const c=rules.named_cards[draw.card];
-  return {deck:c.deck,title:c.title,order:cardInstruction(c),result:draw.result,
-    account:`Cash ${money(draw.before)} → ${money(draw.after)}`,
-    kind:draw.after<draw.before?'charge':draw.after>draw.before?'award':'cover',
+  const c=rules.named_cards[draw.card],player=s.players[a];
+  // Intermediate draws close before the next landing. Only the final card can own its rent bill.
+  const rent=draw===s.card_receipt.draws.at(-1)?utilityRentBill(s,a):null;
+  const after=rent?player.cash:draw.after;
+  return {deck:c.deck,title:c.title,order:cardInstruction(c),result:rent?`${draw.result} ${rent}`:draw.result,
+    account:`Cash ${money(draw.before)} → ${money(after)}`,
+    kind:after<draw.before?'charge':after>draw.before?'award':'cover',
     address:`To ${seat(a)} · ${rules.tiles[draw.source].name}`,serial:`${c.deck} / Round ${s.round}`};
 }
 // A receipt is frozen at the draw. In particular, a later default can return the
@@ -222,6 +225,10 @@ function ownedUtilityRate(s,i){
   if(!rates||owner==null)return null;
   return rates[districtTiles(group).filter(k=>s.owners[k]===owner).length-1];
 }
+function utilityRentBill(s,a){
+  const pos=s.players[a].pos,owner=s.owners[pos],rate=ownedUtilityRate(s,pos);
+  return rate==null||owner===a?null:`Rent to ${seat(owner)} · roll ${s.dice.reduce((x,y)=>x+y,0)} × ${rate} = ${money(s.rents[pos])}`;
+}
 function outcome(m,b,s){
   const a=m.actor,dieTotal=s.dice.reduce((x,y)=>x+y,0),pos=s.players[a].pos;
   const delta=s.players[a].cash-b.players[a].cash, lot=b.auction?.tile??m.tile??pos;
@@ -233,14 +240,13 @@ function outcome(m,b,s){
     detail=s.players.filter(p=>!p.out).length===1?'Last solvent merchant':'Cash and printed deed values settled';prop='final';cue='final';kind='final';targets=[];
   }else if(action==='roll'){
     tag=`${who} rolled ${dieTotal}`;title=tile.name;prop='dice';
-    const rate=ownedUtilityRate(s,pos),utilityBill=rate!=null&&s.owners[pos]!==a;
     if(tile.kind==='deed'){
-      const owner=s.owners[pos],rent=utilityBill?`roll ${dieTotal} × ${rate} = ${money(s.rents[pos])}`:money(b.rents[pos]);
-      detail=owner===null?`For sale · ${money(tile.price)}`:owner===a?'Your own deed':`Rent to ${seat(owner)} · ${rent}`;
+      const owner=s.owners[pos];
+      detail=owner===null?`For sale · ${money(tile.price)}`:owner===a?'Your own deed':utilityRentBill(s,a)??`Rent to ${seat(owner)} · ${money(b.rents[pos])}`;
     }
     else detail=({guild:'Guild charter · cash or cover',works:s.commissions?.length?'Public works · commission a deed or skip':'Public works · no eligible project',fee:tile.cash_tax_pct!=null?`${tile.cash_tax_pct}% cash tax`:`Harbor dues · ${money(tile.price??0)}`,start:'Start payment',rest:s.players[a].in_prison?'Detained':s.players[a].skip_turns?'On vacation':'Just visiting',notice:'Port notice',
       exchange:s.auction?`Auction: ${rules.tiles[s.auction.tile].name}`:'All deeds owned'})[tile.kind];
-    if(hasDraw(s)){detail=utilityBill?`Card delivered · ${detail}`:'Card delivered';kind='dispatch'}
+    if(hasDraw(s)){detail='Card delivered';kind='dispatch'}
     else{
       if(b.players[a].in_prison&&!rolledDoubles(s))detail=s.events.at(-1);
       else if(reachedDoublesLimit(b,s))detail=`${rules.doubles_limit} consecutive doubles · Sent to prison`;
