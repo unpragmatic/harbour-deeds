@@ -643,6 +643,33 @@ body[data-trade] .desk{overflow:auto}
 .deckGuide dl{margin:8px 0}
 .deckGuide dl>div{display:grid;grid-template-columns:minmax(0, .86fr) minmax(0, 1.14fr);gap:8px;border-top:1px solid #a79877;padding:5px 0;font:13px/1.3 system-ui}
 .deckGuide dt{font-weight:750}.deckGuide dd{margin:0}
+.phoneBoardField{display:none}
+@media(max-width:800px){
+  .phoneBoardField{display:block}
+  .layout .boardbox .board.mobileLoop{
+    grid-template:repeat(var(--ring-rows),minmax(44px,1fr)) / repeat(var(--ring-cols),minmax(24px,1fr))!important;
+    min-width:calc(var(--ring-cols)*25px + 3px);gap:1px
+  }
+  .board.mobileLoop .tile,.board.mobileLoop[data-density=dense] .tile{
+    grid-area:var(--ring-row) / var(--ring-col)!important;min-height:44px;padding:0;justify-content:center
+  }
+  .board.mobileLoop .ocean,.board.mobileLoop .ocean:has(#mobileLadder:not(:empty)){
+    display:grid;grid-area:2 / 2 / var(--ring-rows) / var(--ring-cols)!important
+  }
+  .board.mobileLoop #mobileLadder,.board.mobileLoop .foldArrow,.board.mobileLoop .deedLabel,
+  .board.mobileLoop .portLabel,.board.mobileLoop .districtMark,.board.mobileLoop .ownerMark span{display:none}
+  .board.route.mobileLoop .tile .station{
+    display:block;position:static;color:#172634;background:#fff4d8;padding:0 2px;
+    font:750 12px/1.15 system-ui;font-variant-numeric:tabular-nums
+  }
+  .board.mobileLoop .tile.special .station{color:#fff9e6;background:#263d49}
+  .board.mobileLoop .tile.hasOwner .deedHead{min-height:0;justify-content:center}
+  .board.mobileLoop .ownerMark b{font-size:10px}
+  .board.mobileLoop .tile .berth{height:14px}
+  .board.mobileLoop .tile .berth .token{height:14px;max-width:18px}
+  .board.mobileLoop .tile .berth[data-ships="3"],.board.mobileLoop .tile .berth[data-ships="4"]{height:auto;flex-wrap:wrap}
+  .board.mobileLoop .tile .berth:is([data-ships="3"],[data-ships="4"]) .token{flex:0 1 48%;max-width:13px}
+}
 
 [data-print="OT"]{--stock:#e7af98;--ink:#663525;--engraving:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2212%22%3E%3Cpath%20d%3D%22M0%201h16M0%207h16M3%201v6m8%200v6%22%20fill%3D%22none%22%20stroke%3D%22%23663525%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E")}
 [data-print="FD"]{--stock:#f2cd72;--ink:#59400c;--engraving:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%3E%3Cpath%20d%3D%22M6%202.5a3.5%203.5%200%201%201%200%207a3.5%203.5%200%201%201%200-7z%22%20fill%3D%22none%22%20stroke%3D%22%2359400c%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E")}
@@ -736,14 +763,14 @@ body[data-trade] .desk{overflow:auto}
     ["Inspect / browse","Select a tile with pointer or keyboard; check focus vs landing, name, cost and owner."],
     ["Players / activity / rules","Desktop keeps the board and command dock visible. Switch the right instrument, inspect a named holding or return to the offered lot. Phone switches views."],
     ["Treasury","Check every seat without a click, scroll, or hover on all instruments and inside game sheets. For path costs, budgets and contrast evidence see review/clicks.json and review/desktop.py."],
-    ["Local setup","Check solo, pass-and-play, custom seats, map, policy and clock before replacing a game."],
+    ["Local setup","Check solo, pass-and-play, custom seats, starting cash, forced auctions, map, policy and clock before replacing a game. Board changes restore that board’s economic defaults."],
     ["Online setup","Host, join by code, copy invite, assign seats and launch. Guests cannot change the rules."],
     ["Network recovery","Pause on disconnect. Rehost, rejoin, cancel or forget; historical commands must remain silent."],
     ["Bidding","Check presets, exact entry, insufficient cash, timer pause/expiry and final sale."],
     ["Rent / fee / card","A live dispatch shows the instruction and actual effect through the handoff, then clears itself. Activity keeps the exact receipt, including after rejoin. No acknowledgement, sound or animation is needed to play or understand a draw."],
     ["Victory and debt","Choose net worth at the round limit or last solvent merchant. During an unresolved bill, preview deed or level sales, or explicitly declare bankruptcy even when sale proceeds could cover the bill."],
     ["Guild / exchange / works","Distinguish the visiting ship from the deed under auction or receiving a project; make both sides of each offer explicit."],
-    ["Local presentation","Open Display settings, choose the visual pace on this device only. Keep the operating system’s reduced-motion preference and bid clock independent of presentation."],
+    ["Local presentation","Open Display to choose pace or switch a phone between detailed tiles and a numbered perimeter. Selection, ownership and the turn survive a layout change. Neither preference changes the host’s rules or bid clock."],
     ["Trading","Draft on the actual board, not in a separate form. Distinguish your deed, the requested deed, other partners and nontradable spaces without color. Preview both cash balances and both districts before sending or accepting. Declining or cancelling must not transfer assets. See the board-target-preview scenarios."],
     ["Manage deeds / public works","Select the actual deed, not a menu entry. Compare Improve and Sell without leaving the map. Show all engine-quoted candidates, the selected deed, cash afterward and the effect of confirming. Selection, mode switching and cancellation must never issue a game command."],
     ["Audio / motion","Local foley starts after user interaction unless muted. Reduced motion keeps the settled dice, outcome and balance changes without a moving pawn, stamp or ripple. Review with review/motion.py."],
@@ -1003,7 +1030,7 @@ const paceChoices=[
   ['fast','Fast','A quick cast with the ship already underway.'],
   ['reduced','Reduced motion','Show the settled dice and result without animation.']
 ];
-let pace='standard',accents=true,storageAvailable=true;
+let pace='standard',accents=true,phoneBoard='folded',storageAvailable=true;
 const effectivePace=()=>still.matches?'reduced':pace;
 const signed=n=>`${n<0?'−':'+'}${money(Math.abs(n))}`;
 const pips=[[],[4],[0,8],[0,4,8],[0,2,6,8],[0,2,4,6,8],[0,2,3,5,6,8]];
@@ -1028,9 +1055,13 @@ function diceProp(values){
     return `<span class="die" data-value="${v}"><span class="dieCube">${faces.map((n,i)=>`<span class="pipFace face${i}">${face(n)}</span>`).join('')}</span></span>`;
   }).join('')}</span>`;
 }
+function syncPhoneBoard(){
+  $('board').classList.toggle('mobileLoop',!desktop.matches&&phoneBoard==='circuit'&&!tradeMap&&!plotDesk);
+}
 function placeStage(){
   const stage=$('stage'),board=$('board'),route=routeScreen.matches;
   board.classList.toggle('route',route);stage.classList.toggle('strip',route);
+  syncPhoneBoard();
   if(route)board.before(stage);else board.querySelector('.ocean').append(stage);
 }
 const animations=new Set(), effectTimers=new Set();
@@ -1068,24 +1099,31 @@ function syncPrefs(){
 }
 function openPrefs(){
   openDialog(`<h2>Table presentation</h2><p>These preferences stay in this browser. They do not change another player’s view or the bidding clock.</p>
+    <div class="phoneBoardField"><label class="field">Phone board<select id="phoneBoard">
+    <option value="folded">Detailed tiles</option><option value="circuit">Around the board</option></select></label>
+    <p>Follow numbered spaces around the edge. Tap one for its name and details. Trade and deed selection use detailed tiles.</p></div>
     <fieldset id="motionChoices"><legend>Animation pace</legend>${paceChoices.map(([v,name,help])=>
     `<label><input type="radio" name="motionPace" value="${v}" ${pace===v?'checked':''}><span><b>${name}</b><small>${help}</small></span></label>`).join('')}</fieldset>
     <label class="fxOption"><input type="checkbox" id="showAccents" ${accents?'checked':''}> Show wakes, stamps and district seals</label>
     <p id="motionStatus" role="status"></p>`);
   const change=()=>{
     pace=$('motionChoices').querySelector(':checked').value;accents=$('showAccents').checked;
-    try{localStorage.setItem(prefsKey,JSON.stringify({pace,accents}));storageAvailable=true}catch{storageAvailable=false}
-    clearMotion();syncPrefs();
+    phoneBoard=$('phoneBoard').value;
+    try{localStorage.setItem(prefsKey,JSON.stringify({pace,accents,phoneBoard}));storageAvailable=true}catch{storageAvailable=false}
+    clearMotion();syncPrefs();syncPhoneBoard();
   };
-  $('motionChoices').onchange=change;$('showAccents').onchange=change;syncPrefs();
+  $('phoneBoard').value=phoneBoard;
+  $('motionChoices').onchange=$('showAccents').onchange=$('phoneBoard').onchange=change;syncPrefs();
 }
 function initFeedback(){
   let saved;
   try{saved=JSON.parse(localStorage.getItem(prefsKey))}catch(e){if(e.name!=='SyntaxError')storageAvailable=false}
   if(paceChoices.some(([v])=>v===saved?.pace))pace=saved.pace;
+  if(saved?.phoneBoard==='circuit')phoneBoard='circuit';
   accents=saved?.accents!==false;syncPrefs();
   if($('prefsBtn'))$('prefsBtn').onclick=openPrefs;
   initSound();routeScreen.addEventListener('change',()=>{clearMotion();placeStage()});
+  desktop.addEventListener('change',()=>{clearMotion();syncPhoneBoard()});
   still.addEventListener('change',()=>{clearMotion();syncPrefs()});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)clearMotion()});
   window.addEventListener('resize',()=>{if(voyager)clearMotion()});
@@ -1450,7 +1488,7 @@ function liveFeedback(move,before,after){
 
 // PeerJS only handles discovery and WebRTC transport. The host serializes all moves;
 // guests replay accepted commands against their own copy of the seeded Rust engine.
-const protocol='harbor-deeds-v4-', alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const protocol='harbor-deeds-v5-', alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const saveKey='harbor-deeds.table.v2', codePattern=/^[A-HJ-NP-Z2-9]{6}$/;
 const playable=new Set(Object.keys(uxInventory.commands).filter(action=>action!=='start'&&action!=='end'));
 let room=null,peerLoader=null;
@@ -1832,6 +1870,7 @@ function closePlots(focus=false){
   if(!plotDesk)return;
   const {origin}=plotDesk;
   plotDesk=null;
+  syncPhoneBoard();
   delete document.body.dataset.plot;
   $('propertyDesk').hidden=$('plotGuide').hidden=true;
   $('propertyDesk').replaceChildren();$('plotGuide').replaceChildren();
@@ -1862,6 +1901,7 @@ function openPlots(mode,i){
   const origin=plotDesk?.origin??document.activeElement;
   showView('board');
   plotDesk={origin,mode,i:null};
+  syncPhoneBoard();
   document.body.dataset.plot=mode;
   $('propertyDesk').hidden=false;
   setPlot(q?(plotMembers(q).includes(preferred)?preferred:q.tile):null);
@@ -2032,6 +2072,7 @@ function closeTrade(focus=false){
   if(!tradeMap)return;
   const {cells,scroll,phase}=tradeMap;
   tradeMap=null;
+  syncPhoneBoard();
   delete document.body.dataset.trade;
   for(const {b,label,value} of cells){
     delete b.dataset.tradeTile;delete b.dataset.tradeDistrict;
@@ -2053,6 +2094,7 @@ function openTrade(s,send=null){
   });
   const me=draft||(!room?.started?seats[deal.to]==='human':room.owners[deal.to]===room.device);
   tradeMap={s,deal,draft,cells,edited:false,scroll:$('boardView').scrollTop,phase:$('phaseLabel').textContent};
+  syncPhoneBoard();
   document.body.dataset.trade=draft?'draft':'response';
   $('phaseLabel').textContent=draft?'TRADE DESK':'TRADE RESPONSE';
   const who=draft?deal.from:deal.to;
@@ -2460,6 +2502,7 @@ function render() {
       b = document.createElement('button'); b.id=`tile-${i}`;
       const [row,col] = activeBoard.layout.positions[i];
       b.style.gridArea=`${row} / ${col}`;
+      b.style.setProperty('--ring-row',row);b.style.setProperty('--ring-col',col);
       b.className='tile '+(tile.kind==='deed'?'deed':'special');
       b.dataset.kind=tile.kind;
       if(tile.kind==='deed')b.dataset.print=printCode(tile.group);
@@ -2489,7 +2532,7 @@ function render() {
     const face=deed?`<span class="deedFace" aria-hidden="true"></span>
       <span class="deedHead" aria-hidden="true"><span class="districtMark"><span class="printCode">${printCode(tile.group)}</span><span class="printName">${tile.group}</span></span>${mark}</span>`:
       `<span class="portSeal" aria-hidden="true">${icon(portSeal[tile.kind])}</span>`;
-    b.innerHTML=`${face}<span class="station" aria-hidden="true">${String(i).padStart(2,'0')} ${foldRow%2?'←':'→'}</span><span class="${deed?'deedLabel':'portLabel'}"><strong>${tile.name}</strong><span class="tileValue">${value}</span></span>${markers?`<span class="berth" data-ships="${here.length}">${markers}</span>`:''}`;
+    b.innerHTML=`${face}<span class="station" aria-hidden="true">${String(i).padStart(2,'0')}<span class="foldArrow"> ${foldRow%2?'←':'→'}</span></span><span class="${deed?'deedLabel':'portLabel'}"><strong>${tile.name}</strong><span class="tileValue">${value}</span></span>${markers?`<span class="berth" data-ships="${here.length}">${markers}</span>`:''}`;
     const title=owner!==null?`Owned by ${seat(owner)}${faresFor(tile.group)?'':`, level ${s.levels[i]}`}. ${held} of ${district.size} ${tile.group} deeds`:(deed?'Unowned':'');
     b.setAttribute('aria-label',[tile.name,tile.group||tile.kind,value,title,full?`Complete ${tile.group} set`:'',here.length?'Occupied by '+here.map(seat).join(', '):'','Inspect space'].filter(Boolean).join('. '));
   }
@@ -2559,8 +2602,9 @@ function initialize(types,map,seconds,seed,policy,edition=currentEdition,charter
   const base=boardSpec.rules;
   rules={...base,development:{...base.development,policy:policy??base.development.policy}};clockSeconds=seconds;
   if(usesCharter(edition)&&charter){
-    if(!validCharter(charter))throw Error('Invalid victory or liquidation settings');
-    rules={...rules,rounds:charter.rounds,victory:charter.victory,liquidation:{...rules.liquidation,deeds:charter.deeds,improvements:charter.improvements}};
+    if(!validCharter(charter))throw Error('Invalid table settings');
+    rules={...rules,cash:charter.cash??base.cash,auction_declined:charter.forceAuction??base.auction_declined,
+      rounds:charter.rounds,victory:charter.victory,liquidation:{...rules.liquidation,deeds:charter.deeds,improvements:charter.improvements}};
   }else if(!usesCharter(edition)){
     rules={...rules,victory:'net_worth',liquidation:{deeds:false,improvements:false,improvement_rate_pct:50}};
   }
@@ -2574,6 +2618,7 @@ function initialize(types,map,seconds,seed,policy,edition=currentEdition,charter
   board.querySelector('.ocean').style.gridArea=`2 / 2 / ${rows} / ${cols}`;
   board.dataset.map=map;board.dataset.density=density;
   board.style.setProperty('--fold-columns',foldColumns);
+  board.style.setProperty('--ring-rows',rows);board.style.setProperty('--ring-cols',cols);
   $('routeDirection').textContent=direction==='clockwise'?'↻  Clockwise':'↺  Counterclockwise';
   placeStage();
   const mapName=boardSpec.label;
@@ -2600,8 +2645,10 @@ async function play(types,map=catalog.defaultBoard,seconds=DEFAULT_CLOCK,policy,
   }
 }
 function report(err){$('actions').replaceChildren();$('turn').textContent=`Game unavailable: ${err.message}`;console.error(err)}
-const charterOf=r=>({victory:r.victory??'net_worth',rounds:r.rounds,deeds:r.liquidation?.deeds??false,improvements:r.liquidation?.improvements??false});
-const validCharter=c=>c&&['net_worth','elimination'].includes(c.victory)&&Number.isSafeInteger(c.rounds)&&c.rounds>=1&&c.rounds<=200&&typeof c.deeds==='boolean'&&typeof c.improvements==='boolean';
+const maxOpeningCash=1000000;
+const charterOf=r=>({victory:r.victory??'net_worth',rounds:r.rounds,deeds:r.liquidation?.deeds??false,improvements:r.liquidation?.improvements??false,cash:r.cash,forceAuction:r.auction_declined!==false});
+const validCharter=c=>c&&['net_worth','elimination'].includes(c.victory)&&Number.isSafeInteger(c.rounds)&&c.rounds>=1&&c.rounds<=200&&typeof c.deeds==='boolean'&&typeof c.improvements==='boolean'&&
+  (c.cash===undefined||Number.isSafeInteger(c.cash)&&c.cash>=1&&c.cash<=maxOpeningCash)&&(c.forceAuction===undefined||typeof c.forceAuction==='boolean');
 function boardControls(initial,onChange=()=>{}){
   const map=$('map');
   for(const [id,b] of Object.entries(catalog.boards))
@@ -2609,31 +2656,37 @@ function boardControls(initial,onChange=()=>{}){
   map.value=initial.map;
   $('clock').value=String(initial.seconds);
   const chosen=()=>({map:map.value,policy:$('policy').value,seconds:Number($('clock').value),
-    charter:{victory:$('victory').value,rounds:$('roundLimit').valueAsNumber,deeds:$('debtDeeds').checked,improvements:$('debtLevels').checked}});
+    charter:{victory:$('victory').value,rounds:$('roundLimit').valueAsNumber,deeds:$('debtDeeds').checked,improvements:$('debtLevels').checked,cash:$('openingCash').valueAsNumber,forceAuction:$('forceAuction').checked}});
   const changed=()=>{
+    $('auctionHelp').textContent=$('forceAuction').checked?'Buy at list price or start an auction. Bidders may still withdraw.':'Declining leaves the deed on the market without an auction.';
     $('roundField').hidden=$('victory').value==='elimination';onChange(chosen());
   };
   const selectBoard=({policy,charter}={})=>{
     const base=catalog.boards[map.value].rules,c=charter??charterOf(base);
     $('policy').value=policy??base.development.policy;
+    $('openingCash').value=c.cash??base.cash;$('forceAuction').checked=c.forceAuction??(base.auction_declined!==false);
     $('victory').value=c.victory;$('roundLimit').value=c.rounds;$('debtDeeds').checked=c.deeds;$('debtLevels').checked=c.improvements;
     changed();
   };
   map.onchange=()=>selectBoard();
-  for(const id of ['policy','clock','victory','debtDeeds','debtLevels'])$(id).onchange=changed;
-  $('roundLimit').oninput=changed;
+  for(const id of ['policy','clock','victory','debtDeeds','debtLevels','forceAuction'])$(id).onchange=changed;
+  $('roundLimit').oninput=$('openingCash').oninput=changed;
   selectBoard(initial);
   return ()=>{
     if($('victory').value==='elimination'&&!$('roundLimit').validity.valid){
       $('roundLimit').value=catalog.boards[map.value].rules.rounds;changed();
     }
     const choice=chosen();
-    if(!validCharter(choice.charter)){$('roundLimit').reportValidity();return null}
+    if(!$('openingCash').reportValidity()||!$('roundLimit').reportValidity()||!validCharter(choice.charter))return null;
     return choice;
   };
 }
 function settings(){
   return `<label class="field">Board<select id="map"></select></label>
+    <fieldset class="charter"><legend>Cash &amp; auctions</legend>
+    <label class="field">Starting cash per player ($)<input id="openingCash" type="number" min="1" max="${maxOpeningCash}" step="1" inputmode="numeric" required></label>
+    <label><input type="checkbox" id="forceAuction" aria-describedby="auctionHelp"> Force auctions on declined deeds</label>
+    <p id="auctionHelp">Buy at list price or start an auction. Bidders may still withdraw.</p></fieldset>
     <fieldset class="charter"><legend>Victory &amp; bankruptcy</legend><label class="field">Win by<select id="victory"><option value="net_worth">Net worth at round limit</option><option value="elimination">Last solvent merchant</option></select></label>
     <label class="field" id="roundField">Round limit<input type="number" id="roundLimit" min="1" max="200" step="1" required></label>
     <p>To cover a bill, allow the debtor to sell:</p><label><input id="debtDeeds" type="checkbox"> Undeveloped deeds</label><label><input id="debtLevels" type="checkbox"> Improvement levels</label></fieldset>

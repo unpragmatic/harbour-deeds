@@ -150,6 +150,26 @@ with sync_playwright() as pw:
         p.click('[data-view=activity]')
         expect(p.locator('#lastLetter')).to_be_visible()
         expect(p.locator('#lastLetter')).to_contain_text('roll 6 × 10 = $60')
+    p.goto('http://table.test/?board=richup')
+    p.click('#setupBtn');p.locator('#advanced summary').click()
+    expect(p.locator('#forceAuction')).not_to_be_checked()
+    p.check('#forceAuction');p.fill('#openingCash','0');p.click('#start')
+    expect(p.locator('#modal')).to_be_visible()
+    p.fill('#openingCash','725');p.click('#start')
+    assert p.locator('#stageLedger .account b').all_text_contents()==['$725']*3
+    before=p.evaluate('snapshot()')
+    p.click('#prefsBtn');p.select_option('#phoneBoard','circuit');p.click('#close')
+    expect(p.locator('#board.mobileLoop')).to_be_visible()
+    expect(p.locator('#tile-0 .station')).to_be_visible()  # Occupied starting corner.
+    boxes=[p.locator(f'#tile-{i}').bounding_box() for i in (0,10,20,30)]
+    assert boxes[0]['x']==boxes[3]['x']<boxes[1]['x']==boxes[2]['x']
+    assert boxes[0]['y']==boxes[1]['y']<boxes[2]['y']==boxes[3]['y']
+    p.click('#tile-2');expect(p.locator('#modal h2')).to_have_text('Treasure');p.click('#close')
+    assert p.evaluate('snapshot()')==before
+    p.click('#draftTrade');expect(p.locator('#board.mobileLoop')).to_have_count(0)
+    p.click('#tradeCancel');expect(p.locator('#board.mobileLoop')).to_be_visible()
+    p.reload();expect(p.locator('#board.mobileLoop')).to_be_visible()
+    p.set_viewport_size({'width':1000,'height':800});expect(p.locator('#board.mobileLoop')).to_have_count(0)
     assert not errors,errors
     (root/'review/boards-results.json').write_text(json.dumps({'observed':seen,'ownerContrast':[round(s['ratio'],2) for s in samples]},indent=2)+'\n')
     browser.close()

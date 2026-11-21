@@ -64,6 +64,7 @@ function closeTrade(focus=false){
   if(!tradeMap)return;
   const {cells,scroll,phase}=tradeMap;
   tradeMap=null;
+  syncPhoneBoard();
   delete document.body.dataset.trade;
   for(const {b,label,value} of cells){
     delete b.dataset.tradeTile;delete b.dataset.tradeDistrict;
@@ -85,6 +86,7 @@ function openTrade(s,send=null){
   });
   const me=draft||(!room?.started?seats[deal.to]==='human':room.owners[deal.to]===room.device);
   tradeMap={s,deal,draft,cells,edited:false,scroll:$('boardView').scrollTop,phase:$('phaseLabel').textContent};
+  syncPhoneBoard();
   document.body.dataset.trade=draft?'draft':'response';
   $('phaseLabel').textContent=draft?'TRADE DESK':'TRADE RESPONSE';
   const who=draft?deal.from:deal.to;
