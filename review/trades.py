@@ -201,6 +201,7 @@ with sync_playwright() as pw:
     for selector in ('#outAsset','#inAsset','#tradeBalances b','#actions button','#tile-29','#tile-14'):visible(selector)
     p.screenshot(path=root/'trade.png')
     p.set_viewport_size({'width':390,'height':844})
+    p.locator('#board.route').wait_for()
     for selector in ('#actions button','#tile-29','#tile-14','#tradeBalances b'):visible(selector)
     p.screenshot(path=root/'trade-phone.png')
     button('Accept trade').click();f=state()

@@ -1,6 +1,7 @@
 {
   "method": "Desktop mouse paths from the named starting state. Count each deliberate activation, including opening a native select and picking an option (2). Typing, waiting, automatic resolution, and site navigation are excluded and named where relevant. Reading at 0 means no click, hover, scroll, or keyboard shortcut. Decisions with several participants count each participant’s clicks. Repeated bids and edits add their own costs. Budgets are ceilings, not an instruction to remove safeguards.",
   "criteria": [
+    {"id":"district-identity","name":"Read a district without its color","rule":"A deed must share a legible label or keyed code and a distinct visible texture with every member of its district, even across intervening service spaces. Check the rendered prints with color removed on every shipped map and the folded phone board. Ownership or selection must not replace the print. A complete set must be distinguishable from a split district without opening a portfolio, and its mark must disappear when the set breaks.","interactions":["districtRead","setRead"],"scenarios":["match-print","match-print-phone","read-full-set"]},
     {"id":"decision-stakes","name":"Show why this decision matters now","rule":"When a deed is one player's last missing district member, an offer or auction must name that player and the rent at stake before the commitment, even if it is a rival. Before rolling, identify an almost complete district's missing deed and owner without a portfolio lookup. Show the real net-worth gap on a scored table; cash is not the score.","interactions":["stakes","race"],"scenarios":["chase","block","price-out"]},
     {"id":"read-through-handoff","name":"Read the result; never tidy it away","rule":"The next turn must be playable while a letter still shows its recipient, instruction and actual effect. Allow a six-second read without input, on desktop and a muted reduced-motion phone. Then reclaim the chart automatically. One visit to Activity must recover the exact result, even after rejoin. Filing is not a game command and must not pause a bid clock.","interactions":["cardRead","cardFile","activity"],"scenarios":["read-dispatch","read-dispatch-phone","file-dispatch","recall-dispatch"]},
     {"id":"fleet-location","name":"Position is not ownership","rule":"At rest, distinguish the owner of the occupied deed, the visiting ship and the owner's actual location without navigating, scrolling, hovering or relying on color. Test a visitor on a rival deed when the owner is somewhere else, plus several ships sharing a berth.","interactions":["positions","titleHolder"],"scenarios":["rival-berth","owner-away"]},
@@ -8,6 +9,8 @@
   ],
   "interactions": {
     "Read and navigate": [
+      ["districtRead","Deeds visible on board","Match the printed band to its district without selecting, hovering or relying on color",0],
+      ["setRead","Multiple seats own deeds","Distinguish a full set from district membership and identify its owner",0],
       ["stakes","One deed away, or last deed on offer","Read the named district opportunity or rival’s stake",0],
       ["race","Pre-roll, round-limited table","Read current net worth and gap to first place",0],
       ["cardRead","Live dispatch and the next turn","Read the printed instruction, recipient, resolved amount and resulting balance or cover",0],
@@ -122,6 +125,9 @@
     ]
   },
   "scenarios": [
+    ["match-print","Monochrome desktop perimeter and district key","Match every deed to its named district on each shipped map","districtRead",0],
+    ["match-print-phone","Folded phone board with the first two rows in view","Recognize the Old Town deeds on either side of Bottle Post","districtRead",0],
+    ["read-full-set","A trade completes Shipyards and Exchange","Read the printed set marks and owners; a later bank sale breaks only Shipyards","districtRead setRead",0],
     ["chase","Before rolling, with one missing Shipyards deed","Identify Spar Yard, who owns it and the net-worth gap","race stakes",0],
     ["block","A rival owns the other two Exchange deeds","See what the rival gains if this lot goes to auction","stakes",0],
     ["price-out","Short of cash at auction on the last Shipyards deed","See what is at stake even though withdrawing is the only legal move","stakes",0],

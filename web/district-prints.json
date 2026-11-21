@@ -1,0 +1,10 @@
+{
+  "Old Town": {"code":"OT","motif":"Brickwork","stock":"#e7af98","ink":"#663525","width":16,"path":"M0 1h16M0 7h16M3 1v6m8 0v6"},
+  "Foundry": {"code":"FD","motif":"Rivets","stock":"#f2cd72","ink":"#59400c","width":12,"path":"M6 2.5a3.5 3.5 0 1 1 0 7a3.5 3.5 0 1 1 0-7z"},
+  "Shipyards": {"code":"SY","motif":"Planking","stock":"#ddb9d0","ink":"#59324f","width":10,"path":"M-5 12 3 0m2 12L13 0m2 12L23 0"},
+  "Tidelands": {"code":"TD","motif":"Reeds","stock":"#b9d499","ink":"#395125","width":12,"path":"M6 12V1m0 8L1 4m5 3 5-5"},
+  "Market": {"code":"MK","motif":"Awning","stock":"#b9bfec","ink":"#3f416c","width":12,"path":"M0 1v3a6 6 0 0 0 12 0V1M0 1h12"},
+  "Exchange": {"code":"EX","motif":"Lattice","stock":"#b5d3e2","ink":"#2a4d64","width":14,"path":"m0 6 7-5 7 5-7 5z"},
+  "Marina": {"code":"MA","motif":"Waves","stock":"#9dd2c6","ink":"#21564d","width":18,"path":"M0 4q4.5-4 9 0t9 0M0 10q4.5-4 9 0t9 0"},
+  "Headlands": {"code":"HL","motif":"Ridgeline","stock":"#dbbe9e","ink":"#543c2b","width":18,"path":"M-1 11 7 2l5 6 3-3 5 6"}
+}

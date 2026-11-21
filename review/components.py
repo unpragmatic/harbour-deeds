@@ -33,6 +33,9 @@ sections = {
         ('recovery', 'Interrupted table', 'Distinguish a paused network table from a completed match. A returning device needs a recovery action, not a fresh local game.'),
     ],
     'Navigate and inspect': [
+        ('district-sets','A set, not just a color','Shipyards shares a diagonal plank print; Exchange shares a diamond lattice. After the trade, SET appears on all six deeds while DEED ribbons still identify two different owners.'),
+        ('district-grayscale','Match the engraving to the key','The desktop board with color removed. All 24 Grand Harbor deeds still match a named key by their actual printed pattern and code. Bottle Post interrupts Old Town but does not belong to it.'),
+        ('district-phone','Full names on the folded route','The three Old Town deeds carry the same brickwork and full name. The price, title and any visiting ship stay off the textured area. No legend lookup or tap is required.'),
         ('crowded-space', 'Four visitors on an improved deed', 'Density fixture: the deed ribbon is separate from all four numbered ship markers. Nobody disappears into an anonymous count; the inspector keeps the development ladder.'),
         ('grand-harbor', 'Grand Harbor circuit', 'The 40-space circuit distinguishes guilds, dispatches, exchanges, fees and deed districts. Inspect a space to read its effect.'),
         ('grand-chart', 'Pocket chart', 'On small devices the larger circuit becomes a scrollable route in movement order. The desktop perimeter is not shrunk to fit a phone.'),
@@ -113,12 +116,13 @@ out.append('<p><b>What still takes effort:</b> from Manage deeds, choosing a non
            'Leaving an active network match costs three: the last confirmation protects every device. '
            'Budgets measure effort, not enjoyment; they are not human playtest results.</p>')
 obs=results['observed'].copy()
-for file in ('property-results.json','charter-results.json','dispatch-results.json','stakes-results.json','trade-results.json'):
+for file in ('property-results.json','charter-results.json','dispatch-results.json','stakes-results.json','trade-results.json','district-results.json'):
     obs.update(json.loads((root/file).read_text())['observed'])
 criteria=survey['criteria']
 for c in criteria:
     if not set(c['scenarios'])<=obs.keys():raise ValueError(f'Missing measured paths for {c["id"]}')
     out.append(f'<h3 id="{escape(c["id"])}">{escape(c["name"])}</h3><p>{escape(c["rule"])}</p>')
+    if c['id']=='district-identity':out.append('<p>The review compares grayscale pixels from each deed with the printed key, excluding lettering, so eight different labels on eight identical stripes cannot pass. It also checks the phone labels and a set completed and then broken by accepted Rust commands. <a href="#group3">See the boards.</a></p>')
     if c['id']=='read-through-handoff':out.append('<p>The browser observes the text for six seconds across handoff on each device, takes the next turn and checks that the letter clears without input. Activity recovers the same recipient, bill and cash afterward. <a href="#group1">See the letters.</a></p>')
     if c['id']=='board-target-preview':out.append('<p>Trades were in the click inventory, but not in this criterion. The old modal passed without showing a single target. The build now requires every deed-targeting Rust command, including the proposal payload and its responses, to appear in a linked scenario. <a href="#group4">See the two-sided trade.</a></p>')
 def criterion_for(scope,key):

@@ -1,7 +1,8 @@
 {
   "identifiers": [
     ["1 · Destination", "Name stays legible at all times. A gold frame means inspected; the ship markers show actual occupants."],
-    ["2 · Decision value", "Vacant deed: purchase price. Owned deed: current rent. Fee: amount owed. District color is a stripe, not another line of microtext."],
+    ["2 · Decision value", "Vacant deed: purchase price. Owned deed: current rent. Fee: amount owed. Keep the amount and deed name on plain paper, not on the district texture."],
+    ["District membership versus a full set", "Match the same engraved band across deeds: use its code and printed key on the perimeter, or the full district name on the folded board. SET means one player owns them all, not that a ship is present or a trade selected. See the district-identity scenarios."],
     ["3 · Ownership versus presence","A permanent DEED number identifies the owner even when their ship is elsewhere. The numbered ship pieces below the price are the current visitors. Fleet station always names every ship’s berth, balance and who owns its space."],
     ["4 · Detail on demand", "Inspector and accessible label carry district, level, precise amounts and full effects. Never rely on color or sound alone."],
     ["Property map · eligibility and consequence", "A hollow diamond and signed quote mark each candidate; a check identifies the selected deed. Show affected district members separately from the clicked member. See the board-target-preview criterion in the interaction and scenario audit."]
