@@ -6,10 +6,10 @@
     "recall-dispatch": 1
   },
   "desktop": {
-    "firstVisibleMs": 180,
-    "nextRollReadyMs": 967,
-    "continuouslyObservedMs": 6017,
-    "frames": 362,
+    "firstVisibleMs": 160,
+    "nextRollReadyMs": 979,
+    "continuouslyObservedMs": 6016,
+    "frames": 358,
     "misses": 0,
     "animated": true,
     "peak": 0.101,
@@ -31,9 +31,9 @@
     "recallClicks": 1
   },
   "phone": {
-    "firstVisibleMs": 12,
-    "nextRollReadyMs": 963,
-    "continuouslyObservedMs": 6016,
+    "firstVisibleMs": 72,
+    "nextRollReadyMs": 1004,
+    "continuouslyObservedMs": 6015,
     "frames": 362,
     "misses": 0,
     "animated": false,
@@ -128,7 +128,7 @@
     }
   },
   "online": {
-    "guestHandoffMs": 930,
+    "guestHandoffMs": 912,
     "automaticFiling": true,
     "liveCuesPerDevice": 1,
     "rejoinCues": 0,

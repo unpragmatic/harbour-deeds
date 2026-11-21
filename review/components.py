@@ -33,9 +33,10 @@ sections = {
         ('recovery', 'Interrupted table', 'Distinguish a paused network table from a completed match. A returning device needs a recovery action, not a fresh local game.'),
     ],
     'Navigate and inspect': [
-        ('district-sets','A set, not just a color','Shipyards shares a diagonal plank print; Exchange shares a diamond lattice. After the trade, SET appears on all six deeds while DEED ribbons still identify two different owners.'),
-        ('district-grayscale','Match the engraving to the key','The desktop board with color removed. All 24 Grand Harbor deeds still match a named key by their actual printed pattern and code. Bottle Post interrupts Old Town but does not belong to it.'),
-        ('district-phone','Full names on the folded route','The three Old Town deeds carry the same brickwork and full name. The price, title and any visiting ship stay off the textured area. No legend lookup or tap is required.'),
+        ('district-pairs','Eight districts without their headers','For each district: a full deed on the left, a different member on the right with color and the top third removed. These are enlarged crops of the actual board, not drawings of the intended tile.'),
+        ('district-sets','A set, not just a color','After the trade, a double frame and SET stamp mark all six Shipyards and Exchange deeds. The DEED ribbons still identify two different owners; the numbered ship at Grain Quay is a visitor.'),
+        ('district-grayscale','Follow the printed faces','All 24 Grand Harbor deeds carry their engraving across the board space. Bottle Post interrupts the brickwork of Old Town with a dark envelope face: a draw, not a deed.'),
+        ('district-phone','Full names on the folded route','Three Old Town deeds share the same brickwork and full district name. The deed title sits directly on the print; a small plain ticket keeps the price distinct. No legend lookup or tap is required.'),
         ('crowded-space', 'Four visitors on an improved deed', 'Density fixture: the deed ribbon is separate from all four numbered ship markers. Nobody disappears into an anonymous count; the inspector keeps the development ladder.'),
         ('grand-harbor', 'Grand Harbor circuit', 'The 40-space circuit distinguishes guilds, dispatches, exchanges, fees and deed districts. Inspect a space to read its effect.'),
         ('grand-chart', 'Pocket chart', 'On small devices the larger circuit becomes a scrollable route in movement order. The desktop perimeter is not shrunk to fit a phone.'),
@@ -122,7 +123,7 @@ criteria=survey['criteria']
 for c in criteria:
     if not set(c['scenarios'])<=obs.keys():raise ValueError(f'Missing measured paths for {c["id"]}')
     out.append(f'<h3 id="{escape(c["id"])}">{escape(c["name"])}</h3><p>{escape(c["rule"])}</p>')
-    if c['id']=='district-identity':out.append('<p>The review compares grayscale pixels from each deed with the printed key, excluding lettering, so eight different labels on eight identical stripes cannot pass. It also checks the phone labels and a set completed and then broken by accepted Rust commands. <a href="#group3">See the boards.</a></p>')
+    if c['id']=='district-identity':out.append('<p>Ignore the top third and remove color. On each remaining third, the browser checks for visible engraving around the title, excluding prices, stamps and ship pieces. The combined samples must match their own named print more closely than any other. This includes both legs of a pending trade and a complete set. A header stripe cannot pass. <a href="#group3">Compare the faces.</a></p>')
     if c['id']=='read-through-handoff':out.append('<p>The browser observes the text for six seconds across handoff on each device, takes the next turn and checks that the letter clears without input. Activity recovers the same recipient, bill and cash afterward. <a href="#group1">See the letters.</a></p>')
     if c['id']=='board-target-preview':out.append('<p>Trades were in the click inventory, but not in this criterion. The old modal passed without showing a single target. The build now requires every deed-targeting Rust command, including the proposal payload and its responses, to appear in a linked scenario. <a href="#group4">See the two-sided trade.</a></p>')
 def criterion_for(scope,key):
@@ -140,7 +141,7 @@ for group,entries in survey['interactions'].items():
     out.append(f'<details><summary>{escape(group)} ({len(entries)})</summary>'+table(['ID','Starting state','Action / result','Clicks','UX criterion'],[row+[criterion_for('interactions',row[0])] for row in entries])+'</details>')
 out.append('</section><section id="contrast"><h2>Palette and measured contrast</h2><p>Navy surrounds the controls, cream is the reading surface, amber marks action and selection. '
            'Seat numbers, underlines, signed amounts and labeled buttons also carry meaning without color. '
-           'These are relative-luminance ratios for rendered CSS pairs, not a whole-app accessibility certification. '
+           'Ratios use rendered CSS pairs for flat surfaces. For tile titles, the review hides only the lettering and measures the worst pixel behind each name on Grand Harbor. This is not a whole-app accessibility certification. '
            'The guardrails are 4.5:1 for sampled text and 3:1 for the focus outline.</p>')
 out.append(table(['Surface','Foreground','Background','Measured','Minimum'],[[name,v['fg'],v['bg'],f"{v['ratio']:.2f}:1",f"{v['minimum']}:1"] for name,v in results['contrast'].items()])+'</section>')
 out.append('<section id="motion"><h2>Watch a turn, with sound</h2><p>An actual local game: Seat 1 rolls, opens Copper Yard to bids, and wins it for $10 when Seat 2 withdraws. The rattling dice, bid and closing gavel are recorded from the game.</p><video controls playsinline preload="metadata" style="width:100%;max-width:900px" aria-label="Roll, bidding and settlement with the game audio" src="./table-in-motion.webm"></video></section>')

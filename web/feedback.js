@@ -12,6 +12,7 @@ const signed=n=>`${n<0?'−':'+'}${money(Math.abs(n))}`;
 const pips=[[],[4],[0,8],[0,4,8],[0,2,6,8],[0,2,4,6,8],[0,2,3,5,6,8]];
 const artwork={
   ship:'<path d="M7 43h50l-9 10H17zM30 7v32H9L30 7zm5 7 17 25H35z"/>',
+  mooring:'<circle cx="32" cy="12" r="5"/><path d="M32 17v38M22 25h20M10 39q6 16 22 16t22-16m-44 0 1 11m-1-11 10 5m34-5-1 11m1-11-10 5"/>',
   deed:'<path d="M14 5h35v40H14zM21 15h21m-21 7h15m-15 7h20"/><circle cx="40" cy="40" r="8"/><path d="m36 48-2 10 6-4 5 4-1-11"/>',
   gavel:'<path d="m21 14 8-8 17 17-8 8zM12 23l7-7 17 17-7 7zM34 28l21 21-5 5-21-21zM8 49h22l4 7H5z"/>',
   build:'<path d="M6 54h52M10 52V32l14 6V25l15 9v18M43 52l2-39h7l3 39M16 43v4m9-4v4m9-4v4"/>',

@@ -83,8 +83,20 @@
     },
     "Deed price": {
       "fg": "rgb(41, 56, 73)",
-      "bg": "rgb(255, 248, 231)",
-      "ratio": 11.29,
+      "bg": "rgb(255, 243, 216)",
+      "ratio": 10.86,
+      "minimum": 4.5
+    },
+    "Name over engraving (worst: Net Loft)": {
+      "fg": "rgb(21, 33, 37)",
+      "bg": "rgb(190, 136, 115)",
+      "ratio": 5.45,
+      "minimum": 4.5
+    },
+    "Name over emblem (worst: Dock Works)": {
+      "fg": "rgb(255, 249, 230)",
+      "bg": "rgb(83, 112, 111)",
+      "ratio": 5.09,
       "minimum": 4.5
     },
     "Keyboard focus on deed": {

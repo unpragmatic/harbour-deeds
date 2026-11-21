@@ -7,6 +7,7 @@ const colors = ['#9a321f','#006458','#76500b','#53468d'];
 const printCodes=JSON.parse($('printCodes').textContent);
 const printCode=group=>printCodes[group]??group.slice(0,2).toUpperCase();
 const swatch=group=>`<i class="engraving" data-print="${printCode(group)}" aria-hidden="true"></i>`;
+const portSeal={start:'ship',notice:'card',guild:'cover',works:'build',exchange:'gavel',fee:'coin',rest:'mooring'};
 const money = n => '$' + n.toLocaleString('en-US');
 const seat = n => `Seat ${n + 1}`;
 let engine, state, seats, session;
@@ -274,9 +275,13 @@ function render() {
     const markers=here.map(j=>`<span class="token${j===s.turn?' arrived':''}" data-ship="${j}" style="--seat:${colors[j]}" aria-hidden="true">${shipPiece(j,here.length>2)}</span>`).join('');
     b.classList.toggle('hasOwner',owner!==null);b.classList.toggle('fleetHere',here.length>0);
     b.style.setProperty('--fold-row',1+Math.floor(i/8));b.style.setProperty('--fold-col',Math.floor(i/8)%2?8-i%8:1+i%8);
-    const full=tile.kind==='deed'&&sets.get(tile.group)!==null;
-    const band=tile.kind==='deed'?`<span class="districtBand" aria-hidden="true"><span class="printCode">${printCode(tile.group)}</span><span class="printName">${tile.group}</span>${swatch(tile.group)}${full?'<em class="setStamp">SET</em>':''}</span>`:'';
-    b.innerHTML=`${band}${flag}<span class="station" aria-hidden="true">${String(i).padStart(2,'0')} ${Math.floor(i/8)%2?'←':'→'}</span><strong>${tile.name}</strong><span class="tileValue">${value}</span>${markers?`<span class="berth" data-ships="${here.length}">${markers}</span>`:''}`;
+    const deed=tile.kind==='deed',full=deed&&sets.get(tile.group)!==null;
+    const face=deed?`<span class="deedFace" aria-hidden="true"></span>
+      <span class="districtMark" aria-hidden="true"><span class="printCode">${printCode(tile.group)}</span><span class="printName">${tile.group}</span></span>
+      ${full?'<em class="setStamp" aria-hidden="true">SET</em>':''}`:
+      `<span class="portSeal" aria-hidden="true">${icon(portSeal[tile.kind])}</span>`;
+    b.classList.toggle('fullSet',full);
+    b.innerHTML=`${face}${flag}<span class="station" aria-hidden="true">${String(i).padStart(2,'0')} ${Math.floor(i/8)%2?'←':'→'}</span><span class="${deed?'deedLabel':'portLabel'}"><strong>${tile.name}</strong><span class="tileValue">${value}</span></span>${markers?`<span class="berth" data-ships="${here.length}">${markers}</span>`:''}`;
     b.setAttribute('aria-label',[tile.name,tile.group||tile.kind,value,owner===null?'':`Owned by ${seat(owner)}, level ${s.levels[i]}`,full?`Complete ${tile.group} set`:'',here.length?'Occupied by '+here.map(seat).join(', '):'','Inspect space'].filter(Boolean).join('. '));
   }
   $('register').innerHTML=s.players.map((player,i)=>{

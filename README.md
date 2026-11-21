@@ -27,7 +27,9 @@ Each seat selects a controller implementing `(snapshot, abortSignal) => Promise<
 
 ## Interaction review
 
-Districts have a printed texture as well as a color. Match a deed to the named key on the desktop perimeter, or read the full district name on a folded tile. **SET** marks every deed in a complete district; the separate **DEED** ribbon still names its owner. `web/district-prints.json` is the designer’s visual palette, not a game rule. `review/districts.py` exercises the [district identity criterion](https://unpragmatic.github.io/harbour-deeds/components.html#district-identity) after a build.
+Each deed is printed edge to edge in its district’s color and engraving: Old Town is brickwork, Shipyards is planking, Exchange is lattice. Only the price, rent or action quote gets a plain ticket. Service spaces have dark faces and large symbols instead. The desktop key names each print; folded tiles show the district name. A double frame and **SET** mark a complete district, the **DEED** ribbon names the owner, and numbered ships show who is there now.
+
+`web/district-prints.json` is the designer’s visual palette, not a game rule. After building, `review/districts.py` checks the [whole-tile criterion](https://unpragmatic.github.io/harbour-deeds/components.html#district-identity): match the rendered engraving without color or the tile’s top third. The check includes the folded phone board, both selected trade legs, and a set completed and then broken by Rust-accepted moves.
 
 Maintain `web/interactions.json` with changes to controls, cues and board identifiers. The build rejects undocumented Rust commands. Local, host and guest live moves use the command-to-cue mapping; replay, simulation and ordinary turn advancement are silent. `review/components.py` publishes the same inventory in the illustrated checklist. For new UI-only flows, update the surfaces list and the relevant browser walkthrough in the same change.
 

@@ -1,7 +1,9 @@
 """Measure input events, line-of-sight to cash, and contrast on rendered game surfaces."""
 from contextlib import contextmanager
 import json
+from io import BytesIO
 from pathlib import Path
+from PIL import Image
 from playwright.sync_api import sync_playwright, expect
 
 root=Path(__file__).resolve().parent
@@ -32,16 +34,37 @@ with sync_playwright() as pw:
         assert p.locator(sel).all_text_contents()==['$850']*4
         assert in_sight(sel)
 
+    def rgb(css):
+        assert css.startswith('rgb('),css
+        return tuple(map(int,css[4:-1].split(',')))
+    def light(color):
+        c=[v/255 for v in color]
+        return sum(w*(v/12.92 if v<=.04045 else ((v+.055)/1.055)**2.4) for w,v in zip([.2126,.7152,.0722],c))
+    def contrast(fg,bg):
+        hi,lo=sorted((light(fg),light(bg)),reverse=True)
+        return (hi+.05)/(lo+.05)
+    def record(name,fg,bg,ratio,threshold=4.5):
+        assert ratio>=threshold,(name,fg,bg,ratio)
+        ratios[name]={'fg':fg,'bg':bg,'ratio':round(ratio,2),'minimum':threshold}
     def pair(name,text,paper,part='color',threshold=4.5):
         fg=p.locator(text).first.evaluate('(e,p)=>getComputedStyle(e)[p]',part)
         bg=p.locator(paper).first.evaluate('e=>getComputedStyle(e).backgroundColor')
-        def light(rgb):
-            assert rgb.startswith('rgb('),(name,rgb)
-            c=[float(v)/255 for v in rgb[4:-1].split(',')]
-            return sum(w*(v/12.92 if v<=.04045 else ((v+.055)/1.055)**2.4) for w,v in zip([.2126,.7152,.0722],c))
-        hi,lo=sorted([light(fg),light(bg)],reverse=True)
-        ratio=(hi+.05)/(lo+.05);assert ratio>=threshold,(name,fg,bg,ratio)
-        ratios[name]={'fg':fg,'bg':bg,'ratio':round(ratio,2),'minimum':threshold}
+        record(name,fg,bg,contrast(rgb(fg),rgb(bg)),threshold)
+    def ink_on_print():
+        # Hide only the glyphs; measure the worst real background pixel underneath.
+        hidden=p.add_style_tag(content='.tile strong{visibility:hidden!important}')
+        stock=Image.open(BytesIO(p.screenshot())).convert('RGB')
+        hidden.evaluate('e=>e.remove()')
+        for kind,noun in [('deed','engraving'),('special','emblem')]:
+            readings=[]
+            for title in p.locator(f'#board .tile.{kind} strong').all():
+                r=title.bounding_box()
+                area=stock.crop((round(r['x'])+1,round(r['y'])+1,round(r['x']+r['width'])-1,round(r['y']+r['height'])-1))
+                fg=title.evaluate('e=>getComputedStyle(e).color')
+                ratio,bg=min((contrast(rgb(fg),c),c) for _,c in area.getcolors(area.width*area.height))
+                readings.append((ratio,title.text_content(),fg,'rgb%s'%str(bg)))
+            ratio,name,fg,bg=min(readings)
+            record(f'Name over {noun} (worst: {name})',fg,bg,ratio)
 
     expect(button('Roll dice')).to_be_visible()
     p.click('#setupBtn');p.locator('#advanced summary').click()
@@ -58,7 +81,8 @@ with sync_playwright() as pw:
     pair('Primary command','#actions .primary','#actions .primary')
     pair('Dock phase','#phaseLabel','.desk')
     pair('Inspector secondary text','#inspector p','#inspector')
-    pair('Deed price','#tile-1 .tileValue','#tile-1')
+    pair('Deed price','#tile-1 .tileValue','#tile-1 .tileValue')
+    ink_on_print()
     p.keyboard.press('Tab');p.focus('#tile-1')
     pair('Keyboard focus on deed','#tile-1','#tile-1','outlineColor',3)
     pair('Selected pane label','.switcher [aria-pressed=true]','.switcher [aria-pressed=true]')
