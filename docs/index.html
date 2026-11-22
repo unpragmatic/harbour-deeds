@@ -651,21 +651,50 @@ body[data-trade] .desk{overflow:auto}
   grid-template: auto minmax(0,1fr) auto / repeat(2,minmax(0,1fr));
 }
 .board:is(:not(.route),.mobileLoop) #boardGlance{display:contents}
-#boardGlance>div{position:relative;z-index:1;min-width:0;padding:6px 10px;color:#fffae9;background:#193940ed;font:650 14px/1.2 system-ui}
-#boardGlance span{display:block;color:#ffdc9c;font:750 11px/1.5 system-ui;letter-spacing:.06em;text-transform:uppercase}
-#boardGlance strong{display:block;font:750 clamp(17px,2vw,27px)/1.35 system-ui;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-#boardGlance small{display:block;font:600 13px/1.5 system-ui;color:#fffae9;letter-spacing:0}
-.turnWell{grid-area:1/1;justify-self:start;text-align:left;border-left:3px solid #ebc778}
-.rollWell{grid-area:1/2;justify-self:end;text-align:right;border-right:3px solid #9ccdd3}
-.cashWell{grid-area:3/1/4/-1;justify-self:center;text-align:center;border-top:2px solid #adc5a5}
+#boardGlance>div{position:relative;z-index:1;min-width:0;max-width:100%;color:#fff6dc;font-variant-numeric:tabular-nums}
+#boardGlance>div>span{display:block;font:750 11px/1.45 system-ui;letter-spacing:.07em;text-transform:uppercase}
+#boardGlance strong{display:block;font:700 clamp(20px,2.4vw,33px)/1.3 Georgia,serif;overflow-wrap:anywhere}
+#boardGlance small{display:block;font:650 13px/1.5 system-ui;letter-spacing:0}
+.turnWell{grid-area:1/1;justify-self:start;align-self:start;text-align:left;padding:6px 23px 6px 13px;transform-origin:4px 12px;
+  filter:drop-shadow(0 2px 1px #102227aa)}
+.turnWell::before{content:"";position:absolute;inset:0;z-index:-1;border-left:4px ridge #ebc67a;
+  background:linear-gradient(100deg,#0003,transparent 20% 76%,#0003),var(--flag-ink);
+  clip-path:polygon(0 0,100% 0,calc(100% - 10px) 50%,100% 100%,0 100%);box-shadow:inset 0 3px #fff3,inset 0 -3px #0003}
+.turnWell::after{content:"";position:absolute;left:6px;top:5px;bottom:5px;border-left:1px dashed #fff7}
+.rollWell{grid-area:1/2;justify-self:end;align-self:start;padding:5px 12px 6px;text-align:center;
+  background:linear-gradient(#193d3e,#102c32);border:1px solid #bf9a62;border-radius:12px;
+  box-shadow:inset 0 0 0 3px #253632,inset 0 0 0 4px #e6ce922f,0 2px 2px #14272b}
+.rollWell>span{color:#f1d99c}.castLine,#wellFaces,.ticketLine{display:flex;align-items:center;justify-content:center;gap:6px}
+#wellFaces[hidden]{display:none}#wellFaces{gap:3px}
+.castLine:has(#wellFaces:not([hidden])) strong::before{content:"=";margin-right:.24em;color:#e9d4ab;font:650 .6em/1 system-ui;vertical-align:.12em}
+#wellFaces svg{display:block;width:clamp(18px,2vw,27px);height:auto;background:linear-gradient(135deg,#ffffed,#eed9aa);
+  border:1px solid #fff8d8;border-radius:22%;box-shadow:0 2px #9e754c,0 3px 2px #0007;fill:#203837}
+#wellRoller{color:#ece4cd}
+.cashWell{grid-area:3/1/4/-1;justify-self:center;text-align:center;padding:5px 18px 6px;isolation:isolate;
+  filter:drop-shadow(0 2px 2px #152924aa)}
+.cashWell::before{content:"";position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(110deg,#f5e7c5,#fffae8 60%,#f0dfba);border-block:3px double #9a815b;
+  mask:radial-gradient(circle at 0 50%,transparent 2px,#000 2.5px) left/51% 9px repeat-y,radial-gradient(circle at 100% 50%,transparent 2px,#000 2.5px) right/51% 9px repeat-y}
+#boardGlance .cashWell{color:#213c39}
+#wellCashLabel{color:#685032}#wellRoute{color:#3a4845}.ticketLine{gap:0 10px;flex-wrap:wrap}
+#boardGlance #wellCash:has(.ticketEntry){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px 14px;text-align:left;font:550 14px/1.5 system-ui}
+.ticketEntry b{font-weight:750}
+#wellCashNote:not(:empty){border-top:1px dashed #ab9978}
 .board:is(:not(.route),.mobileLoop) .ocean>:is(#stage,#tradeGuide,#plotGuide){grid-area:2/1/3/-1}
+.boardbox:has(.board:is(:not(.route),.mobileLoop)) #stage[data-kind=roll] .stageFace{display:block;text-align:center;min-height:0;padding:8px 12px}
+.board:not(.route) .ocean #stage[data-kind=roll]:not(:has(#dispatchCard)){width:fit-content;max-width:90%;padding-inline:12px}
+.boardbox:has(.board:is(:not(.route),.mobileLoop)) #stage[data-kind=roll] #stageProp{display:none}
 .boardbox:has(.board:is(:not(.route),.mobileLoop)) #stage[data-kind=roll] #stageTag{display:none}
 .boardbox:has(.board:is(:not(.route),.mobileLoop)) #stage[data-live=roll][data-rent] #stageDetail{display:none}
 .boardbox:has(.board:is(:not(.route),.mobileLoop)) #stage[data-kind=dispatch]:has(#dispatchCard) .stageFace{display:none}
 .board.mobileLoop .cashWell{grid-row:2;align-self:start;margin-top:8px}
 @media(max-width:800px){
-  #boardGlance>div{padding:4px 5px}
-  #boardGlance strong{font-size:16px}
+  #boardGlance>div>span{font-size:10px}
+  #boardGlance strong{font-size:19px}
+  #boardGlance small{font-size:12px}
+  .turnWell{padding:5px 13px 5px 9px}.turnWell::before{clip-path:polygon(0 0,100% 0,calc(100% - 6px) 50%,100% 100%,0 100%)}
+  .rollWell{padding:3px 7px 4px}.castLine{gap:4px}.cashWell{padding:4px 11px}
+  #boardGlance #wellCash:has(.ticketEntry){font-size:12px;column-gap:8px}
 }
 @media(max-width:800px) and (max-height:740px){
   .boardbox:has(.mobileLoop) #dispatchCard{margin:0;padding:4px 8px}
@@ -743,8 +772,8 @@ body[data-trade] .desk{overflow:auto}
 <h2 id="boardName"></h2><div id="chartStatus"></div></div>
 <div id="boardGlance" role="group" aria-label="Table at a glance">
 <div class="turnWell"><span id="wellTurnLabel">Active player</span><strong id="wellTurn"></strong></div>
-<div class="rollWell"><span>Last roll</span><strong id="wellRoll"></strong><small id="wellRoller"></small></div>
-<div class="cashWell"><span id="wellCashLabel">Last payment</span><strong id="wellCash"></strong><small id="wellCashNote"></small></div></div>
+<div class="rollWell"><span>Last roll</span><div class="castLine"><div id="wellFaces" role="img" hidden></div><strong id="wellRoll"></strong></div><small id="wellRoller"></small></div>
+<div class="cashWell"><span id="wellCashLabel">Last payment</span><div class="ticketLine"><small id="wellRoute"></small><strong id="wellCash"></strong></div><small id="wellCashNote"></small></div></div>
 <div id="plotGuide" hidden></div><div id="tradeGuide" hidden></div>
 <section id="stage" aria-label="Table action"><div class="stageFace">
 <div class="stageCopy" role="status" aria-atomic="true"><div id="stageTag"></div><div id="stageTitle"></div><div id="stageDetail"></div></div>
@@ -798,6 +827,7 @@ body[data-trade] .desk{overflow:auto}
     ["Treasury","Check every seat without a click, scroll, or hover on all instruments and inside game sheets. For path costs, budgets and contrast evidence see review/clicks.json and review/desktop.py."],
     ["Local setup","Check solo, pass-and-play, custom seats, starting cash, forced auctions, whether detained owners collect rent, map, policy and clock before replacing a game. Board changes restore that board’s economic defaults."],
     ["Perimeter sightlines","The current decision maker and the last roller have separate labeled positions in the interior. A third position keeps the latest payment readable across handoff. See the glance-placement criterion."],
+    ["Tactile feedback","Look for the seat pennant, dice tray and rent receipt before reading their labels. A live rent handoff gives each its own brief cue. Reduced motion, disabled accents and journal replay keep the same settled information without animating it."],
     ["Online setup","Host, join by code, copy invite, assign seats and launch. Guests cannot change the rules."],
     ["Network recovery","Pause on disconnect. Rehost, rejoin, cancel or forget; historical commands must remain silent."],
     ["Bidding","Check presets, exact entry, insufficient cash, timer pause/expiry and final sale."],
@@ -1141,7 +1171,7 @@ function openPrefs(){
     <p>Follow numbered spaces around the edge. Tap one for its name and details. Trade and deed selection use detailed tiles.</p></div>
     <fieldset id="motionChoices"><legend>Animation pace</legend>${paceChoices.map(([v,name,help])=>
     `<label><input type="radio" name="motionPace" value="${v}" ${pace===v?'checked':''}><span><b>${name}</b><small>${help}</small></span></label>`).join('')}</fieldset>
-    <label class="fxOption"><input type="checkbox" id="showAccents" ${accents?'checked':''}> Show wakes, stamps and district seals</label>
+    <label class="fxOption"><input type="checkbox" id="showAccents" ${accents?'checked':''}> Animate board instruments, wakes, stamps and district seals</label>
     <p id="motionStatus" role="status"></p>`);
   const change=()=>{
     pace=$('motionChoices').querySelector(':checked').value;accents=$('showAccents').checked;
@@ -1314,29 +1344,39 @@ function recordGlance(move,before,s){
     if(rent){
       const due=rent.due-rent.covered-rent.paid;
       const rate=ownedUtilityRate(s,s.players[a].pos);
-      lastPayment={label:'Last rent',text:rent.waived?landingRentText(s,a):
-        `${seat(a)} → ${seat(rent.owner)} · ${money(rent.paid)}${rent.covered?` + ${money(rent.covered)} from guild`:''}${due?` · ${money(due)} unpaid`:''}`,
-        note:!rent.waived&&rate!=null?`Roll ${s.dice.reduce((n,d)=>n+d,0)} × ${rate} = ${money(rent.due)}`:''};
+      lastPayment=rent.waived?{label:'Last rent',text:'No rent',note:`${seat(rent.owner)} is in jail`}:
+        {label:'Last rent',route:`${seat(a)} → ${seat(rent.owner)}`,text:money(rent.paid),
+          note:[rent.covered?`${money(rent.covered)} from guild`:'',due?`${money(due)} unpaid`:'',
+            rate!=null?`Roll ${s.dice.reduce((n,d)=>n+d,0)} × ${rate} = ${money(rent.due)}`:''].filter(Boolean).join(' · ')};
       return;
     }
   }
   // Use settled balances, not the bid, list price, or a guess about who paid.
-  const changes=s.players.flatMap((p,i)=>p.cash===before.players[i].cash?[]:[`${seat(i)} ${signed(p.cash-before.players[i].cash)}`]);
+  const changes=s.players.flatMap((p,i)=>p.cash===before.players[i].cash?[]:[{who:seat(i),amount:signed(p.cash-before.players[i].cash)}]);
   if(changes.length){
     const reason=({buy:'Deed purchase',sell:'Deed sale',bail:'Bail',commission:'Refit',build:'Build',salvage:'Liquidation',accept:'Trade',grant:'Grant'})[move.action]
       ??(before.phase==='auction'?'Auction':move.action==='end'?'Settlement':hasDraw(s)?'Card':rules.tiles[s.players[a].pos].name);
-    lastPayment={label:`Last cash change · ${reason}`,text:changes.join(' · ')};
+    lastPayment={label:`Last cash change · ${reason}`,...(changes.length===1?
+      {route:changes[0].who,text:changes[0].amount}:{entries:changes})};
   }
 }
 function renderGlance(s){
-  const over=s.phase==='over';
+  const over=s.phase==='over',actor=actingSeat(s),dice=lastRoll?.dice??[],faces=$('wellFaces');
+  $('wellTurn').parentElement.style.setProperty('--flag-ink',over?'#3d434f':colors[actor]);
   $('wellTurnLabel').textContent=over?'Winner':s.phase==='auction'?'Active bidder':s.phase==='trade'?'Trade decision':'Active player';
-  $('wellTurn').textContent=over?s.winners.map(seat).join(' & '):seat(actingSeat(s));
-  $('wellRoll').textContent=!lastRoll?'Not rolled':lastRoll.dice.length===1?String(lastRoll.dice[0]):
-    `${lastRoll.dice.join(' + ')} = ${lastRoll.dice.reduce((n,d)=>n+d,0)}`;
+  $('wellTurn').textContent=over?s.winners.map(seat).join(' & '):seat(actor);
+  const pictured=dice.length>0&&dice.length<=2&&(rules.dice?.sides??6)===6,total=dice.reduce((n,d)=>n+d,0);
+  const label=pictured?`Dice: ${dice.join(' + ')}`:'';
+  if(label!==faces.getAttribute('aria-label')){
+    faces.hidden=!pictured;faces.setAttribute('aria-label',label);
+    faces.innerHTML=pictured?dice.map(d=>`<svg aria-hidden="true" viewBox="0 0 24 24">${pips[d].map(i=>`<circle cx="${5+7*(i%3)}" cy="${5+7*Math.floor(i/3)}" r="2.2"/>`).join('')}</svg>`).join(''):'';
+  }
+  $('wellRoll').textContent=!lastRoll?'Not rolled':pictured||dice.length===1?String(total):`${dice.join(' + ')} = ${total}`;
   $('wellRoller').textContent=lastRoll?seat(lastRoll.seat):'';
   $('wellCashLabel').textContent=lastPayment?.label??'Last payment';
-  $('wellCash').textContent=lastPayment?.text??'None yet';
+  $('wellRoute').textContent=lastPayment?.route??'';
+  if(lastPayment?.entries)$('wellCash').innerHTML=lastPayment.entries.map(c=>`<span class="ticketEntry">${c.who} <b>${c.amount}</b></span>`).join('');
+  else $('wellCash').textContent=lastPayment?.text??'None yet';
   $('wellCashNote').textContent=lastPayment?.note??'';
 }
 function outcome(m,b,s){
@@ -1420,6 +1460,23 @@ function animate(el,frames,timing){
   if(!el?.animate)return;
   const anim=el.animate(frames,timing);animations.add(anim);
   anim.addEventListener('finish',()=>animations.delete(anim),{once:true});return anim;
+}
+// Only live commits play these cues; rendering a saved roll or resizing the board is silent.
+function cueGlance(move,b,s){
+  if(document.hidden||$('modal').open||effectivePace()==='reduced'||!accents||!$('wellTurn').getClientRects().length)return;
+  const fast=effectivePace()==='fast',timing={duration:fast?220:420,easing:'ease-out'};
+  if(actingSeat(b)!==actingSeat(s)||s.phase==='over')
+    animate($('wellTurn').parentElement,[{transform:'rotate(-5deg) scaleX(.94)'},{transform:'rotate(2deg)',offset:.62},{transform:'none'}],timing);
+  if(move.action==='roll'){
+    const faces=$('wellFaces').children;
+    Array.from(faces.length?faces:[$('wellRoll')]).forEach((face,i)=>animate(face,[
+      {transform:`translateY(-6px) rotate(${i?19:-17}deg)`},{transform:'translateY(1px)',offset:.48},
+      {transform:`translateY(-2px) rotate(${i?-4:3}deg)`,offset:.72},{transform:'none'}],{...timing,delay:i*30}));
+  }
+  const rent=move.action==='roll'&&s.rent_receipt;
+  if(rent?rent.paid+rent.covered>0:s.players.some((p,i)=>p.cash!==b.players[i].cash))
+    animate($('wellCashLabel').parentElement,[{transform:'translateY(-6px) rotate(-2deg)'},{transform:'translateY(1px) scaleY(.97)',offset:.68},{transform:'none'}],
+      {...timing,delay:move.action==='roll'?(fast?75:150):0});
 }
 function tilePoint(el,base){
   const r=el.getBoundingClientRect();
@@ -1531,8 +1588,9 @@ function sail(move,b,s,fast,dispatch){
 }
 function liveFeedback(move,before,after){
   // A quiet network handoff may arrive before the dock; the next meaningful action supersedes it.
-  if(move.action==='end'&&after.phase!=='over')return;
+  if(move.action==='end'&&after.phase!=='over'){cueGlance(move,before,after);return}
   clearMotion();
+  cueGlance(move,before,after);
   const event=outcome(move,before,after);
   lastDeltas=after.players.map((p,i)=>p.cash-before.players[i].cash);
   $('stage').toggleAttribute('data-set',!!event.sets.length);

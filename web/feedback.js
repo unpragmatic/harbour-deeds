@@ -82,7 +82,7 @@ function openPrefs(){
     <p>Follow numbered spaces around the edge. Tap one for its name and details. Trade and deed selection use detailed tiles.</p></div>
     <fieldset id="motionChoices"><legend>Animation pace</legend>${paceChoices.map(([v,name,help])=>
     `<label><input type="radio" name="motionPace" value="${v}" ${pace===v?'checked':''}><span><b>${name}</b><small>${help}</small></span></label>`).join('')}</fieldset>
-    <label class="fxOption"><input type="checkbox" id="showAccents" ${accents?'checked':''}> Show wakes, stamps and district seals</label>
+    <label class="fxOption"><input type="checkbox" id="showAccents" ${accents?'checked':''}> Animate board instruments, wakes, stamps and district seals</label>
     <p id="motionStatus" role="status"></p>`);
   const change=()=>{
     pace=$('motionChoices').querySelector(':checked').value;accents=$('showAccents').checked;
@@ -255,29 +255,39 @@ function recordGlance(move,before,s){
     if(rent){
       const due=rent.due-rent.covered-rent.paid;
       const rate=ownedUtilityRate(s,s.players[a].pos);
-      lastPayment={label:'Last rent',text:rent.waived?landingRentText(s,a):
-        `${seat(a)} → ${seat(rent.owner)} · ${money(rent.paid)}${rent.covered?` + ${money(rent.covered)} from guild`:''}${due?` · ${money(due)} unpaid`:''}`,
-        note:!rent.waived&&rate!=null?`Roll ${s.dice.reduce((n,d)=>n+d,0)} × ${rate} = ${money(rent.due)}`:''};
+      lastPayment=rent.waived?{label:'Last rent',text:'No rent',note:`${seat(rent.owner)} is in jail`}:
+        {label:'Last rent',route:`${seat(a)} → ${seat(rent.owner)}`,text:money(rent.paid),
+          note:[rent.covered?`${money(rent.covered)} from guild`:'',due?`${money(due)} unpaid`:'',
+            rate!=null?`Roll ${s.dice.reduce((n,d)=>n+d,0)} × ${rate} = ${money(rent.due)}`:''].filter(Boolean).join(' · ')};
       return;
     }
   }
   // Use settled balances, not the bid, list price, or a guess about who paid.
-  const changes=s.players.flatMap((p,i)=>p.cash===before.players[i].cash?[]:[`${seat(i)} ${signed(p.cash-before.players[i].cash)}`]);
+  const changes=s.players.flatMap((p,i)=>p.cash===before.players[i].cash?[]:[{who:seat(i),amount:signed(p.cash-before.players[i].cash)}]);
   if(changes.length){
     const reason=({buy:'Deed purchase',sell:'Deed sale',bail:'Bail',commission:'Refit',build:'Build',salvage:'Liquidation',accept:'Trade',grant:'Grant'})[move.action]
       ??(before.phase==='auction'?'Auction':move.action==='end'?'Settlement':hasDraw(s)?'Card':rules.tiles[s.players[a].pos].name);
-    lastPayment={label:`Last cash change · ${reason}`,text:changes.join(' · ')};
+    lastPayment={label:`Last cash change · ${reason}`,...(changes.length===1?
+      {route:changes[0].who,text:changes[0].amount}:{entries:changes})};
   }
 }
 function renderGlance(s){
-  const over=s.phase==='over';
+  const over=s.phase==='over',actor=actingSeat(s),dice=lastRoll?.dice??[],faces=$('wellFaces');
+  $('wellTurn').parentElement.style.setProperty('--flag-ink',over?'#3d434f':colors[actor]);
   $('wellTurnLabel').textContent=over?'Winner':s.phase==='auction'?'Active bidder':s.phase==='trade'?'Trade decision':'Active player';
-  $('wellTurn').textContent=over?s.winners.map(seat).join(' & '):seat(actingSeat(s));
-  $('wellRoll').textContent=!lastRoll?'Not rolled':lastRoll.dice.length===1?String(lastRoll.dice[0]):
-    `${lastRoll.dice.join(' + ')} = ${lastRoll.dice.reduce((n,d)=>n+d,0)}`;
+  $('wellTurn').textContent=over?s.winners.map(seat).join(' & '):seat(actor);
+  const pictured=dice.length>0&&dice.length<=2&&(rules.dice?.sides??6)===6,total=dice.reduce((n,d)=>n+d,0);
+  const label=pictured?`Dice: ${dice.join(' + ')}`:'';
+  if(label!==faces.getAttribute('aria-label')){
+    faces.hidden=!pictured;faces.setAttribute('aria-label',label);
+    faces.innerHTML=pictured?dice.map(d=>`<svg aria-hidden="true" viewBox="0 0 24 24">${pips[d].map(i=>`<circle cx="${5+7*(i%3)}" cy="${5+7*Math.floor(i/3)}" r="2.2"/>`).join('')}</svg>`).join(''):'';
+  }
+  $('wellRoll').textContent=!lastRoll?'Not rolled':pictured||dice.length===1?String(total):`${dice.join(' + ')} = ${total}`;
   $('wellRoller').textContent=lastRoll?seat(lastRoll.seat):'';
   $('wellCashLabel').textContent=lastPayment?.label??'Last payment';
-  $('wellCash').textContent=lastPayment?.text??'None yet';
+  $('wellRoute').textContent=lastPayment?.route??'';
+  if(lastPayment?.entries)$('wellCash').innerHTML=lastPayment.entries.map(c=>`<span class="ticketEntry">${c.who} <b>${c.amount}</b></span>`).join('');
+  else $('wellCash').textContent=lastPayment?.text??'None yet';
   $('wellCashNote').textContent=lastPayment?.note??'';
 }
 function outcome(m,b,s){
@@ -361,6 +371,23 @@ function animate(el,frames,timing){
   if(!el?.animate)return;
   const anim=el.animate(frames,timing);animations.add(anim);
   anim.addEventListener('finish',()=>animations.delete(anim),{once:true});return anim;
+}
+// Only live commits play these cues; rendering a saved roll or resizing the board is silent.
+function cueGlance(move,b,s){
+  if(document.hidden||$('modal').open||effectivePace()==='reduced'||!accents||!$('wellTurn').getClientRects().length)return;
+  const fast=effectivePace()==='fast',timing={duration:fast?220:420,easing:'ease-out'};
+  if(actingSeat(b)!==actingSeat(s)||s.phase==='over')
+    animate($('wellTurn').parentElement,[{transform:'rotate(-5deg) scaleX(.94)'},{transform:'rotate(2deg)',offset:.62},{transform:'none'}],timing);
+  if(move.action==='roll'){
+    const faces=$('wellFaces').children;
+    Array.from(faces.length?faces:[$('wellRoll')]).forEach((face,i)=>animate(face,[
+      {transform:`translateY(-6px) rotate(${i?19:-17}deg)`},{transform:'translateY(1px)',offset:.48},
+      {transform:`translateY(-2px) rotate(${i?-4:3}deg)`,offset:.72},{transform:'none'}],{...timing,delay:i*30}));
+  }
+  const rent=move.action==='roll'&&s.rent_receipt;
+  if(rent?rent.paid+rent.covered>0:s.players.some((p,i)=>p.cash!==b.players[i].cash))
+    animate($('wellCashLabel').parentElement,[{transform:'translateY(-6px) rotate(-2deg)'},{transform:'translateY(1px) scaleY(.97)',offset:.68},{transform:'none'}],
+      {...timing,delay:move.action==='roll'?(fast?75:150):0});
 }
 function tilePoint(el,base){
   const r=el.getBoundingClientRect();
@@ -472,8 +499,9 @@ function sail(move,b,s,fast,dispatch){
 }
 function liveFeedback(move,before,after){
   // A quiet network handoff may arrive before the dock; the next meaningful action supersedes it.
-  if(move.action==='end'&&after.phase!=='over')return;
+  if(move.action==='end'&&after.phase!=='over'){cueGlance(move,before,after);return}
   clearMotion();
+  cueGlance(move,before,after);
   const event=outcome(move,before,after);
   lastDeltas=after.players.map((p,i)=>p.cash-before.players[i].cash);
   $('stage').toggleAttribute('data-set',!!event.sets.length);
