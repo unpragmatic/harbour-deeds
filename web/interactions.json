@@ -36,6 +36,7 @@
     ["Treasury","Check every seat without a click, scroll, or hover on all instruments and inside game sheets. For path costs, budgets and contrast evidence see review/clicks.json and review/desktop.py."],
     ["Local setup","Check solo, pass-and-play, custom seats, starting cash, forced auctions, whether detained owners collect rent, map, policy and clock before replacing a game. Board changes restore that board’s economic defaults."],
     ["Perimeter sightlines","The current decision maker and the last roller have separate labeled positions in the interior. A third position keeps the latest payment readable across handoff. See the glance-placement criterion."],
+    ["Tactile feedback","Look for the seat pennant, dice tray and rent receipt before reading their labels. A live rent handoff gives each its own brief cue. Reduced motion, disabled accents and journal replay keep the same settled information without animating it."],
     ["Online setup","Host, join by code, copy invite, assign seats and launch. Guests cannot change the rules."],
     ["Network recovery","Pause on disconnect. Rehost, rejoin, cancel or forget; historical commands must remain silent."],
     ["Bidding","Check presets, exact entry, insufficient cash, timer pause/expiry and final sale."],

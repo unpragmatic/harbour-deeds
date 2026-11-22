@@ -135,10 +135,37 @@ with sync_playwright() as pw:
         roll.click();decline.click()
     roll.click();buy.click()
     expect(p.locator('#stageDetail')).to_contain_text('Rent 10× dice')
+    # Sample actual painted motion from the paying roll through the incoming player's turn.
+    # A fresh animation object, class, or nonzero requested duration isn't evidence of movement.
+    watch_instruments="""() => {
+      const samples={dice:0,ticket:0,flag:0},ended={},began={};
+      window.watchInstruments=new Promise(resolve=>document.addEventListener('click',()=>{
+        const start=performance.now();
+        function measure(now){
+          for(const [key,selector] of Object.entries({dice:'#wellFaces svg',ticket:'.cashWell',flag:'.turnWell'})){
+            const el=document.querySelector(selector);
+            if(el?.getClientRects().length&&getComputedStyle(el).transform!=='none'){
+              began[key]??=now-start;ended[key]=now-start;samples[key]++;
+            }
+          }
+          if(now-start<3200)requestAnimationFrame(measure);else resolve({samples,ended,began});
+        }requestAnimationFrame(measure);
+      },{once:true,capture:true}));
+    }"""
+    p.emulate_media(reduced_motion='no-preference')
+    p.evaluate(watch_instruments)
     roll.click()
+    handoff_clicks=p.evaluate('clicks')
     expect(p.locator('#stageDetail')).to_contain_text('Rent to Seat 1 · roll 7 × 10 = $70')
     expect(p.locator('#stageLedger .account').nth(1).locator('em')).to_have_text('−$70')
     expect(p.locator('#wellTurn')).to_have_text('Seat 1')  # Automatic handoff, no new roll.
+    motion=p.evaluate('watchInstruments')
+    assert min(motion['samples'].values())>=2,motion
+    assert motion['began']['dice']<motion['began']['ticket']<motion['began']['flag'],motion
+    assert all(motion['ended'][k]-motion['began'][k]<600 for k in motion['samples']),motion
+    assert not p.locator('#boardGlance').evaluate('g=>g.getAnimations({subtree:true}).length')
+    seen['tactile-handoff']=p.evaluate('clicks')-handoff_clicks
+    p.emulate_media(reduced_motion='reduce')
     def check_placement():
         # Test every line, including any pinned card, against the actual hit target.
         assert p.locator('#boardGlance').evaluate('''g=>{
@@ -150,15 +177,19 @@ with sync_playwright() as pw:
             return rects.length&&rects.every(r=>r.width&&r.left>=b.left&&r.right<=b.right+.5&&r.top>=b.top&&r.bottom<=b.bottom+.5&&
               [r.left+1,r.right-1].every(x=>[r.top+1,r.bottom-1].every(y=>n.contains(document.elementFromPoint(x,y)))));
           };
-          return turn.right<=roll.left+.5&&Math.max(turn.bottom,roll.bottom)<=cash.top+.5&&
+          return [...g.querySelectorAll('#wellFaces svg')].every(el=>{
+              const r=el.getBoundingClientRect();return r.width>=15&&el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));
+            })&&turn.right<=roll.left+.5&&Math.max(turn.bottom,roll.bottom)<=cash.top+.5&&
             [...g.querySelectorAll('span,strong,small')].filter(n=>n.textContent).every(n=>lines(n,bounds))&&
             [...document.querySelectorAll('#dispatchAddress,#dispatchTitle,#dispatchOrder,#dispatchResult,#dispatchAccount')].every(n=>lines(n,n.closest('#dispatchCard').getBoundingClientRect()));
         }''')
     def glance(key):
         before=p.evaluate('clicks')
-        expect(p.locator('#wellRoll')).to_have_text('6 + 1 = 7')
+        expect(p.locator('#wellRoll')).to_have_text('7')
+        assert p.locator('#wellFaces svg').evaluate_all('els=>els.map(el=>el.querySelectorAll("circle").length)')==[6,1]
         expect(p.locator('#wellRoller')).to_have_text('Seat 2')
-        expect(p.locator('#wellCash')).to_have_text('Seat 2 → Seat 1 · $70')
+        expect(p.locator('#wellCash')).to_have_text('$70')
+        expect(p.locator('#wellRoute')).to_have_text('Seat 2 → Seat 1')
         check_placement()
         p.screenshot(path=root/f'review/{key}.png')
         seen[key]=p.evaluate('clicks')-before
@@ -181,11 +212,23 @@ with sync_playwright() as pw:
         expect(p.locator('#lastLetter')).to_be_visible()
         expect(p.locator('#lastLetter')).to_contain_text('roll 6 × 10 = $60')
     p.set_viewport_size({'width':1366,'height':768})
-    before,after=p.evaluate('rentLanding(true)')
-    assert before==after
-    expect(p.locator('#wellCash')).to_have_text('No rent · Seat 3 is in jail')
+    p.emulate_media(reduced_motion='no-preference')
+    expect(p.locator('html')).to_have_attribute('data-motion','standard')
+    expect(p.locator('#board:not(.route)')).to_be_visible()
+    (before,after),dice_cues,cash_cues=p.evaluate('''()=>[rentLanding(true),
+        document.querySelector('#wellFaces').getAnimations({subtree:true}).length,
+        document.querySelector('.cashWell').getAnimations({subtree:true}).length]''')
+    assert before==after and dice_cues>0 and cash_cues==0
+    expect(p.locator('#wellCash')).to_have_text('No rent')
+    expect(p.locator('#wellCashNote')).to_have_text('Seat 3 is in jail')
     assert 'Rent paused' in p.locator('#tile-13').get_attribute('aria-label')
     p.click('#tile-13');expect(p.locator('#inspector')).to_contain_text('resumes on release')
+    p.click('#prefsBtn');p.uncheck('#showAccents');p.click('#close')
+    p.evaluate('rentLanding()')
+    expect(p.locator('#wellCash')).to_have_text('$60')
+    assert not p.locator('#boardGlance').evaluate('el=>el.getAnimations({subtree:true}).length')
+    p.click('#prefsBtn');p.check('#showAccents');p.click('#close')
+    p.emulate_media(reduced_motion='reduce')
     # On a short phone the incoming player's actions take height away from the board.
     p.set_viewport_size({'width':320,'height':667})
     p.evaluate('() => {crypto.getRandomValues=a=>(a[0]=1,a)}')
@@ -194,13 +237,17 @@ with sync_playwright() as pw:
     p.click('#start')
     roll.click();p.get_by_role('button',name='Buy · $140',exact=True).click()
     roll.click();roll.click();p.get_by_role('button',name='Buy · $200',exact=True).click()
+    p.evaluate(watch_instruments)
     roll.click();before=p.evaluate('clicks')
     expect(p.locator('#wellTurn')).to_have_text('Seat 1')
     expect(roll).to_be_enabled()
     expect(p.locator('#wellRoller')).to_have_text('Seat 4')
-    expect(p.locator('#wellCash')).to_have_text('Seat 4 → Seat 1 · $35')
+    expect(p.locator('#wellCash')).to_have_text('$35')
+    expect(p.locator('#wellRoute')).to_have_text('Seat 4 → Seat 1')
     check_placement()
     seen['center-four-seat-handoff']=p.evaluate('clicks')-before
+    assert not any(p.evaluate('watchInstruments')['samples'].values())
+    seen['tactile-quiet-phone']=p.evaluate('clicks')-before
     p.set_viewport_size({'width':390,'height':844})
     p.goto('http://table.test/?board=richup')
     p.click('#setupBtn');p.locator('#advanced summary').click()

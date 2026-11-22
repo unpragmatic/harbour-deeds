@@ -7,9 +7,11 @@
     "second-airport": 0,
     "sell-airport": 1,
     "trade-airport": 0,
+    "tactile-handoff": 0,
     "center-handoff": 0,
     "center-handoff-phone": 0,
-    "center-four-seat-handoff": 0
+    "center-four-seat-handoff": 0,
+    "tactile-quiet-phone": 0
   },
   "ownerContrast": [
     7.37,
