@@ -102,6 +102,8 @@ function initFeedback(){
   if($('prefsBtn'))$('prefsBtn').onclick=openPrefs;
   initSound();routeScreen.addEventListener('change',()=>{clearMotion();placeStage()});
   desktop.addEventListener('change',()=>{clearMotion();syncPhoneBoard()});
+  // Incoming controls can shrink the board after the roll has already settled.
+  new ResizeObserver(frameCircuit).observe($('boardView'));
   still.addEventListener('change',()=>{clearMotion();syncPrefs()});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)clearMotion()});
   window.addEventListener('resize',()=>{if(voyager)clearMotion()});
@@ -389,12 +391,15 @@ function followTile(i){
   const top=v.top+(routeScreen.matches?$('stage').offsetHeight:0);
   if(r.top<top||r.bottom>v.bottom)view.scrollTop+=r.top-(top+v.bottom-r.height)/2;
 }
-function followRoll(i){
-  if(!$('board').classList.contains('mobileLoop'))return followTile(i);
-  if($('boardView').hidden||$('modal').open)return;
+function frameCircuit(){
+  if(!$('board').classList.contains('mobileLoop')||$('boardView').hidden||$('modal').open)return;
   // Keep the handoff in sight instead of panning to a far edge under the sticky receipt.
   const view=$('boardView'),box=view.getBoundingClientRect(),[turn,roll,cash]=Array.from($('boardGlance').children,n=>n.getBoundingClientRect());
-  view.scrollTop=Math.max(0,view.scrollTop+Math.min(cash.bottom-box.bottom+4,Math.min(turn.top,roll.top)-box.top-$('stage').offsetHeight-4));
+  const down=Math.max(0,cash.bottom-box.bottom+4),limit=Math.min(turn.top,roll.top)-box.top-$('stage').offsetHeight-4;
+  view.scrollTop+=Math.min(down,limit);
+}
+function followRoll(i){
+  if($('board').classList.contains('mobileLoop'))frameCircuit();else followTile(i);
 }
 function cast(fast){
   $('stageProp').querySelectorAll('.die').forEach((die,i)=>{
