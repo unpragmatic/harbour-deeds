@@ -1,6 +1,7 @@
 export function actingSeat(s) {
   return s.phase === 'auction' ? s.auction.actor : s.phase === 'trade' ? s.trade.to : s.turn;
 }
+export const rentPaused=(s,rules,owner)=>owner!=null&&rules.collect_rent_in_jail===false&&s.players[owner].in_prison;
 export function locked(s,rules,i){
   return s.locked?.[i] ?? s.levels?.some((l,k)=>l>0 && rules.tiles[k].group===rules.tiles[i].group);
 }
@@ -65,7 +66,7 @@ function rescueSale(s,rules){
     const salary=Math.floor(path/n)*rules.salary+(path>=n&&k===0?(rules.salary_land??rules.salary)-rules.salary:0);
     const owner=s.owners[k],mult=rules.utility_multipliers?.[t.group];
     const rent=owner!=null&&mult?d*mult[rules.tiles.filter((x,j)=>x.group===t.group&&s.owners[j]===owner).length-1]:s.rents[k];
-    const bill=t.kind==='fee'?(t.cash_tax_pct!=null?Math.round((p.cash+salary)*t.cash_tax_pct/100):t.price):owner!=null && owner!==actor?Math.max(0,rent-p.cover):0;
+    const bill=t.kind==='fee'?(t.cash_tax_pct!=null?Math.round((p.cash+salary)*t.cash_tax_pct/100):t.price):owner!=null && owner!==actor&&!rentPaused(s,rules,owner)?Math.max(0,rent-p.cover):0;
     return {prob,need:bill-p.cash-salary};
   }).filter(x=>x.prob>0 && x.need>0);
   if(short.reduce((sum,x)=>sum+x.prob,0)<0.10)return;

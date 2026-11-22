@@ -22,6 +22,8 @@ sections = {
         ('desktop-auction','After: timed auction','Bidder, next commitment, time remaining and all cash balances remain visible. Inspecting the lot is not a bid.'),
     ],
     'Read the table in play': [
+        ('center-handoff','Who acts now, who just paid?','The upper left gives Seat 1 the turn. The upper right keeps Seat 2’s roll of seven. Below the landing, the payment names both seats and shows why the company collected $70.'),
+        ('center-handoff-phone','The same handoff on a phone','Around the board keeps the same reading order inside the circuit. The last transfer sits directly below the actor and dice so it does not require scrolling to the far end.'),
         ('fleet-stations','Whose ship, and whose deed?','Ship 2 is visiting Silk Arcade. The S1 mark says the deed belongs to Seat 1, whose ship is at Port Office. Select a fleet berth to locate that ship without changing the chosen deed.'),
         ('dispatch-desktop','Read it now or later','Fogbound cargo charged Seat 1 $55. Passing Port Office earned $240. The letter separates both amounts while Seat 2 plays, then leaves the chart on its own. Activity keeps the exact receipt.'),
         ('dispatch-phone','Read through a handoff','Muted and reduced motion: the card still names its recipient and displays $65 of cover, with the next player’s roll available underneath.'),
