@@ -9,6 +9,21 @@ anchor='engine=(await WebAssembly.instantiate(bytes)).instance.exports;'
 assert html.count(anchor)==1
 html=html.replace(anchor,anchor+'''
 window.snapshot=()=>JSON.stringify(state);
+window.guildHandoff=()=>{
+  session?.abort();initialize(Array(4).fill('human'),'richup',0,4);
+  let paid=false;
+  for(let i=0;i<180;i++){
+    const b=state,m=botMove(b,rules);state=command(m);
+    if(paid||m.action==='roll'&&state.card_receipt?.draws.some(d=>rules.named_cards[d.card].title==='Guild subscription')&&state.players[1].cash===b.players[1].cash+150){
+      render();liveFeedback(m,b,state);
+      if(paid){
+        session=new AbortController();controllers.human(state,session.signal);return;
+      }
+      paid=true;
+    }
+  }
+  throw Error('Seed did not reach the four-seat subscription');
+};
 window.rentLanding=(waiver=false)=>{
   session?.abort();initialize(['bot','bot','bot'],'richup',0,1,undefined,currentEdition,{...charterOf(catalog.boards.richup.rules),jailRent:!waiver});
   for(let i=0;i<150;i++){
@@ -248,6 +263,13 @@ with sync_playwright() as pw:
     seen['center-four-seat-handoff']=p.evaluate('clicks')-before
     assert not any(p.evaluate('watchInstruments')['samples'].values())
     seen['tactile-quiet-phone']=p.evaluate('clicks')-before
+    p.evaluate('guildHandoff()')
+    expect(roll).to_be_enabled()
+    expect(p.locator('#wellTurn')).to_have_text('Seat 3')
+    expect(p.locator('#dispatchTitle')).to_have_text('Guild subscription')
+    for line in ['Seat 1 −$50','Seat 2 +$150','Seat 3 −$50','Seat 4 −$50']:
+        expect(p.locator('#wellCash')).to_contain_text(line)
+    check_placement()
     p.set_viewport_size({'width':390,'height':844})
     p.goto('http://table.test/?board=richup')
     p.click('#setupBtn');p.locator('#advanced summary').click()

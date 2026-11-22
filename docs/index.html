@@ -652,7 +652,7 @@ body[data-trade] .desk{overflow:auto}
 }
 .board:is(:not(.route),.mobileLoop) #boardGlance{display:contents}
 #boardGlance>div{position:relative;z-index:1;min-width:0;max-width:100%;color:#fff6dc;font-variant-numeric:tabular-nums}
-#boardGlance span{display:block;font:750 11px/1.45 system-ui;letter-spacing:.07em;text-transform:uppercase}
+#boardGlance>div>span{display:block;font:750 11px/1.45 system-ui;letter-spacing:.07em;text-transform:uppercase}
 #boardGlance strong{display:block;font:700 clamp(20px,2.4vw,33px)/1.3 Georgia,serif;overflow-wrap:anywhere}
 #boardGlance small{display:block;font:650 13px/1.5 system-ui;letter-spacing:0}
 .turnWell{grid-area:1/1;justify-self:start;align-self:start;text-align:left;padding:6px 23px 6px 13px;transform-origin:4px 12px;
@@ -677,6 +677,8 @@ body[data-trade] .desk{overflow:auto}
   mask:radial-gradient(circle at 0 50%,transparent 2px,#000 2.5px) left/51% 9px repeat-y,radial-gradient(circle at 100% 50%,transparent 2px,#000 2.5px) right/51% 9px repeat-y}
 #boardGlance .cashWell{color:#213c39}
 #wellCashLabel{color:#685032}#wellRoute{color:#3a4845}.ticketLine{gap:0 10px;flex-wrap:wrap}
+#boardGlance #wellCash:has(.ticketEntry){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px 14px;text-align:left;font:550 14px/1.5 system-ui}
+.ticketEntry b{font-weight:750}
 #wellCashNote:not(:empty){border-top:1px dashed #ab9978}
 .board:is(:not(.route),.mobileLoop) .ocean>:is(#stage,#tradeGuide,#plotGuide){grid-area:2/1/3/-1}
 .boardbox:has(.board:is(:not(.route),.mobileLoop)) #stage[data-kind=roll] .stageFace{display:block;text-align:center;min-height:0;padding:8px 12px}
@@ -687,11 +689,12 @@ body[data-trade] .desk{overflow:auto}
 .boardbox:has(.board:is(:not(.route),.mobileLoop)) #stage[data-kind=dispatch]:has(#dispatchCard) .stageFace{display:none}
 .board.mobileLoop .cashWell{grid-row:2;align-self:start;margin-top:8px}
 @media(max-width:800px){
-  #boardGlance span{font-size:10px}
+  #boardGlance>div>span{font-size:10px}
   #boardGlance strong{font-size:19px}
   #boardGlance small{font-size:12px}
   .turnWell{padding:5px 13px 5px 9px}.turnWell::before{clip-path:polygon(0 0,100% 0,calc(100% - 6px) 50%,100% 100%,0 100%)}
   .rollWell{padding:3px 7px 4px}.castLine{gap:4px}.cashWell{padding:4px 11px}
+  #boardGlance #wellCash:has(.ticketEntry){font-size:12px;column-gap:8px}
 }
 @media(max-width:800px) and (max-height:740px){
   .boardbox:has(.mobileLoop) #dispatchCard{margin:0;padding:4px 8px}
@@ -1353,8 +1356,8 @@ function recordGlance(move,before,s){
   if(changes.length){
     const reason=({buy:'Deed purchase',sell:'Deed sale',bail:'Bail',commission:'Refit',build:'Build',salvage:'Liquidation',accept:'Trade',grant:'Grant'})[move.action]
       ??(before.phase==='auction'?'Auction':move.action==='end'?'Settlement':hasDraw(s)?'Card':rules.tiles[s.players[a].pos].name);
-    lastPayment={label:`Last cash change · ${reason}`,route:changes.length===1?changes[0].who:'',
-      text:changes.length===1?changes[0].amount:changes.map(c=>`${c.who} ${c.amount}`).join(' · ')};
+    lastPayment={label:`Last cash change · ${reason}`,...(changes.length===1?
+      {route:changes[0].who,text:changes[0].amount}:{entries:changes})};
   }
 }
 function renderGlance(s){
@@ -1372,7 +1375,8 @@ function renderGlance(s){
   $('wellRoller').textContent=lastRoll?seat(lastRoll.seat):'';
   $('wellCashLabel').textContent=lastPayment?.label??'Last payment';
   $('wellRoute').textContent=lastPayment?.route??'';
-  $('wellCash').textContent=lastPayment?.text??'None yet';
+  if(lastPayment?.entries)$('wellCash').innerHTML=lastPayment.entries.map(c=>`<span class="ticketEntry">${c.who} <b>${c.amount}</b></span>`).join('');
+  else $('wellCash').textContent=lastPayment?.text??'None yet';
   $('wellCashNote').textContent=lastPayment?.note??'';
 }
 function outcome(m,b,s){

@@ -267,8 +267,8 @@ function recordGlance(move,before,s){
   if(changes.length){
     const reason=({buy:'Deed purchase',sell:'Deed sale',bail:'Bail',commission:'Refit',build:'Build',salvage:'Liquidation',accept:'Trade',grant:'Grant'})[move.action]
       ??(before.phase==='auction'?'Auction':move.action==='end'?'Settlement':hasDraw(s)?'Card':rules.tiles[s.players[a].pos].name);
-    lastPayment={label:`Last cash change · ${reason}`,route:changes.length===1?changes[0].who:'',
-      text:changes.length===1?changes[0].amount:changes.map(c=>`${c.who} ${c.amount}`).join(' · ')};
+    lastPayment={label:`Last cash change · ${reason}`,...(changes.length===1?
+      {route:changes[0].who,text:changes[0].amount}:{entries:changes})};
   }
 }
 function renderGlance(s){
@@ -286,7 +286,8 @@ function renderGlance(s){
   $('wellRoller').textContent=lastRoll?seat(lastRoll.seat):'';
   $('wellCashLabel').textContent=lastPayment?.label??'Last payment';
   $('wellRoute').textContent=lastPayment?.route??'';
-  $('wellCash').textContent=lastPayment?.text??'None yet';
+  if(lastPayment?.entries)$('wellCash').innerHTML=lastPayment.entries.map(c=>`<span class="ticketEntry">${c.who} <b>${c.amount}</b></span>`).join('');
+  else $('wellCash').textContent=lastPayment?.text??'None yet';
   $('wellCashNote').textContent=lastPayment?.note??'';
 }
 function outcome(m,b,s){
