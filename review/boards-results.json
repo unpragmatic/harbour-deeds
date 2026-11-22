@@ -6,7 +6,9 @@
     "inspect-surprise-phone": 1,
     "second-airport": 0,
     "sell-airport": 1,
-    "trade-airport": 0
+    "trade-airport": 0,
+    "center-handoff": 0,
+    "center-handoff-phone": 0
   },
   "ownerContrast": [
     7.37,

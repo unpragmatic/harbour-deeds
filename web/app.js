@@ -31,6 +31,7 @@ function command(input) {
   const out = engine.dispatch();
   const result = JSON.parse(new TextDecoder().decode(new Uint8Array(engine.memory.buffer, out, engine.length())));
   if (result.error) throw new Error(result.error);
+  recordGlance(input,state,result);
   recordDispatch(input,state,result);
   return result;
 }
@@ -215,7 +216,8 @@ function detailHtml(i) {
   const title=owner===null?'On the market':`Owned by ${seat(owner)}`;
   const utility=utilityFor(t.group);
   const body=t.kind==='deed'?`<p>${title} · ${utility?'Utility':network?'Network deed':`Level ${level}/${max}`}</p>
-    ${facts([['List price',money(t.price)],[utility?'Rent formula':network?'Current fare':'Current rent',utility?rateLabel(t.group,utility[owner==null?0:have-1]):money(state.rents[i])],...(q?[['Bank offer',money(q.price)]]:[])])}
+    ${facts([['List price',money(t.price)],[utility?'Rent formula':rentPaused(state,rules,owner)?'Scheduled rent':network?'Current fare':'Current rent',utility?rateLabel(t.group,utility[owner==null?0:have-1]):money(state.rents[i])],...(q?[['Bank offer',money(q.price)]]:[])])}
+    ${rentPaused(state,rules,owner)?`<p>No rent is collected while ${seat(owner)} is in jail. The schedule below resumes on release.</p>`:''}
     ${bonus?`<p>Refitted: next rent includes a one-use ${money(bonus)} bonus.</p>`:''}${curve(i)}${roster}
     ${network?'':`<p>${status}${locked(state,rules,i)?' No sale or trade while this district is developed.':''}</p>`}`:
     t.kind==='notice'?deckGuide(t):`<p>${info[t.kind]}</p>`;
@@ -305,7 +307,7 @@ function render() {
     b.classList.toggle('landing',s.phase!=='over'&&i===s.players[s.turn].pos);
     b.classList.remove('located');
     const here=s.players.flatMap((player,j)=>player.pos===i&&!player.out?[j]:[]);
-    const owner=s.owners[i],mult=utilityFor(tile.group),value=owner!==null?(mult?rateLabel(tile.group,mult[districts.get(tile.group).counts[owner]-1]):`${faresFor(tile.group)?'Fare':'Rent'} ${money(s.rents[i])}`):tile.kind==='fee'?(tile.cash_tax_pct!=null?`−${tile.cash_tax_pct}% cash`:`−${money(tile.price)}`):tile.price?money(tile.price):({start:'Salary',notice:'Draw',guild:'Choose',exchange:'Auction',works:'Commission',rest:tile.move_to!=null?'Relocate':tile.skip_turns?'Skip turn':'Visit'})[tile.kind];
+    const owner=s.owners[i],mult=utilityFor(tile.group),value=rentPaused(s,rules,owner)?'Rent paused':owner!==null?(mult?rateLabel(tile.group,mult[districts.get(tile.group).counts[owner]-1]):`${faresFor(tile.group)?'Fare':'Rent'} ${money(s.rents[i])}`):tile.kind==='fee'?(tile.cash_tax_pct!=null?`−${tile.cash_tax_pct}% cash`:`−${money(tile.price)}`):tile.price?money(tile.price):({start:'Salary',notice:'Draw',guild:'Choose',exchange:'Auction',works:'Commission',rest:tile.move_to!=null?'Relocate':tile.skip_turns?'Skip turn':'Visit'})[tile.kind];
     const deed=tile.kind==='deed',district=deed?districts.get(tile.group):null;
     const held=owner===null?0:district.counts[owner],full=owner!==null&&held===district.size;
     if(owner!==null)b.style.setProperty('--owner-ink',colors[owner]);else b.style.removeProperty('--owner-ink');
@@ -389,6 +391,7 @@ function initialize(types,map,seconds,seed,policy,edition=currentEdition,charter
   if(usesCharter(edition)&&charter){
     if(!validCharter(charter))throw Error('Invalid table settings');
     rules={...rules,cash:charter.cash??base.cash,auction_declined:charter.forceAuction??base.auction_declined,
+      collect_rent_in_jail:charter.jailRent??base.collect_rent_in_jail??true,
       rounds:charter.rounds,victory:charter.victory,liquidation:{...rules.liquidation,deeds:charter.deeds,improvements:charter.improvements}};
   }else if(!usesCharter(edition)){
     rules={...rules,victory:'net_worth',liquidation:{deeds:false,improvements:false,improvement_rate_pct:50}};
@@ -431,9 +434,10 @@ async function play(types,map=catalog.defaultBoard,seconds=DEFAULT_CLOCK,policy,
 }
 function report(err){$('actions').replaceChildren();$('turn').textContent=`Game unavailable: ${err.message}`;console.error(err)}
 const maxOpeningCash=1000000;
-const charterOf=r=>({victory:r.victory??'net_worth',rounds:r.rounds,deeds:r.liquidation?.deeds??false,improvements:r.liquidation?.improvements??false,cash:r.cash,forceAuction:r.auction_declined!==false});
+const hasJail=r=>r.prison_entry!=null||r.doubles_limit!=null||r.bail_cost!=null;
+const charterOf=r=>({victory:r.victory??'net_worth',rounds:r.rounds,deeds:r.liquidation?.deeds??false,improvements:r.liquidation?.improvements??false,cash:r.cash,forceAuction:r.auction_declined!==false,jailRent:r.collect_rent_in_jail!==false});
 const validCharter=c=>c&&['net_worth','elimination'].includes(c.victory)&&Number.isSafeInteger(c.rounds)&&c.rounds>=1&&c.rounds<=200&&typeof c.deeds==='boolean'&&typeof c.improvements==='boolean'&&
-  (c.cash===undefined||Number.isSafeInteger(c.cash)&&c.cash>=1&&c.cash<=maxOpeningCash)&&(c.forceAuction===undefined||typeof c.forceAuction==='boolean');
+  (c.cash===undefined||Number.isSafeInteger(c.cash)&&c.cash>=1&&c.cash<=maxOpeningCash)&&(c.forceAuction===undefined||typeof c.forceAuction==='boolean')&&(c.jailRent===undefined||typeof c.jailRent==='boolean');
 function boardControls(initial,onChange=()=>{}){
   const map=$('map');
   for(const [id,b] of Object.entries(catalog.boards))
@@ -441,7 +445,7 @@ function boardControls(initial,onChange=()=>{}){
   map.value=initial.map;
   $('clock').value=String(initial.seconds);
   const chosen=()=>({map:map.value,policy:$('policy').value,seconds:Number($('clock').value),
-    charter:{victory:$('victory').value,rounds:$('roundLimit').valueAsNumber,deeds:$('debtDeeds').checked,improvements:$('debtLevels').checked,cash:$('openingCash').valueAsNumber,forceAuction:$('forceAuction').checked}});
+    charter:{victory:$('victory').value,rounds:$('roundLimit').valueAsNumber,deeds:$('debtDeeds').checked,improvements:$('debtLevels').checked,cash:$('openingCash').valueAsNumber,forceAuction:$('forceAuction').checked,jailRent:$('jailRent').checked}});
   const changed=()=>{
     $('auctionHelp').textContent=$('forceAuction').checked?'Buy at list price or start an auction. Bidders may still withdraw.':'Declining leaves the deed on the market without an auction.';
     $('roundField').hidden=$('victory').value==='elimination';onChange(chosen());
@@ -450,11 +454,12 @@ function boardControls(initial,onChange=()=>{}){
     const base=catalog.boards[map.value].rules,c=charter??charterOf(base);
     $('policy').value=policy??base.development.policy;
     $('openingCash').value=c.cash??base.cash;$('forceAuction').checked=c.forceAuction??(base.auction_declined!==false);
+    $('jailRentField').hidden=!hasJail(base);$('jailRent').checked=c.jailRent??(base.collect_rent_in_jail!==false);
     $('victory').value=c.victory;$('roundLimit').value=c.rounds;$('debtDeeds').checked=c.deeds;$('debtLevels').checked=c.improvements;
     changed();
   };
   map.onchange=()=>selectBoard();
-  for(const id of ['policy','clock','victory','debtDeeds','debtLevels','forceAuction'])$(id).onchange=changed;
+  for(const id of ['policy','clock','victory','debtDeeds','debtLevels','forceAuction','jailRent'])$(id).onchange=changed;
   $('roundLimit').oninput=$('openingCash').oninput=changed;
   selectBoard(initial);
   return ()=>{
@@ -471,7 +476,8 @@ function settings(){
     <fieldset class="charter"><legend>Cash &amp; auctions</legend>
     <label class="field">Starting cash per player ($)<input id="openingCash" type="number" min="1" max="${maxOpeningCash}" step="1" inputmode="numeric" required></label>
     <label><input type="checkbox" id="forceAuction" aria-describedby="auctionHelp"> Force auctions on declined deeds</label>
-    <p id="auctionHelp">Buy at list price or start an auction. Bidders may still withdraw.</p></fieldset>
+    <p id="auctionHelp">Buy at list price or start an auction. Bidders may still withdraw.</p>
+    <label id="jailRentField"><input type="checkbox" id="jailRent"> Owners collect rent while in jail</label></fieldset>
     <fieldset class="charter"><legend>Victory &amp; bankruptcy</legend><label class="field">Win by<select id="victory"><option value="net_worth">Net worth at round limit</option><option value="elimination">Last solvent merchant</option></select></label>
     <label class="field" id="roundField">Round limit<input type="number" id="roundLimit" min="1" max="200" step="1" required></label>
     <p>To cover a bill, allow the debtor to sell:</p><label><input id="debtDeeds" type="checkbox"> Undeveloped deeds</label><label><input id="debtLevels" type="checkbox"> Improvement levels</label></fieldset>
@@ -536,6 +542,7 @@ $('rulesBtn').onclick=()=>openDialog(`<h2>The rulebook</h2><h3>How to win this t
 try {
   initFeedback();
   $('rulesBtn').addEventListener('click',()=>{
+    if(hasJail(rules))$('content').insertAdjacentHTML('beforeend',`<h3>Rent while in jail</h3><p>${rules.collect_rent_in_jail===false?'Landing on a jailed owner’s deed is rent-free until the owner is released.':'Owners collect rent normally while in jail.'} Just visiting does not count as detention.</p>`);
     $('content').insertAdjacentHTML('beforeend','<h3>Reading a deed</h3><p>Matching prints belong to the same district. Select a deed for the full district name and its members. S1 2/3 means Seat 1 owns two of three deeds; SET means the whole district. Ships mark visitors, not owners.</p>');
     $('content').insertAdjacentHTML('afterbegin','<p class="keyGuide"><b>Desktop keys</b> &nbsp; R Roll · T Draft trade · I Improve · S Sell quote · B Space · F Players · L Activity · ← → browse focused spaces · Esc close sheet</p>');
     $('content').insertAdjacentHTML('beforeend',`<h3>Manage deeds on the board</h3><p>Before rolling, select a marked deed or choose Manage deeds. Switch between Improve and Sell to compare your options. Selecting a space only previews it; Confirm is a separate action. ${bankTerms()} Player trades leave the original bank acquisition price unchanged. Permanently developed districts cannot be sold.</p>${rules.tiles.some(t=>t.kind==='works')?'<h3>Public works</h3><p>Land at a works with an eligible deed to commission a one-use rent bonus. It pays only on the next rival rent. No full set is needed, and passing costs nothing.</p>':''}`);

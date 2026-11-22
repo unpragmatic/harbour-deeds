@@ -29,7 +29,11 @@ Each seat selects a controller implementing `(snapshot, abortSignal) => Promise<
 
 **Starting cash and forced auctions:** In **Custom local table** or the host lobby, set each player's opening balance ($1–$1,000,000). Turn on **Force auctions on declined deeds** to require a purchase or a public auction; bidders can still withdraw, so a deed with no bids remains unsold. Switching boards restores that board’s defaults. Rematches and recovered network tables keep the chosen rules.
 
+On a board with a prison, **Owners collect rent while in jail** is on by default. Turn it off to waive rent on every deed a detained owner holds, including airports and companies. Just visiting does not suspend rent. Collection resumes on release, with no back payments.
+
 **Phone layout:** Open **Display → Phone board → Around the board** for a numbered circuit with the board’s actual starting corner and direction. Tap a space to inspect it. Trade and deed-management screens temporarily use detailed tiles so the prices and terms stay readable. This setting stays on this device and doesn’t change the game.
+
+On perimeter boards the center separates **who acts now**, **who rolled what**, and **who paid whom**. The roll and latest payment stay in place when the next seat takes over. The [glance-placement audit](https://unpragmatic.github.io/harbour-deeds/components.html#glance-placement) checks that all three are visible together on desktop and phone.
 
 **Across devices:** Choose **New table → Host online**. Copy the six-character code; guests enter it under **New table → Join online**. Choose the board first: switching boards loads its development policy, victory mode, round limit and emergency-sale permissions without changing the bid clock or seats. The host can override those defaults, then start the game. Guests and rejoining devices use the saved board, rules edition and host settings. A single device may operate several seats.
 

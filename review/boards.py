@@ -9,16 +9,16 @@ anchor='engine=(await WebAssembly.instantiate(bytes)).instance.exports;'
 assert html.count(anchor)==1
 html=html.replace(anchor,anchor+'''
 window.snapshot=()=>JSON.stringify(state);
-window.companyDispatch=()=>{
-  session?.abort();initialize(['bot','bot','bot'],'richup',0,1);
-  for(let i=0;i<100;i++){
+window.rentLanding=(waiver=false)=>{
+  session?.abort();initialize(['bot','bot','bot'],'richup',0,1,undefined,currentEdition,{...charterOf(catalog.boards.richup.rules),jailRent:!waiver});
+  for(let i=0;i<150;i++){
     const before=state,m=botMove(state,rules);state=command(m);
-    if(m.action==='roll'&&state.card_receipt?.draws.some(d=>rules.named_cards[d.card].title==='Company inspection')&&state.owners[state.players[m.actor].pos]!=null){
+    if(m.action==='roll'&&state.rent_receipt&&(waiver?state.rent_receipt.waived:state.card_receipt?.draws.some(d=>rules.named_cards[d.card].title==='Company inspection'))){
       render();liveFeedback(m,before,state);
-      return [state.card_receipt.draws.at(-1).before,state.players[m.actor].cash];
+      return [before.players[m.actor].cash,state.players[m.actor].cash];
     }
   }
-  throw Error('Seed did not exercise a card-directed company bill');
+  throw Error('Seed did not exercise the requested rent landing');
 };
 window.networkPreview=(offer)=>{
   session?.abort();initialize(['human','human'],'grand',0,451);
@@ -138,20 +138,58 @@ with sync_playwright() as pw:
     roll.click()
     expect(p.locator('#stageDetail')).to_contain_text('Rent to Seat 1 · roll 7 × 10 = $70')
     expect(p.locator('#stageLedger .account').nth(1).locator('em')).to_have_text('−$70')
-    for width,height in [(1366,768),(390,844)]:
+    expect(p.locator('#wellTurn')).to_have_text('Seat 1')  # Automatic handoff, no new roll.
+    def check_placement():
+        # Test every line, including any pinned card, against the actual hit target.
+        assert p.locator('#boardGlance').evaluate('''g=>{
+          const bounds=g.parentElement.getBoundingClientRect();
+          const [turn,roll,cash]=Array.from(g.children,n=>n.getBoundingClientRect());
+          const lines=(n,b)=>{
+            const range=document.createRange();range.selectNodeContents(n);
+            const rects=[...range.getClientRects()];
+            return rects.length&&rects.every(r=>r.width&&r.left>=b.left&&r.right<=b.right+.5&&r.top>=b.top&&r.bottom<=b.bottom+.5&&
+              [r.left+1,r.right-1].every(x=>[r.top+1,r.bottom-1].every(y=>n.contains(document.elementFromPoint(x,y)))));
+          };
+          return turn.right<=roll.left+.5&&Math.max(turn.bottom,roll.bottom)<=cash.top+.5&&
+            [...g.querySelectorAll('span,strong,small')].filter(n=>n.textContent).every(n=>lines(n,bounds))&&
+            [...document.querySelectorAll('#dispatchAddress,#dispatchTitle,#dispatchOrder,#dispatchResult,#dispatchAccount')].every(n=>lines(n,n.closest('#dispatchCard').getBoundingClientRect()));
+        }''')
+    def glance(key):
+        before=p.evaluate('clicks')
+        expect(p.locator('#wellRoll')).to_have_text('6 + 1 = 7')
+        expect(p.locator('#wellRoller')).to_have_text('Seat 2')
+        expect(p.locator('#wellCash')).to_have_text('Seat 2 → Seat 1 · $70')
+        check_placement()
+        p.screenshot(path=root/f'review/{key}.png')
+        seen[key]=p.evaluate('clicks')-before
+        assert seen[key]==0
+    glance('center-handoff')
+    p.set_viewport_size({'width':390,'height':844})
+    p.click('#prefsBtn');p.select_option('#phoneBoard','circuit');p.click('#close')
+    glance('center-handoff-phone')
+    for width,height in [(1200,720),(390,844),(320,667)]:
         p.set_viewport_size({'width':width,'height':height})
-        before,after=p.evaluate('companyDispatch()')
+        before,after=p.evaluate('rentLanding()')
         assert before-after==60
         result=p.locator('#dispatchResult')
         expect(result).to_be_visible()
         expect(result).to_be_in_viewport()
         expect(result).to_contain_text('Rent to Seat 3 · roll 6 × 10 = $60')
         expect(p.locator('#dispatchAccount')).to_have_text(f'Cash ${before:,} → ${after:,}')
+        check_placement()
         p.click('[data-view=activity]')
         expect(p.locator('#lastLetter')).to_be_visible()
         expect(p.locator('#lastLetter')).to_contain_text('roll 6 × 10 = $60')
+    p.set_viewport_size({'width':1366,'height':768})
+    before,after=p.evaluate('rentLanding(true)')
+    assert before==after
+    expect(p.locator('#wellCash')).to_have_text('No rent · Seat 3 is in jail')
+    assert 'Rent paused' in p.locator('#tile-13').get_attribute('aria-label')
+    p.click('#tile-13');expect(p.locator('#inspector')).to_contain_text('resumes on release')
+    p.set_viewport_size({'width':390,'height':844})
     p.goto('http://table.test/?board=richup')
     p.click('#setupBtn');p.locator('#advanced summary').click()
+    expect(p.locator('#jailRent')).to_be_checked();p.uncheck('#jailRent')
     expect(p.locator('#forceAuction')).not_to_be_checked()
     p.check('#forceAuction');p.fill('#openingCash','0');p.click('#start')
     expect(p.locator('#modal')).to_be_visible()

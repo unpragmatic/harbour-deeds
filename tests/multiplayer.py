@@ -226,7 +226,7 @@ with contextlib.ExitStack() as stack:
     host.click('#retry');host.click('#host');code=host.locator('#tableCode').inner_text()
     host.select_option('#policy','district');host.select_option('#map','richup')
     expect(host.locator('#forceAuction')).not_to_be_checked()
-    host.check('#forceAuction');host.fill('#openingCash','910')
+    host.check('#forceAuction');host.fill('#openingCash','910');host.uncheck('#jailRent')
     guest.click('#retry');guest.click('#join');guest.fill('#code',code);guest.locator('#joinForm button').click()
     expect(guest.locator('#roomInfo')).to_contain_text('Device 1')
     # Enrollment redraws the lobby. Both board defaults and subsequent overrides survive.
@@ -238,7 +238,8 @@ with contextlib.ExitStack() as stack:
         expect(p.locator('.tile')).to_have_count(40)
     config=host.evaluate("JSON.parse(localStorage.getItem('harbor-deeds.table.v2')).config")
     assert config['map']=='richup' and config['policy']=='even'
-    assert config['charter']=={'victory':'elimination','rounds':30,'deeds':True,'improvements':True,'cash':910,'forceAuction':True}
+    assert config['charter']=={'victory':'elimination','rounds':30,'deeds':True,'improvements':True,'cash':910,'forceAuction':True,'jailRent':False}
+    guest.click('#rulesBtn');expect(guest.locator('#content')).to_contain_text('rent-free until the owner is released');guest.click('#close')
     host.get_by_role('button',name='Roll dice').click()
     host.get_by_role('button',name='Start auction').click()
     for p in (host,guest):expect(p.locator('body')).to_have_attribute('data-phase','auction')

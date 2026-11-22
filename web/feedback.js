@@ -32,7 +32,9 @@ function diceProp(values){
   }).join('')}</span>`;
 }
 function syncPhoneBoard(){
-  $('board').classList.toggle('mobileLoop',!desktop.matches&&phoneBoard==='circuit'&&!tradeMap&&!plotDesk);
+  const board=$('board'),wasCircuit=board.classList.contains('mobileLoop');
+  if(board.classList.toggle('mobileLoop',!desktop.matches&&phoneBoard==='circuit'&&!tradeMap&&!plotDesk)&&!wasCircuit)
+    $('boardView').scrollTop=0;
 }
 function placeStage(){
   const stage=$('stage'),board=$('board'),route=routeScreen.matches;
@@ -127,7 +129,7 @@ const hasDraw=s=>s.last_card!=null||Boolean(s.card_receipt?.draws.length);
 function namedReceipt(a,s,draw){
   const c=rules.named_cards[draw.card],player=s.players[a];
   // Intermediate draws close before the next landing. Only the final card can own its rent bill.
-  const rent=draw===s.card_receipt.draws.at(-1)?utilityRentBill(s,a):null;
+  const rent=draw===s.card_receipt.draws.at(-1)&&s.rent_receipt?landingRentText(s,a):null;
   const after=rent?player.cash:draw.after;
   return {deck:c.deck,title:c.title,order:cardInstruction(c),result:rent?`${draw.result} ${rent}`:draw.result,
     account:`Cash ${money(draw.before)} → ${money(after)}`,
@@ -221,7 +223,7 @@ function shipPiece(seatId,convoy){
   return `<svg viewBox="0 0 36 24" aria-hidden="true"><path class="sail" d="M3 16 13 3v13zm12-12 8 12h-8z"/><path d="M1 17h33l-5 6H7z" fill="var(--seat)" stroke="#13272a"/><circle cx="25" cy="10" r="9" stroke="#fff4cc" stroke-width="1.6" fill="var(--seat)"/><text x="25" y="14.8" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-weight="800" font-size="14">${seatId+1}</text></svg>`;
 }
 function syncStage(s){
-  ledger(s);maskVoyager();
+  ledger(s);renderGlance(s);maskVoyager();
   if($('stage').dataset.live)return;
   const tile=s.auction?.tile??s.players[s.turn].pos;
   const context={roll:'Ready to sail',offer:'Deed for sale',guild:'Guild charter',works:'Harbor works',auction:'At auction',trade:'Contract offered',debt:'Outstanding bill',end:'Settlement',over:'Final accounts'};
@@ -236,9 +238,45 @@ function ownedUtilityRate(s,i){
   if(!rates||owner==null)return null;
   return rates[districtTiles(group).filter(k=>s.owners[k]===owner).length-1];
 }
-function utilityRentBill(s,a){
-  const pos=s.players[a].pos,owner=s.owners[pos],rate=ownedUtilityRate(s,pos);
-  return rate==null||owner===a?null:`Rent to ${seat(owner)} · roll ${s.dice.reduce((x,y)=>x+y,0)} × ${rate} = ${money(s.rents[pos])}`;
+function landingRentText(s,a){
+  const r=s.rent_receipt,rate=ownedUtilityRate(s,s.players[a].pos);
+  if(r.waived)return `No rent · ${seat(r.owner)} is in jail`;
+  return `Rent to ${seat(r.owner)} · ${rate==null?'':`roll ${s.dice.reduce((x,y)=>x+y,0)} × ${rate} = `}${money(r.due)}`;
+}
+let lastRoll=null,lastPayment=null;
+function recordGlance(move,before,s){
+  if(move.action==='start'){lastRoll=lastPayment=null;return}
+  const a=move.actor;
+  if(move.action==='roll'){
+    lastRoll={seat:a,dice:s.dice};
+    const rent=s.rent_receipt;
+    if(rent){
+      const due=rent.due-rent.covered-rent.paid;
+      const rate=ownedUtilityRate(s,s.players[a].pos);
+      lastPayment={label:'Last rent',text:rent.waived?landingRentText(s,a):
+        `${seat(a)} → ${seat(rent.owner)} · ${money(rent.paid)}${rent.covered?` + ${money(rent.covered)} from guild`:''}${due?` · ${money(due)} unpaid`:''}`,
+        note:!rent.waived&&rate!=null?`Roll ${s.dice.reduce((n,d)=>n+d,0)} × ${rate} = ${money(rent.due)}`:''};
+      return;
+    }
+  }
+  // Use settled balances, not the bid, list price, or a guess about who paid.
+  const changes=s.players.flatMap((p,i)=>p.cash===before.players[i].cash?[]:[`${seat(i)} ${signed(p.cash-before.players[i].cash)}`]);
+  if(changes.length){
+    const reason=({buy:'Deed purchase',sell:'Deed sale',bail:'Bail',commission:'Refit',build:'Build',salvage:'Liquidation',accept:'Trade',grant:'Grant'})[move.action]
+      ??(before.phase==='auction'?'Auction':move.action==='end'?'Settlement':hasDraw(s)?'Card':rules.tiles[s.players[a].pos].name);
+    lastPayment={label:`Last cash change · ${reason}`,text:changes.join(' · ')};
+  }
+}
+function renderGlance(s){
+  const over=s.phase==='over';
+  $('wellTurnLabel').textContent=over?'Winner':s.phase==='auction'?'Active bidder':s.phase==='trade'?'Trade decision':'Active player';
+  $('wellTurn').textContent=over?s.winners.map(seat).join(' & '):seat(actingSeat(s));
+  $('wellRoll').textContent=!lastRoll?'Not rolled':lastRoll.dice.length===1?String(lastRoll.dice[0]):
+    `${lastRoll.dice.join(' + ')} = ${lastRoll.dice.reduce((n,d)=>n+d,0)}`;
+  $('wellRoller').textContent=lastRoll?seat(lastRoll.seat):'';
+  $('wellCashLabel').textContent=lastPayment?.label??'Last payment';
+  $('wellCash').textContent=lastPayment?.text??'None yet';
+  $('wellCashNote').textContent=lastPayment?.note??'';
 }
 function outcome(m,b,s){
   const a=m.actor,dieTotal=s.dice.reduce((x,y)=>x+y,0),pos=s.players[a].pos;
@@ -253,7 +291,7 @@ function outcome(m,b,s){
     tag=`${who} rolled ${dieTotal}`;title=tile.name;prop='dice';
     if(tile.kind==='deed'){
       const owner=s.owners[pos];
-      detail=owner===null?`For sale · ${money(tile.price)}`:owner===a?'Your own deed':utilityRentBill(s,a)??`Rent to ${seat(owner)} · ${money(b.rents[pos])}`;
+      detail=s.rent_receipt?landingRentText(s,a):owner===null?`For sale · ${money(tile.price)}`:owner===a?'Your own deed':'No rent charged';
     }
     else detail=({guild:'Guild charter · cash or cover',works:s.commissions?.length?'Public works · commission a deed or skip':'Public works · no eligible project',fee:tile.cash_tax_pct!=null?`${tile.cash_tax_pct}% cash tax`:`Harbor dues · ${money(tile.price??0)}`,start:'Start payment',rest:s.players[a].in_prison?'Detained':s.players[a].skip_turns?'On vacation':'Just visiting',notice:'Port notice',
       exchange:s.auction?`Auction: ${rules.tiles[s.auction.tile].name}`:'All deeds owned'})[tile.kind];
@@ -351,6 +389,13 @@ function followTile(i){
   const top=v.top+(routeScreen.matches?$('stage').offsetHeight:0);
   if(r.top<top||r.bottom>v.bottom)view.scrollTop+=r.top-(top+v.bottom-r.height)/2;
 }
+function followRoll(i){
+  if(!$('board').classList.contains('mobileLoop'))return followTile(i);
+  if($('boardView').hidden||$('modal').open)return;
+  // Keep the handoff in sight instead of panning to a far edge under the sticky receipt.
+  const view=$('boardView'),box=view.getBoundingClientRect(),[turn,roll,cash]=Array.from($('boardGlance').children,n=>n.getBoundingClientRect());
+  view.scrollTop=Math.max(0,view.scrollTop+Math.min(cash.bottom-box.bottom+4,Math.min(turn.top,roll.top)-box.top-$('stage').offsetHeight-4));
+}
 function cast(fast){
   $('stageProp').querySelectorAll('.die').forEach((die,i)=>{
     const dir=i%2?1:-1,duration=fast?420+i*12:780+(i%3)*36;
@@ -375,7 +420,7 @@ function sail(move,b,s,fast,dispatch){
   if(route.at(-1)!==end)route.push(end);
   const lastStep=route.length-1;
   const dockAt=delay+travel,settle=fast?145:325;
-  followTile(fast?end:start);
+  followRoll(fast?end:start);
   const wake=$('wake'),base=wake.getBoundingClientRect(),view=$('boardView'),initialScroll=view.scrollTop;
   const frames=[],seen=new Map(),sample=Math.ceil(total/16);
   const timeAt=k=>fast||!k||k===lastStep?k/lastStep:(k+.4)/(lastStep+1.1);
@@ -414,7 +459,7 @@ function sail(move,b,s,fast,dispatch){
     {delay,duration:travel/3,iterations:3});
   animate(pawn.firstElementChild,[{transform:'translateY(0)'},{transform:'translateY(2px) rotate(6deg)',offset:.3},{transform:'none'}],{delay:dockAt,duration:settle});
   animate(pawn,[{opacity:1},{opacity:1,offset:.45},{opacity:0}],{delay:dockAt,duration:settle});
-  later(dockAt,()=>{if(view.scrollTop===initialScroll)followTile(end)});
+  later(dockAt,()=>{if(view.scrollTop===initialScroll)followRoll(end)});
   later(dockAt+settle,()=>{pawn.remove();releaseBerth()});
   impact($(`tile-${end}`),dockAt,'','dock');
   readThrough=performance.now()+dockAt+settle+30;
@@ -427,6 +472,7 @@ function liveFeedback(move,before,after){
   const event=outcome(move,before,after);
   lastDeltas=after.players.map((p,i)=>p.cash-before.players[i].cash);
   $('stage').toggleAttribute('data-set',!!event.sets.length);
+  $('stage').toggleAttribute('data-rent',event.kind==='roll'&&!!after.rent_receipt&&!before.players[move.actor].in_prison&&!after.players[move.actor].out);
   $('stage').dataset.live=move.action;plate(event.tag,event.title,event.detail,event.prop,event.kind);ledger(after);
   // last_card survives non-roll commands, including end; never print from render,
   // a state-only reconnect or historical replay. A final draw still has a receipt.
@@ -434,7 +480,7 @@ function liveFeedback(move,before,after){
   if(document.hidden||$('modal').open)return;
   const rolling=move.action==='roll'&&event.kind!=='final';
   if(effectivePace()==='reduced'||$('boardView').hidden||!$('stage').animate){
-    if(rolling)followTile(after.players[move.actor].pos);
+    if(rolling)followRoll(after.players[move.actor].pos);
     foley(card?'dispatch':rolling?'dock':event.cue);if(event.sets.length)foley('district',300);return;
   }
   const prop=$('stageProp');

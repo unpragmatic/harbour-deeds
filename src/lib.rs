@@ -31,6 +31,8 @@ struct Rules {
     bail_cost: Option<i32>,
     #[serde(default = "yes")]
     auction_declined: bool,
+    #[serde(default = "yes")]
+    collect_rent_in_jail: bool,
     auction_increment: i32,
     rounds: usize,
     tiles: Vec<Tile>,
@@ -265,6 +267,14 @@ struct Trade {
     take_cash: i32,
 }
 #[derive(Serialize)]
+struct RentReceipt {
+    owner: usize,
+    due: i32,
+    paid: i32,
+    covered: i32,
+    waived: bool,
+}
+#[derive(Serialize)]
 struct Game {
     levels: Vec<usize>,
     bonuses: Vec<i32>,
@@ -293,6 +303,8 @@ struct Game {
     piles: board_cards::Piles,
     #[serde(skip_serializing_if = "Option::is_none")]
     card_receipt: Option<board_cards::Receipt>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    rent_receipt: Option<RentReceipt>,
     last_card: Option<usize>,
     phase: Phase,
     auction: Option<Auction>,
@@ -569,6 +581,7 @@ impl Game {
             deck: vec![],
             piles: Default::default(),
             card_receipt: None,
+            rent_receipt: None,
             last_card: None,
             rules,
             seed: seed.max(1),
@@ -965,6 +978,7 @@ impl Game {
     fn roll(&mut self, a: usize) -> Result<(), &'static str> {
         self.last_card = None;
         self.card_receipt = None;
+        self.rent_receipt = None;
         self.dice = (0..self.rules.dice.count)
             .map(|_| 1 + self.random(self.rules.dice.sides))
             .collect();
@@ -1033,6 +1047,18 @@ impl Game {
             Kind::Deed => match self.owners[j] {
                 None => self.phase = Phase::Offer,
                 Some(b) if b != a => {
+                    if self.players[b].in_prison && !self.rules.collect_rent_in_jail {
+                        self.events
+                            .push(format!("No rent: Seat {} is in jail.", b + 1));
+                        self.rent_receipt = Some(RentReceipt {
+                            owner: b,
+                            due: 0,
+                            paid: 0,
+                            covered: 0,
+                            waived: true,
+                        });
+                        return Ok(());
+                    }
                     // Snapshots from before this roll reflect the previous dice.
                     let group = self.district(j);
                     let rent = self.owned_rent(j, self.held(&group, b), group.len());
@@ -1046,6 +1072,13 @@ impl Game {
                         self.bonuses[j] = 0;
                     }
                     let covered = rent.min(self.players[a].cover);
+                    self.rent_receipt = Some(RentReceipt {
+                        owner: b,
+                        due: rent,
+                        paid: (rent - covered).min(self.players[a].cash),
+                        covered,
+                        waived: false,
+                    });
                     if covered > 0 {
                         self.players[a].cover = 0;
                         self.players[b].cash += covered;
@@ -1460,6 +1493,49 @@ mod tests {
 
     fn game(r: serde_json::Value, seed: u32) -> Game {
         Game::new(serde_json::from_value(r).unwrap(), 2, seed).unwrap()
+    }
+
+    #[test]
+    fn jail_rent_applies_to_the_owner_only_during_detention() {
+        for configured in [None, Some(true), Some(false)] {
+            let mut rules = classic_rules();
+            if let Some(on) = configured {
+                rules["collect_rent_in_jail"] = on.into();
+            }
+            for tile in [1, 5, 12] {
+                // city, airport, company
+                let mut g = game(rules.clone(), 10);
+                g.dice = vec![2, 3];
+                g.owners[tile] = Some(1);
+                g.players[0].cover = 1;
+                if tile == 1 {
+                    g.bonuses[tile] = 50;
+                }
+                g.send_to_prison(1, 30).unwrap();
+                g.land(0, tile).unwrap();
+                let receipt = g.rent_receipt.as_ref().unwrap();
+                assert_eq!(receipt.waived, configured == Some(false));
+                if receipt.waived {
+                    assert_eq!(
+                        (g.players[0].cash, g.players[1].cash, g.players[0].cover),
+                        (1500, 1500, 1)
+                    );
+                    assert!(g.debt.is_none());
+                    if tile == 1 {
+                        assert_eq!(g.bonuses[tile], 50);
+                    }
+                    // Still on the prison space, but now only visiting.
+                    g.players[1].in_prison = false;
+                    g.land(0, tile).unwrap();
+                }
+                let receipt = g.rent_receipt.as_ref().unwrap();
+                assert!(!receipt.waived && receipt.due > 0);
+                assert_eq!(receipt.covered, 1);
+                assert_eq!(g.bonuses[tile], 0);
+                assert_eq!(g.players[0].cash, 1500 - receipt.paid);
+                assert_eq!(g.players[1].cash, 1500 + receipt.due);
+            }
+        }
     }
 
     #[test]

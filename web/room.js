@@ -1,6 +1,6 @@
 // PeerJS only handles discovery and WebRTC transport. The host serializes all moves;
 // guests replay accepted commands against their own copy of the seeded Rust engine.
-const protocol='harbor-deeds-v5-', alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const protocol='harbor-deeds-v6-', alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const saveKey='harbor-deeds.table.v2', codePattern=/^[A-HJ-NP-Z2-9]{6}$/;
 const playable=new Set(Object.keys(uxInventory.commands).filter(action=>action!=='start'&&action!=='end'));
 let room=null,peerLoader=null;
